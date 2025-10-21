@@ -1,0 +1,67 @@
+name: cuda_qurani
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 0.1.0
+
+environment:
+  sdk: ^3.9.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Audio Recording
+  record: ^6.1.2
+  permission_handler: ^12.0.1
+  
+  # WebSocket & HTTP
+  web_socket_channel: ^3.0.1
+  http: ^1.2.2
+  
+  # State Management
+  provider: ^6.1.2
+  
+  # Audio Processing
+  path_provider: ^2.1.4
+  
+  # SQLite Database
+  sqflite: ^2.3.0
+  path: ^1.8.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/data/
+    - assets/fonts/
+    - assets/fonts/QPCV1Font/
+    - assets/images/
+
+  fonts:
+    - family: Uthmanic
+      fonts:
+        - asset: assets/fonts/Uthmanic.otf
+    - family: UthmanicHafs
+      fonts:
+        - asset: assets/fonts/KFGQPCUthmanicScriptHAFSRegular.otf
+    - family: MeQuran
+      fonts:
+        - asset: assets/fonts/me_quran.ttf
+    - family: Kitab
+      fonts:
+        - asset: assets/fonts/kitab.ttf
+    - family: Bismillah
+      fonts:
+        - asset: assets/fonts/110BesmellahNormal.ttf
+    - family: Quran-Common
+      fonts:
+        - asset: assets/fonts/quran-common.ttf
+    - family: surah-name-v2
+      fonts:
+        - asset: assets/fonts/surah-name-v2.ttf

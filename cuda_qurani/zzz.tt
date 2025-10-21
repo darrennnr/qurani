@@ -1,0 +1,221 @@
+MAIN PROMPT : 
+Mobile Flutter, tolong kamu fuse aplikasi ini menjadi satu kesatyuan, tanpa ada error sama sekali, kamu fuse, untuk informasi kode : 
+
+kode frontend(kode frontend tanpa fungsi backend, ini adalah kode frontend utama) : 
+
+D:\cuda_qurani\lib\screens\main\stt\controllers\stt_controller.dart
+
+D:\cuda_qurani\lib\screens\main\stt\data
+
+D:\cuda_qurani\lib\screens\main\stt\data\models.dart
+
+D:\cuda_qurani\lib\screens\main\stt\database
+
+D:\cuda_qurani\lib\screens\main\stt\database\db_helper.dart
+
+D:\cuda_qurani\lib\screens\main\stt\services
+
+D:\cuda_qurani\lib\screens\main\stt\services\quran_service.dart
+
+D:\cuda_qurani\lib\screens\main\stt\utils
+
+D:\cuda_qurani\lib\screens\main\stt\utils\constants.dart
+
+D:\cuda_qurani\lib\screens\main\stt\utils\logger.dart
+
+D:\cuda_qurani\lib\screens\main\stt\widgets
+
+D:\cuda_qurani\lib\screens\main\stt\widgets\list_view.dart
+
+D:\cuda_qurani\lib\screens\main\stt\widgets\mushaf_view.dart
+
+D:\cuda_qurani\lib\screens\main\stt\widgets\quran_widgets.dart
+
+D:\cuda_qurani\lib\screens\main\stt\stt_page.dart
+
+kode sebelum(lebih tepatnya kode backend(seperti penanganan untuk pengoreksi blok warna, mulai recording lah, apalah, dan lain-lain), yang frontend nya belum jadi, tetapi backend sudah jadi) adalah : 
+
+D:\cuda_qurani\lib\screens\surah_page.dart
+
+terserah bagaimana fuse mu, dan mau pakai direktori yang mana, tugas intimu adalah menggabungkan kedua kode itu menjadi satu, untuk frontend, kamu gunakan kode yang khusus frontend(layout & tampilan frontend secara total), untuk backend kamu gunakan kode khusus backend(jangan gunakan layout & tampilan dari kode ini sama sekali, gunakan backend nya saja), dan nanti kedua kode itu menjadi satu, dengan layout kode frontend, dan dengan backend kode backend, untuk kode backend itu kamu hapus layout & tampilan yang lama secara total, dan gunakanlah layout & tampilan yang dari frontend, kamu harus benar benar memahami maksudku, apa yang kumau dari prompt ini, karena aku tidak mau ada salah maksud ataupun salah dalam pengerjaan, mungkin kita akan menggunakan direktori yang ini "D:\cuda_qurani\lib\screens\main\stt\stt_page.dart"
+
+lalu kita ambil fungsi backend dari kode backend kesitu(seperti pengoreksi blok warna, mic recorder, dan lain-lain, bukan fungsi layout), mungkin itu bahasa simplenya, atau entah jika kamu punya teknik fuse yang lebih baik, nanti kamu kembalikan kode yang neccesary aja, kode yang penting penting saja, jangan kode full 100%, dengan instruksi yang spesifik & jelas tentang apa yang harus aku lakukan(replace,hapus,tambah, dan lain-lain) 
+
+untuk direktori fullnya begini : 
+
+D:\cuda_qurani\lib\config\app_config.dart
+
+D:\cuda_qurani\lib\models
+
+D:\cuda_qurani\lib\models\quran_models.dart
+
+D:\cuda_qurani\lib\providers
+
+D:\cuda_qurani\lib\providers\recitation_provider.dart
+
+D:\cuda_qurani\lib\screens
+
+D:\cuda_qurani\lib\screens\main
+
+D:\cuda_qurani\lib\screens\main\home
+
+D:\cuda_qurani\lib\screens\main\stt
+
+D:\cuda_qurani\lib\screens\main\stt\controllers
+
+D:\cuda_qurani\lib\screens\main\stt\controllers\stt_controller.dart
+
+D:\cuda_qurani\lib\screens\main\stt\data
+
+D:\cuda_qurani\lib\screens\main\stt\data\models.dart
+
+D:\cuda_qurani\lib\screens\main\stt\database
+
+D:\cuda_qurani\lib\screens\main\stt\database\db_helper.dart
+
+D:\cuda_qurani\lib\screens\main\stt\services
+
+D:\cuda_qurani\lib\screens\main\stt\services\quran_service.dart
+
+D:\cuda_qurani\lib\screens\main\stt\utils
+
+D:\cuda_qurani\lib\screens\main\stt\utils\constants.dart
+
+D:\cuda_qurani\lib\screens\main\stt\utils\logger.dart
+
+D:\cuda_qurani\lib\screens\main\stt\widgets
+
+D:\cuda_qurani\lib\screens\main\stt\widgets\list_view.dart
+
+D:\cuda_qurani\lib\screens\main\stt\widgets\mushaf_view.dart
+
+D:\cuda_qurani\lib\screens\main\stt\widgets\quran_widgets.dart
+
+D:\cuda_qurani\lib\screens\main\stt\stt_page.dart
+
+D:\cuda_qurani\lib\screens\surah_list_page.dart
+
+D:\cuda_qurani\lib\screens\surah_page.dart
+
+D:\cuda_qurani\lib\services
+
+D:\cuda_qurani\lib\services\audio_service.dart
+
+D:\cuda_qurani\lib\services\local_database_service.dart
+
+D:\cuda_qurani\lib\services\quran_service.dart
+
+D:\cuda_qurani\lib\services\supabase_service.dart
+
+D:\cuda_qurani\lib\services\websocket_service.dart
+
+D:\cuda_qurani\lib\main.dart : import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'models/quran_models.dart';
+import 'providers/recitation_provider.dart';
+import 'screens/surah_page.dart';
+import 'screens/surah_list_page.dart';
+import 'services/quran_service.dart';
+
+void main() {
+  runApp(const MainApp());
+}
+
+class MainApp extends StatelessWidget {
+  const MainApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => RecitationProvider(),
+      child: MaterialApp(
+        title: 'Qurani Hafidz',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          primarySwatch: Colors.green,
+          primaryColor: const Color(0xFF1B5E20),
+          scaffoldBackgroundColor: const Color(0xFFF5F5F5),
+        ),
+        home: const SurahListPage(),
+      ),
+    );
+  }
+}
+
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  Surah? _surahYasin;
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSurahData();
+  }
+
+  Future<void> _loadSurahData() async {
+    try {
+      final quranService = QuranService();
+      // Load any surah dynamically (or from last opened)
+      final surah = await quranService.getSurah(1); // Default: Al-Fatihah
+      setState(() {
+        _surahYasin = surah;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Failed to load Surah from Supabase: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (_error != null) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 64, color: Colors.red),
+              const SizedBox(height: 16),
+              Text(_error!),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _isLoading = true;
+                    _error = null;
+                  });
+                  _loadSurahData();
+                },
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return SurahPage(surah: _surahYasin!);
+  }
+}
+
+IMPORTANT : 
+jangan kembalikan kode full 100%(perfile), tapi kembalikan kode yang penting penting saja(fungsi yang perlu direplace/tambah/hapus), dengan instruksi yang super jelas & spesifik tentang apa yang harus aku lakukan untuk implementasinya, dan pastikan kamu benar benar memahami apa yang aku mau, dan pengerjaan tidak boleh ada kesalahan atau error sama sekali
