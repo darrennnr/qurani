@@ -292,6 +292,108 @@ class LocalDatabaseService {
     
     return results;
   }
+
+  static Future<int> getPageNumber(int surahId, int ayahNumber) async {
+  if (_wordsDb == null) await initializeDatabases();
+  
+  try {
+    // Get first word of this ayah
+    final wordResult = await _wordsDb!.query(
+      'words',
+      where: 'surah = ? AND ayah = ?',
+      whereArgs: [surahId, ayahNumber],
+      orderBy: 'word ASC',
+      limit: 1,
+    );
+    
+    if (wordResult.isEmpty) return 1;
+    
+    final firstWordId = wordResult.first['id'] as int;
+    
+    // Query pages database to find page containing this word
+    final databasesPath = await getDatabasesPath();
+    final pagesPath = join(databasesPath, 'qpc-v1-15-lines.db');
+    
+    if (!await File(pagesPath).exists()) {
+      print('[DB] Pages database not found, copying...');
+      final data = await rootBundle.load('assets/data/qpc-v1-15-lines.db');
+      final bytes = data.buffer.asUint8List();
+      await File(pagesPath).writeAsBytes(bytes, flush: true);
+    }
+    
+    final pagesDb = await openDatabase(pagesPath, readOnly: true);
+    
+    final pageResult = await pagesDb.rawQuery('''
+      SELECT page_number FROM pages 
+      WHERE line_type = 'ayah' 
+      AND first_word_id <= ? 
+      AND last_word_id >= ? 
+      LIMIT 1
+    ''', [firstWordId, firstWordId]);
+    
+    await pagesDb.close();
+    
+    if (pageResult.isNotEmpty) {
+      return pageResult.first['page_number'] as int;
+    }
+    
+    return 1;
+  } catch (e) {
+    print('[DB] Error getting page number: $e');
+    return 1;
+  }
+}
+
+/// Get first surah and ayah in a page
+static Future<Map<String, int>> getFirstAyahInPage(int pageNumber) async {
+  if (_wordsDb == null) await initializeDatabases();
+  
+  try {
+    final databasesPath = await getDatabasesPath();
+    final pagesPath = join(databasesPath, 'qpc-v1-15-lines.db');
+    
+    final pagesDb = await openDatabase(pagesPath, readOnly: true);
+    
+    final pageResult = await pagesDb.query(
+      'pages',
+      where: 'page_number = ? AND line_type = ?',
+      whereArgs: [pageNumber, 'ayah'],
+      orderBy: 'line_number ASC',
+      limit: 1,
+    );
+    
+    if (pageResult.isEmpty) {
+      await pagesDb.close();
+      return {'surah': 1, 'ayah': 1};
+    }
+    
+    final firstWordId = pageResult.first['first_word_id'];
+    await pagesDb.close();
+    
+    if (firstWordId == null || firstWordId == '') {
+      return {'surah': 1, 'ayah': 1};
+    }
+    
+    final wordResult = await _wordsDb!.query(
+      'words',
+      where: 'id = ?',
+      whereArgs: [int.parse(firstWordId.toString())],
+      limit: 1,
+    );
+    
+    if (wordResult.isEmpty) {
+      return {'surah': 1, 'ayah': 1};
+    }
+    
+    return {
+      'surah': wordResult.first['surah'] as int,
+      'ayah': wordResult.first['ayah'] as int,
+    };
+  } catch (e) {
+    print('[DB] Error getting first ayah in page: $e');
+    return {'surah': 1, 'ayah': 1};
+  }
+}
   
   /// Close all databases
   static Future<void> close() async {

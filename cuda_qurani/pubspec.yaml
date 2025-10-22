@@ -45,6 +45,8 @@ flutter:
     - assets/data/uthmani.db
     - assets/data/
     - assets/fonts/QPCV1Font/
+    - assets/data/qpc-v1-ayah-by-ayah-glyphs.db
+    - assets/data/quran-metadata-juz.sqlite
 
   fonts:
     - family: UthmanTN
@@ -63,13 +65,17 @@ flutter:
       fonts:
         - asset: assets/fonts/surah-name-v2.ttf
 
+    - family: surah-name-v1
+      fonts:
+        - asset: assets/fonts/surah-name-v1.ttf
+
+    - family: surah_names
+      fonts:
+        - asset: assets/fonts/surah_names.ttf
+
     - family: KFGQPCUthmanicScriptHAFSRegular
       fonts:
         - asset: assets/fonts/KFGQPCUthmanicScriptHAFSRegular.otf
-
-    - family: KFGQPCNastaleeq
-      fonts:
-        - asset: assets/fonts/KFGQPCNastaleeq-Regular.ttf
 
     - family: p1
       fonts:

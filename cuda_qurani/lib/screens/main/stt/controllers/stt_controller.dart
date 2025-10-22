@@ -14,9 +14,9 @@ import 'package:cuda_qurani/config/app_config.dart';
 class SttController with ChangeNotifier {
   final int suratId;
   SttController({required this.suratId}) {
-  _webSocketService = WebSocketService(serverUrl: AppConfig.websocketUrl);
-  _initializeWebSocket();
-}
+    _webSocketService = WebSocketService(serverUrl: AppConfig.websocketUrl);
+    _initializeWebSocket();
+  }
 
   // Services
   final QuranService _sqliteService = QuranService();
@@ -42,23 +42,23 @@ class SttController with ChangeNotifier {
   final ScrollController _scrollController = ScrollController();
 
   // Backend Integration - Recording & WebSocket
-final AudioService _audioService = AudioService();
-late final WebSocketService _webSocketService;
-bool _isRecording = false;
-bool _isConnected = false;
-String? _sessionId;
-int _expectedAyah = 1;
-final Map<int, TartibStatus> _tartibStatus = {};
-final Map<int, Map<int, WordStatus>> _wordStatusMap = {};
-StreamSubscription? _wsSubscription;
-StreamSubscription? _connectionSubscription;
+  final AudioService _audioService = AudioService();
+  late final WebSocketService _webSocketService;
+  bool _isRecording = false;
+  bool _isConnected = false;
+  String? _sessionId;
+  int _expectedAyah = 1;
+  final Map<int, TartibStatus> _tartibStatus = {};
+  final Map<int, Map<int, WordStatus>> _wordStatusMap = {};
+  StreamSubscription? _wsSubscription;
+  StreamSubscription? _connectionSubscription;
 
-// Getters for recording state
-bool get isRecording => _isRecording;
-bool get isConnected => _isConnected;
-int get expectedAyah => _expectedAyah;
-Map<int, TartibStatus> get tartibStatus => _tartibStatus;
-Map<int, Map<int, WordStatus>> get wordStatusMap => _wordStatusMap;
+  // Getters for recording state
+  bool get isRecording => _isRecording;
+  bool get isConnected => _isConnected;
+  int get expectedAyah => _expectedAyah;
+  Map<int, TartibStatus> get tartibStatus => _tartibStatus;
+  Map<int, Map<int, WordStatus>> get wordStatusMap => _wordStatusMap;
 
   // Page Pre-loading Cache
   final Map<int, List<MushafPageLine>> pageCache = {};
@@ -85,23 +85,27 @@ Map<int, Map<int, WordStatus>> get wordStatusMap => _wordStatusMap;
 
   // ===== INITIALIZATION =====
   Future<void> initializeApp() async {
-    appLogger.log('APP_INIT', 'Starting app initialization (Frontend Only)');
+    appLogger.log('APP_INIT', 'Starting instant app initialization');
     _isLoading = true;
     _errorMessage = '';
     notifyListeners();
 
     try {
+      // Database already initialized in main.dart, just verify
       await _sqliteService.initialize();
-      appLogger.log('APP_INIT', 'SQLite service initialized');
 
+      // Load data immediately
       await _loadAyatData();
       _sessionStartTime = DateTime.now();
 
+      // Mark as ready INSTANTLY
       _isLoading = false;
       notifyListeners();
-      appLogger.log('APP_INIT', 'App initialization completed successfully');
 
-      Future.delayed(const Duration(milliseconds: 500), () {
+      appLogger.log('APP_INIT', 'App ready - ${_ayatList.length} ayat loaded');
+
+      // Background tasks - don't block UI
+      Future.microtask(() {
         if (_isQuranMode) {
           _preloadAdjacentPagesAggressively();
         }
@@ -118,19 +122,28 @@ Map<int, Map<int, WordStatus>> get wordStatusMap => _wordStatusMap;
   Future<void> _loadAyatData() async {
     appLogger.log('DATA', 'Loading ayat data for surah_id $suratId');
     try {
-      final chapter = await _sqliteService.getChapterInfo(suratId);
-      _ayatList = await _sqliteService.getSurahAyatData(
-        suratId,
-        isQuranMode: _isQuranMode,
-      );
+      // Use optimized batch loading
+      final results = await Future.wait([
+        _sqliteService.getChapterInfo(suratId),
+        _sqliteService.getSurahAyatDataOptimized(
+          suratId,
+          isQuranMode: _isQuranMode,
+        ),
+      ]);
+
+      final chapter = results[0] as ChapterData;
+      _ayatList = results[1] as List<AyatData>;
+
       _suratNameSimple = chapter.nameSimple;
       _suratVersesCount = chapter.versesCount.toString();
 
       if (_ayatList.isNotEmpty) {
         _currentPage = _ayatList.first.page;
-        await _loadCurrentPageAyats();
+        // Load page data in background, don't await
+        _loadCurrentPageAyats();
       }
-      appLogger.log('DATA', 'Loaded ${_ayatList.length} ayat');
+
+      appLogger.log('DATA', 'Loaded ${_ayatList.length} ayat instantly');
       notifyListeners();
     } catch (e) {
       appLogger.log('DATA_ERROR', 'Failed to load ayat data - $e');
@@ -396,191 +409,203 @@ Map<int, Map<int, WordStatus>> get wordStatusMap => _wordStatusMap;
   }
 
   // ===== WEBSOCKET & RECORDING =====
-void _initializeWebSocket() {
-  _wsSubscription = _webSocketService.messages.listen(_handleWebSocketMessage);
-  _connectionSubscription = _webSocketService.connectionStatus.listen((isConnected) {
-    if (_isConnected != isConnected) {
-      _isConnected = isConnected;
-      if (_isConnected) {
-        _errorMessage = '';
-      } else if (_isRecording) {
-        _errorMessage = 'Connection lost. Attempting to reconnect...';
-      }
-      notifyListeners();
-    }
-  });
-  
-  // Auto-connect
-  _connectWebSocket();
-}
-
-Future<void> _connectWebSocket() async {
-  try {
-    _webSocketService.enableAutoReconnect();
-    await _webSocketService.connect();
-    _isConnected = _webSocketService.isConnected;
-    appLogger.log('WEBSOCKET', 'Connected: $_isConnected');
-  } catch (e) {
-    appLogger.log('WEBSOCKET_ERROR', 'Connection failed: $e');
-  }
-}
-
-void _handleWebSocketMessage(Map<String, dynamic> message) {
-  final type = message['type'];
-  appLogger.log('WS_MESSAGE', 'Received: $type');
-  
-  switch (type) {
-    case 'word_processing':
-      final int ayah = message['ayah'] ?? 0;
-      final int wordIndex = message['word_index'] ?? 0;
-      _currentAyatIndex = _ayatList.indexWhere((a) => a.ayah == ayah);
-      if (!_wordStatusMap.containsKey(ayah)) _wordStatusMap[ayah] = {};
-      _wordStatusMap[ayah]![wordIndex] = WordStatus.processing;
-      notifyListeners();
-      break;
-      
-    case 'skip_rejected':
-      _errorMessage = message['message'] ?? 'Please read in order';
-      notifyListeners();
-      Future.delayed(const Duration(seconds: 3), () {
-        if (_errorMessage == message['message']) {
+  void _initializeWebSocket() {
+    _wsSubscription = _webSocketService.messages.listen(
+      _handleWebSocketMessage,
+    );
+    _connectionSubscription = _webSocketService.connectionStatus.listen((
+      isConnected,
+    ) {
+      if (_isConnected != isConnected) {
+        _isConnected = isConnected;
+        if (_isConnected) {
           _errorMessage = '';
-          notifyListeners();
+        } else if (_isRecording) {
+          _errorMessage = 'Connection lost. Attempting to reconnect...';
         }
-      });
-      break;
-      
-    case 'word_feedback':
-      final int ayah = message['ayah'] ?? 0;
-      final int wordIndex = message['word_index'] ?? 0;
-      final String status = message['status'] ?? 'pending';
-      _currentAyatIndex = _ayatList.indexWhere((a) => a.ayah == ayah);
-      if (!_wordStatusMap.containsKey(ayah)) _wordStatusMap[ayah] = {};
-      _wordStatusMap[ayah]![wordIndex] = _mapWordStatus(status);
+        notifyListeners();
+      }
+    });
+
+    // Auto-connect
+    _connectWebSocket();
+  }
+
+  Future<void> _connectWebSocket() async {
+    try {
+      _webSocketService.enableAutoReconnect();
+      await _webSocketService.connect();
+      _isConnected = _webSocketService.isConnected;
+      appLogger.log('WEBSOCKET', 'Connected: $_isConnected');
+    } catch (e) {
+      appLogger.log('WEBSOCKET_ERROR', 'Connection failed: $e');
+    }
+  }
+
+  void _handleWebSocketMessage(Map<String, dynamic> message) {
+    final type = message['type'];
+    appLogger.log('WS_MESSAGE', 'Received: $type');
+
+    switch (type) {
+      case 'word_processing':
+        final int ayah = message['ayah'] ?? 0;
+        final int wordIndex = message['word_index'] ?? 0;
+        _currentAyatIndex = _ayatList.indexWhere((a) => a.ayah == ayah);
+        if (!_wordStatusMap.containsKey(ayah)) _wordStatusMap[ayah] = {};
+        _wordStatusMap[ayah]![wordIndex] = WordStatus.processing;
+        notifyListeners();
+        break;
+
+      case 'skip_rejected':
+        _errorMessage = message['message'] ?? 'Please read in order';
+        notifyListeners();
+        Future.delayed(const Duration(seconds: 3), () {
+          if (_errorMessage == message['message']) {
+            _errorMessage = '';
+            notifyListeners();
+          }
+        });
+        break;
+
+      case 'word_feedback':
+        final int ayah = message['ayah'] ?? 0;
+        final int wordIndex = message['word_index'] ?? 0;
+        final String status = message['status'] ?? 'pending';
+        _currentAyatIndex = _ayatList.indexWhere((a) => a.ayah == ayah);
+        if (!_wordStatusMap.containsKey(ayah)) _wordStatusMap[ayah] = {};
+        _wordStatusMap[ayah]![wordIndex] = _mapWordStatus(status);
+        notifyListeners();
+        break;
+
+      case 'ayah_complete':
+        final int completedAyah = message['ayah'] ?? 0;
+        final int nextAyah = message['next_ayah'] ?? 0;
+        _tartibStatus[completedAyah] = TartibStatus.correct;
+        _currentAyatIndex = _ayatList.indexWhere((a) => a.ayah == nextAyah);
+        notifyListeners();
+        break;
+
+      case 'started':
+        _tartibStatus.clear();
+        _wordStatusMap.clear();
+        _expectedAyah = message['expected_ayah'] ?? 1;
+        _sessionId = message['session_id'];
+        appLogger.log('SESSION', 'Started: $_sessionId');
+        notifyListeners();
+        break;
+
+      case 'error':
+        _errorMessage = message['message'];
+        notifyListeners();
+        break;
+    }
+  }
+
+  WordStatus _mapWordStatus(String status) {
+    switch (status.toLowerCase()) {
+      case 'matched':
+      case 'correct':
+        return WordStatus.matched;
+      case 'processing':
+        return WordStatus.processing;
+      case 'mismatched':
+      case 'incorrect':
+        return WordStatus.mismatched;
+      case 'skipped':
+        return WordStatus.skipped;
+      default:
+        return WordStatus.pending;
+    }
+  }
+
+  Future<void> startRecording() async {
+    if (!_isConnected) {
+      _errorMessage = 'Connecting...';
       notifyListeners();
-      break;
-      
-    case 'ayah_complete':
-      final int completedAyah = message['ayah'] ?? 0;
-      final int nextAyah = message['next_ayah'] ?? 0;
-      _tartibStatus[completedAyah] = TartibStatus.correct;
-      _currentAyatIndex = _ayatList.indexWhere((a) => a.ayah == nextAyah);
-      notifyListeners();
-      break;
-      
-    case 'started':
+      await _connectWebSocket();
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (!_isConnected) {
+        _errorMessage = 'Cannot connect to server';
+        notifyListeners();
+        return;
+      }
+    }
+
+    try {
       _tartibStatus.clear();
       _wordStatusMap.clear();
-      _expectedAyah = message['expected_ayah'] ?? 1;
-      _sessionId = message['session_id'];
-      appLogger.log('SESSION', 'Started: $_sessionId');
-      notifyListeners();
-      break;
-      
-    case 'error':
-      _errorMessage = message['message'];
-      notifyListeners();
-      break;
-  }
-}
+      _expectedAyah = 1;
+      _sessionId = null;
+      _errorMessage = '';
 
-WordStatus _mapWordStatus(String status) {
-  switch (status.toLowerCase()) {
-    case 'matched': case 'correct': return WordStatus.matched;
-    case 'processing': return WordStatus.processing;
-    case 'mismatched': case 'incorrect': return WordStatus.mismatched;
-    case 'skipped': return WordStatus.skipped;
-    default: return WordStatus.pending;
-  }
-}
+      _webSocketService.sendStartRecording(suratId);
+      await _audioService.startRecording(
+        onAudioChunk: (base64Audio) {
+          if (_webSocketService.isConnected) {
+            _webSocketService.sendAudioChunk(base64Audio);
+          }
+        },
+      );
 
-Future<void> startRecording() async {
-  if (!_isConnected) {
-    _errorMessage = 'Connecting...';
-    notifyListeners();
-    await _connectWebSocket();
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (!_isConnected) {
-      _errorMessage = 'Cannot connect to server';
+      _isRecording = true;
+      appLogger.log('RECORDING', 'Started for surah $suratId');
       notifyListeners();
-      return;
+    } catch (e) {
+      _errorMessage = 'Failed to start: $e';
+      _isRecording = false;
+      appLogger.log('RECORDING_ERROR', e.toString());
+      notifyListeners();
     }
   }
-  
-  try {
-    _tartibStatus.clear();
-    _wordStatusMap.clear();
-    _expectedAyah = 1;
-    _sessionId = null;
+
+  Future<void> stopRecording() async {
+    try {
+      await _audioService.stopRecording();
+      _webSocketService.sendStopRecording();
+      _isRecording = false;
+      appLogger.log('RECORDING', 'Stopped');
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = 'Failed to stop: $e';
+      appLogger.log('RECORDING_ERROR', e.toString());
+      notifyListeners();
+    }
+  }
+
+  void clearError() {
     _errorMessage = '';
-    
-    _webSocketService.sendStartRecording(suratId);
-    await _audioService.startRecording(
-      onAudioChunk: (base64Audio) {
-        if (_webSocketService.isConnected) {
-          _webSocketService.sendAudioChunk(base64Audio);
-        }
-      },
-    );
-    
-    _isRecording = true;
-    appLogger.log('RECORDING', 'Started for surah $suratId');
-    notifyListeners();
-  } catch (e) {
-    _errorMessage = 'Failed to start: $e';
-    _isRecording = false;
-    appLogger.log('RECORDING_ERROR', e.toString());
     notifyListeners();
   }
-}
 
-Future<void> stopRecording() async {
-  try {
-    await _audioService.stopRecording();
-    _webSocketService.sendStopRecording();
-    _isRecording = false;
-    appLogger.log('RECORDING', 'Stopped');
+  Future<void> reconnect() async {
+    _errorMessage = 'Reconnecting...';
+    _isConnected = false;
     notifyListeners();
-  } catch (e) {
-    _errorMessage = 'Failed to stop: $e';
-    appLogger.log('RECORDING_ERROR', e.toString());
+
+    _webSocketService.disconnect();
+    await Future.delayed(const Duration(milliseconds: 500));
+    await _connectWebSocket();
+
+    if (_isConnected && _sessionId != null) {
+      _webSocketService.sendRecoverSession(_sessionId!);
+    }
+
+    _errorMessage = _isConnected ? '' : 'Reconnect failed';
     notifyListeners();
   }
-}
 
-void clearError() {
-  _errorMessage = '';
-  notifyListeners();
-}
-
-Future<void> reconnect() async {
-  _errorMessage = 'Reconnecting...';
-  _isConnected = false;
-  notifyListeners();
-  
-  _webSocketService.disconnect();
-  await Future.delayed(const Duration(milliseconds: 500));
-  await _connectWebSocket();
-  
-  if (_isConnected && _sessionId != null) {
-    _webSocketService.sendRecoverSession(_sessionId!);
-  }
-  
-  _errorMessage = _isConnected ? '' : 'Reconnect failed';
-  notifyListeners();
-}
   // ===== DISPOSAL =====
-@override
-void dispose() {
-  appLogger.log('DISPOSAL', 'Starting cleanup process');
-  _wsSubscription?.cancel();
-  _connectionSubscription?.cancel();
-  _audioService.dispose();
-  _webSocketService.dispose();
-  // JANGAN dispose sqliteService karena menggunakan singleton
-  // _sqliteService.dispose(); // HAPUS BARIS INI
-  _scrollController.dispose();
-  appLogger.dispose();
-  super.dispose();
-}
+  @override
+  void dispose() {
+    appLogger.log('DISPOSAL', 'Starting cleanup process');
+    _wsSubscription?.cancel();
+    _connectionSubscription?.cancel();
+    _audioService.dispose();
+    _webSocketService.dispose();
+    // JANGAN dispose sqliteService karena menggunakan singleton
+    // _sqliteService.dispose(); // HAPUS BARIS INI
+    _scrollController.dispose();
+    appLogger.dispose();
+    super.dispose();
+  }
 }

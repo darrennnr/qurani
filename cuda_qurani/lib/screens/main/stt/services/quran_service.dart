@@ -36,6 +36,66 @@ class QuranService {
     }
   }
 
+  // ==================== OPTIMIZED BATCH LOADING ====================
+  /// Fast load surah data with minimal queries
+  Future<List<AyatData>> getSurahAyatDataOptimized(
+    int surahId, {
+    bool isQuranMode = true,
+  }) async {
+    await initialize();
+    
+    final db = _getWordsDatabase(isQuranMode);
+    
+    // Single query to get all words for the surah
+    final result = await db.query(
+      'words',
+      where: 'surah = ?',
+      whereArgs: [surahId],
+      orderBy: 'ayah ASC, word ASC',
+    );
+    
+    if (result.isEmpty) return [];
+    
+    // Group words by ayah in memory (faster than multiple queries)
+    final Map<int, List<WordData>> ayahGroups = {};
+    for (final row in result) {
+      final word = WordData.fromSqlite(row);
+      ayahGroups.putIfAbsent(word.ayah, () => []).add(word);
+    }
+    
+    // Get chapter info (single query)
+    final chapter = await getChapterInfo(surahId);
+    
+    // Build ayat list
+    final List<AyatData> ayatList = [];
+    for (int ayahNum = 1; ayahNum <= chapter.versesCount; ayahNum++) {
+      final ayahWords = ayahGroups[ayahNum] ?? [];
+      if (ayahWords.isEmpty) continue;
+      
+      // Calculate page and juz efficiently
+      final firstWordId = ayahWords.first.id;
+      final pageResult = await _uthmaniLinesDB!.rawQuery(
+        'SELECT page_number FROM pages WHERE line_type = ? AND first_word_id <= ? AND last_word_id >= ? LIMIT 1',
+        ['ayah', firstWordId, firstWordId],
+      );
+      final page = pageResult.isNotEmpty ? pageResult.first['page_number'] as int : 1;
+      final juz = calculateJuzAccurate(surahId, ayahNum);
+      
+      ayatList.add(
+        AyatData(
+          surah_id: surahId,
+          ayah: ayahNum,
+          words: ayahWords,
+          page: page,
+          juz: juz,
+          fullArabicText: ayahWords.map((w) => w.text).join(' '),
+        ),
+      );
+    }
+    
+    return ayatList;
+  }
+
   Future<ChapterData> getChapterInfo(int surahId) async {
     await initialize();
     final result = await _metadataDB!.query(

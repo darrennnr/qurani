@@ -1,13 +1,40 @@
+import 'package:cuda_qurani/screens/splash_screen.dart';
+import 'package:cuda_qurani/screens/main/stt/database/db_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'models/quran_models.dart';
 import 'providers/recitation_provider.dart';
-import 'screens/main/stt/stt_page.dart';
-import 'screens/surah_list_page.dart';
-import 'services/quran_service.dart';
+import 'screens/main/home/services/juz_service.dart';
 
-void main() {
+// Global flag to track DB initialization
+bool _isDatabaseInitialized = false;
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+ 
+  // Pre-initialize all databases BEFORE app starts
+  await _initializeDatabases();
+  await JuzService.initialize();
+ 
   runApp(const MainApp());
+}
+
+Future<void> _initializeDatabases() async {
+  if (_isDatabaseInitialized) return;
+ 
+  try {
+    // Open all databases in parallel
+    await Future.wait([
+      DBHelper.openDB(DBType.metadata),
+      DBHelper.openDB(DBType.qpc_v1_15),
+      DBHelper.openDB(DBType.qpc_v1_wbw),
+      DBHelper.openDB(DBType.uthmani),
+    ]);
+   
+    _isDatabaseInitialized = true;
+    print('✅ All databases pre-initialized successfully');
+  } catch (e) {
+    print('❌ Database initialization failed: $e');
+  }
 }
 
 class MainApp extends StatelessWidget {
@@ -22,87 +49,11 @@ class MainApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           primarySwatch: Colors.green,
-          primaryColor: const Color(0xFF1B5E20),
-          scaffoldBackgroundColor: const Color(0xFFF5F5F5),
+          primaryColor: const Color(0xFF247C64),
+          scaffoldBackgroundColor: const Color(0xFFFFFFFF),
         ),
-        home: const SurahListPage(),
+        home: const SplashScreen(),
       ),
     );
-  }
-}
-
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
-
-  @override
-  State<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
-  Surah? _surahYasin;
-  bool _isLoading = true;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadSurahData();
-  }
-
-  Future<void> _loadSurahData() async {
-    try {
-      final quranService = QuranService();
-      // Load any surah dynamically (or from last opened)
-      final surah = await quranService.getSurah(1); // Default: Al-Fatihah
-      setState(() {
-        _surahYasin = surah;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = 'Failed to load Surah from Supabase: $e';
-        _isLoading = false;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
-    if (_error != null) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 64, color: Colors.red),
-              const SizedBox(height: 16),
-              Text(_error!),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    _isLoading = true;
-                    _error = null;
-                  });
-                  _loadSurahData();
-                },
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // Use SttPage with surah ID
-    return SttPage(suratId: _surahYasin?.number ?? 1);
   }
 }

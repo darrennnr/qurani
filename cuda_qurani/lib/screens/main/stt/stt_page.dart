@@ -33,7 +33,7 @@ class SttPage extends StatelessWidget {
             backgroundColor: backgroundColor,
             appBar: const QuranAppBar(),
             body: controller.isLoading
-                ? QuranLoadingWidget(errorMessage: controller.errorMessage)
+                ? const SizedBox.shrink() // No loading UI - instant load
                 : controller.errorMessage.isNotEmpty &&
                       controller.errorMessage.contains('rejected')
                 ? Column(

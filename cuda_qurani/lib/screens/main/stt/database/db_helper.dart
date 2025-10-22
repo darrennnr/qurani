@@ -62,6 +62,20 @@ class DBHelper {
     _dbInstances.clear();
   }
 
+  static Future<void> preInitializeAll() async {
+    print('DB_HELPER: Pre-initializing all databases...');
+
+    // Open semua database parallel
+    await Future.wait([
+      openDB(DBType.metadata),
+      openDB(DBType.qpc_v1_15),
+      openDB(DBType.qpc_v1_wbw),
+      openDB(DBType.uthmani),
+    ]);
+
+    print('DB_HELPER: All databases pre-initialized');
+  }
+
   // TAMBAHAN: Method untuk reset database (jika diperlukan)
   static Future<void> resetDatabase(DBType type) async {
     if (_dbInstances.containsKey(type)) {

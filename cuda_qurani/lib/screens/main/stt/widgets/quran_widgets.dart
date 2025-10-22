@@ -1,6 +1,6 @@
 // lib\screens\main\stt\widgets\quran_widgets.dart
 
-import 'package:cuda_qurani/screens/surah_list_page.dart';
+import 'package:cuda_qurani/screens/main/home/surah_list_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../controllers/stt_controller.dart';
