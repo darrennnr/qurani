@@ -2,6 +2,8 @@
 
 import 'dart:async';
 import 'package:cuda_qurani/models/quran_models.dart';
+import 'package:cuda_qurani/screens/main/home/services/juz_service.dart';
+import 'package:cuda_qurani/services/local_database_service.dart';
 import 'package:flutter/material.dart';
 import '../data/models.dart' hide TartibStatus;
 import '../services/quran_service.dart';
@@ -12,8 +14,16 @@ import 'package:cuda_qurani/services/websocket_service.dart';
 import 'package:cuda_qurani/config/app_config.dart';
 
 class SttController with ChangeNotifier {
-  final int suratId;
-  SttController({required this.suratId}) {
+  final int? suratId;
+  final int? pageId;
+  final int? juzId;
+
+  int? _determinedSurahId;
+
+  SttController({this.suratId, this.pageId, this.juzId}) {
+    print(
+      '🗃️ SttController: CONSTRUCTOR - surah:$suratId page:$pageId juz:$juzId',
+    );
     _webSocketService = WebSocketService(serverUrl: AppConfig.websocketUrl);
     _initializeWebSocket();
   }
@@ -50,6 +60,8 @@ class SttController with ChangeNotifier {
   int _expectedAyah = 1;
   final Map<int, TartibStatus> _tartibStatus = {};
   final Map<int, Map<int, WordStatus>> _wordStatusMap = {};
+  List<WordFeedback> _currentWords =
+      []; // ✅ ADD: Store current words for realtime updates
   StreamSubscription? _wsSubscription;
   StreamSubscription? _connectionSubscription;
 
@@ -59,9 +71,12 @@ class SttController with ChangeNotifier {
   int get expectedAyah => _expectedAyah;
   Map<int, TartibStatus> get tartibStatus => _tartibStatus;
   Map<int, Map<int, WordStatus>> get wordStatusMap => _wordStatusMap;
+  List<WordFeedback> get currentWords =>
+      _currentWords; // ✅ ADD: Getter for currentWords
 
   // Page Pre-loading Cache
   final Map<int, List<MushafPageLine>> pageCache = {};
+
   bool _isPreloadingPages = false;
 
   // Getters for UI
@@ -85,37 +100,180 @@ class SttController with ChangeNotifier {
 
   // ===== INITIALIZATION =====
   Future<void> initializeApp() async {
-    appLogger.log('APP_INIT', 'Starting instant app initialization');
+    appLogger.log('APP_INIT', 'Starting OPTIMIZED page-based initialization');
     _isLoading = true;
     _errorMessage = '';
     notifyListeners();
 
     try {
-      // Database already initialized in main.dart, just verify
       await _sqliteService.initialize();
 
-      // Load data immediately
-      await _loadAyatData();
+      // 🚀 STEP 1: Determine target page FIRST
+      int targetPage = await _determineTargetPage();
+      _currentPage = targetPage;
+
+      appLogger.log('APP_INIT', 'Target page determined: $targetPage');
+
+      // 🚀 STEP 2: Load ONLY that page (minimal data)
+      await _loadSinglePageData(targetPage);
+
       _sessionStartTime = DateTime.now();
 
       // Mark as ready INSTANTLY
       _isLoading = false;
       notifyListeners();
 
-      appLogger.log('APP_INIT', 'App ready - ${_ayatList.length} ayat loaded');
+      appLogger.log(
+        'APP_INIT',
+        'App ready - Page $targetPage loaded instantly',
+      );
 
-      // Background tasks - don't block UI
+      // 🚀 STEP 3: Background tasks
       Future.microtask(() {
         if (_isQuranMode) {
           _preloadAdjacentPagesAggressively();
         }
       });
     } catch (e) {
-      final errorString = 'Failed to initialize app: $e';
+      final errorString = 'Failed to initialize: $e';
       appLogger.log('APP_INIT_ERROR', errorString);
       _errorMessage = errorString;
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  // ADD NEW METHOD: Determine target page from navigation params
+  Future<int> _determineTargetPage() async {
+    // Priority: pageId > juzId > suratId
+
+    if (pageId != null) {
+      appLogger.log('NAV', 'Direct navigation to page $pageId');
+      return pageId!;
+    }
+
+    if (juzId != null) {
+      appLogger.log('NAV', 'Navigation from Juz $juzId');
+
+      // Get juz metadata
+      final juzData = await JuzService.getJuz(juzId!);
+      if (juzData == null) {
+        throw Exception('Juz $juzId not found');
+      }
+
+      // Parse first_verse_key (format: "surah:ayah")
+      final firstVerseKey = juzData['first_verse_key'] as String;
+      final parts = firstVerseKey.split(':');
+      final surahNum = int.parse(parts[0]);
+      final ayahNum = int.parse(parts[1]);
+
+      // Get page number for this ayah
+      final page = await LocalDatabaseService.getPageNumber(surahNum, ayahNum);
+      appLogger.log(
+        'NAV',
+        'Juz $juzId starts at page $page (${surahNum}:${ayahNum})',
+      );
+      return page;
+    }
+
+    if (suratId != null) {
+      appLogger.log('NAV', 'Navigation from Surah $suratId');
+
+      // Get first page of this surah
+      final page = await LocalDatabaseService.getPageNumber(suratId!, 1);
+      appLogger.log('NAV', 'Surah $suratId starts at page $page');
+      return page;
+    }
+
+    // Fallback (should never happen due to assertion)
+    return 1;
+  }
+
+  // ADD NEW METHOD: Load single page data (OPTIMIZED)
+  Future<void> _loadSinglePageData(int pageNumber) async {
+    appLogger.log('DATA', 'Loading SINGLE page: $pageNumber');
+
+    try {
+      // Load page lines (for mushaf view)
+      final pageLines = await _sqliteService.getMushafPageLines(pageNumber);
+      pageCache[pageNumber] = pageLines;
+
+      // ✅ FIX: Determine and STORE surah ID from first ayah on page
+      if (pageLines.isNotEmpty) {
+        for (final line in pageLines) {
+          if (line.ayahSegments != null && line.ayahSegments!.isNotEmpty) {
+            final firstSegment = line.ayahSegments!.first;
+            _determinedSurahId =
+                firstSegment.surahId; // ✅ CRITICAL: Store surah ID
+
+            // Get surah metadata (minimal)
+            final chapter = await _sqliteService.getChapterInfo(
+              _determinedSurahId!,
+            );
+            _suratNameSimple = chapter.nameSimple;
+            _suratVersesCount = chapter.versesCount.toString();
+
+            // Build minimal ayat list for THIS PAGE ONLY
+            final Set<String> uniqueAyahs = {};
+            for (final line in pageLines) {
+              if (line.ayahSegments != null) {
+                for (final segment in line.ayahSegments!) {
+                  final key = '${segment.surahId}:${segment.ayahNumber}';
+                  uniqueAyahs.add(key);
+                }
+              }
+            }
+
+            // Load only ayahs on this page
+            _ayatList = [];
+            for (final ayahKey in uniqueAyahs) {
+              final parts = ayahKey.split(':');
+              final surahId = int.parse(parts[0]);
+              final ayahNum = int.parse(parts[1]);
+
+              final ayahWords = await _sqliteService.getAyahWords(
+                surahId,
+                ayahNum,
+                isQuranMode: true,
+              );
+              final juz = _sqliteService.calculateJuzAccurate(surahId, ayahNum);
+
+              _ayatList.add(
+                AyatData(
+                  surah_id: surahId,
+                  ayah: ayahNum,
+                  words: ayahWords,
+                  page: pageNumber,
+                  juz: juz,
+                  fullArabicText: ayahWords.map((w) => w.text).join(' '),
+                ),
+              );
+            }
+
+            // Sort by surah then ayah
+            _ayatList.sort((a, b) {
+              if (a.surah_id != b.surah_id)
+                return a.surah_id.compareTo(b.surah_id);
+              return a.ayah.compareTo(b.ayah);
+            });
+
+            _currentAyatIndex = 0;
+            _currentPageAyats = _ayatList;
+
+            appLogger.log(
+              'DATA',
+              'Loaded ${_ayatList.length} ayahs on page $pageNumber (Surah $_determinedSurahId)',
+            );
+            notifyListeners();
+            return;
+          }
+        }
+      }
+
+      throw Exception('No valid data on page $pageNumber');
+    } catch (e) {
+      appLogger.log('DATA_ERROR', 'Failed to load page $pageNumber: $e');
+      rethrow;
     }
   }
 
@@ -124,9 +282,9 @@ class SttController with ChangeNotifier {
     try {
       // Use optimized batch loading
       final results = await Future.wait([
-        _sqliteService.getChapterInfo(suratId),
+        _sqliteService.getChapterInfo(suratId!),
         _sqliteService.getSurahAyatDataOptimized(
-          suratId,
+          suratId!,
           isQuranMode: _isQuranMode,
         ),
       ]);
@@ -445,6 +603,7 @@ class SttController with ChangeNotifier {
   void _handleWebSocketMessage(Map<String, dynamic> message) {
     final type = message['type'];
     appLogger.log('WS_MESSAGE', 'Received: $type');
+    print('🔔 STT CONTROLLER: Received message type: $type');
 
     switch (type) {
       case 'word_processing':
@@ -471,9 +630,108 @@ class SttController with ChangeNotifier {
         final int ayah = message['ayah'] ?? 0;
         final int wordIndex = message['word_index'] ?? 0;
         final String status = message['status'] ?? 'pending';
+        final String expectedWord = message['expected_word'] ?? '';
+        final String transcribedWord = message['transcribed_word'] ?? '';
+        final int totalWords = message['total_words'] ?? 0;
+
         _currentAyatIndex = _ayatList.indexWhere((a) => a.ayah == ayah);
+
+        // ✅ UPDATE _wordStatusMap (existing behavior)
         if (!_wordStatusMap.containsKey(ayah)) _wordStatusMap[ayah] = {};
         _wordStatusMap[ayah]![wordIndex] = _mapWordStatus(status);
+        print(
+          '🗺️ STT: Updated wordStatusMap[$ayah][$wordIndex] = ${_mapWordStatus(status)}',
+        );
+        print('🗺️ STT: Full wordStatusMap[$ayah] = ${_wordStatusMap[ayah]}');
+
+        // 🔥 NEW: Update _currentWords REALTIME
+        if (_currentWords.isEmpty || _currentWords.length != totalWords) {
+          print(
+            '🔥 STT: Initializing _currentWords for ayah $ayah with $totalWords words',
+          );
+          _currentWords = List.generate(
+            totalWords,
+            (i) => WordFeedback(
+              text: '',
+              status: WordStatus.pending,
+              wordIndex: i,
+              similarity: 0.0,
+            ),
+          );
+        }
+
+        if (wordIndex >= 0 && wordIndex < _currentWords.length) {
+          _currentWords[wordIndex] = WordFeedback(
+            text: expectedWord,
+            status: _mapWordStatus(status),
+            wordIndex: wordIndex,
+            similarity: (message['similarity'] ?? 0.0).toDouble(),
+            transcribedWord: transcribedWord,
+          );
+          print(
+            '🔥 STT REALTIME: Updated _currentWords[$wordIndex] = $expectedWord (${_mapWordStatus(status)})',
+          );
+        }
+
+        notifyListeners();
+        break;
+
+      case 'progress':
+        final int completedAyah = message['ayah'];
+        print('📥 STT: Progress for ayah $completedAyah');
+
+        // 🚫 DON'T overwrite _currentWords if still recording same ayah!
+        // word_feedback updates are more accurate and realtime
+        if (!_isRecording ||
+            _currentAyatIndex !=
+                _ayatList.indexWhere((a) => a.ayah == completedAyah)) {
+          if (message['words'] != null) {
+            _currentWords = (message['words'] as List)
+                .map((w) => WordFeedback.fromJson(w))
+                .toList();
+            print('🎨 STT: Parsed ${_currentWords.length} words for display');
+          }
+
+          // Update expected ayah from backend
+          if (message['expected_ayah'] != null) {
+            _expectedAyah = message['expected_ayah'];
+            print('✅ STT: Updated expected_ayah to: $_expectedAyah');
+          }
+
+          // ✅ Only update currentAyatIndex if NOT recording
+          if (!_isRecording) {
+            _currentAyatIndex = _ayatList.indexWhere(
+              (a) => a.ayah == _expectedAyah,
+            );
+            print('✅ STT: Moved currentAyatIndex to: $_currentAyatIndex');
+          }
+        } else {
+          print(
+            '🚫 STT SKIP: Keeping realtime word_feedback data (recording in progress)',
+          );
+        }
+
+        // Update tartib status from backend
+        if (message['tartib_status'] != null) {
+          final Map<String, dynamic> backendTartib = message['tartib_status'];
+          backendTartib.forEach((key, value) {
+            final int ayahNum = int.tryParse(key) ?? -1;
+            if (ayahNum > 0) {
+              final String statusStr = value.toString().toLowerCase();
+              switch (statusStr) {
+                case 'correct':
+                  _tartibStatus[ayahNum] = TartibStatus.correct;
+                  break;
+                case 'skipped':
+                  _tartibStatus[ayahNum] = TartibStatus.skipped;
+                  break;
+                default:
+                  _tartibStatus[ayahNum] = TartibStatus.unread;
+              }
+            }
+          });
+        }
+
         notifyListeners();
         break;
 
@@ -505,6 +763,7 @@ class SttController with ChangeNotifier {
     switch (status.toLowerCase()) {
       case 'matched':
       case 'correct':
+      case 'close': // ✅ Close = hampir benar = HIJAU
         return WordStatus.matched;
       case 'processing':
         return WordStatus.processing;
@@ -519,12 +778,15 @@ class SttController with ChangeNotifier {
   }
 
   Future<void> startRecording() async {
+    print('🎤 startRecording(): Called. isConnected=$_isConnected');
     if (!_isConnected) {
+      print('⚠️ startRecording(): Not connected, attempting to connect...');
       _errorMessage = 'Connecting...';
       notifyListeners();
       await _connectWebSocket();
       await Future.delayed(const Duration(milliseconds: 500));
       if (!_isConnected) {
+        print('❌ startRecording(): Connect failed!');
         _errorMessage = 'Cannot connect to server';
         notifyListeners();
         return;
@@ -532,13 +794,46 @@ class SttController with ChangeNotifier {
     }
 
     try {
+      print('✅ startRecording(): Connected, clearing state...');
       _tartibStatus.clear();
       _wordStatusMap.clear();
       _expectedAyah = 1;
       _sessionId = null;
       _errorMessage = '';
 
-      _webSocketService.sendStartRecording(suratId);
+      // ✅ FIX: Determine surah ID with proper priority
+      int recordingSurahId;
+
+      if (suratId != null) {
+        // Direct surah navigation
+        recordingSurahId = suratId!;
+        appLogger.log('RECORDING', 'Using direct suratId: $recordingSurahId');
+      } else if (_determinedSurahId != null) {
+        // From page/juz navigation - use determined surah
+        recordingSurahId = _determinedSurahId!;
+        appLogger.log(
+          'RECORDING',
+          'Using determined suratId from page: $recordingSurahId',
+        );
+      } else if (_ayatList.isNotEmpty) {
+        // Fallback: use first ayat's surah
+        recordingSurahId = _ayatList.first.surah_id;
+        appLogger.log(
+          'RECORDING',
+          'Fallback: Using first ayat surah: $recordingSurahId',
+        );
+      } else {
+        throw Exception(
+          'Cannot determine surah ID for recording - no data loaded',
+        );
+      }
+
+      print(
+        '📤 startRecording(): Sending START message for surah $recordingSurahId...',
+      );
+      _webSocketService.sendStartRecording(recordingSurahId);
+
+      print('🎙️ startRecording(): Starting audio recording...');
       await _audioService.startRecording(
         onAudioChunk: (base64Audio) {
           if (_webSocketService.isConnected) {
@@ -548,9 +843,11 @@ class SttController with ChangeNotifier {
       );
 
       _isRecording = true;
-      appLogger.log('RECORDING', 'Started for surah $suratId');
+      appLogger.log('RECORDING', 'Started for surah $recordingSurahId');
+      print('✅ startRecording(): Recording started successfully');
       notifyListeners();
     } catch (e) {
+      print('❌ startRecording(): Exception: $e');
       _errorMessage = 'Failed to start: $e';
       _isRecording = false;
       appLogger.log('RECORDING_ERROR', e.toString());
@@ -559,13 +856,16 @@ class SttController with ChangeNotifier {
   }
 
   Future<void> stopRecording() async {
+    print('🛑 stopRecording(): Called');
     try {
       await _audioService.stopRecording();
       _webSocketService.sendStopRecording();
       _isRecording = false;
       appLogger.log('RECORDING', 'Stopped');
+      print('✅ stopRecording(): Stopped successfully');
       notifyListeners();
     } catch (e) {
+      print('❌ stopRecording(): Exception: $e');
       _errorMessage = 'Failed to stop: $e';
       appLogger.log('RECORDING_ERROR', e.toString());
       notifyListeners();
@@ -594,18 +894,32 @@ class SttController with ChangeNotifier {
     notifyListeners();
   }
 
-  // ===== DISPOSAL =====
-  @override
-  void dispose() {
-    appLogger.log('DISPOSAL', 'Starting cleanup process');
-    _wsSubscription?.cancel();
-    _connectionSubscription?.cancel();
-    _audioService.dispose();
-    _webSocketService.dispose();
-    // JANGAN dispose sqliteService karena menggunakan singleton
-    // _sqliteService.dispose(); // HAPUS BARIS INI
-    _scrollController.dispose();
-    appLogger.dispose();
-    super.dispose();
+  // REPLACE method updateVisiblePage dengan:
+  void updateVisiblePage(int pageNumber) {
+    if (_currentPage != pageNumber) {
+      _currentPage = pageNumber;
+
+      // Trigger pre-loading for both modes
+      if (!_isQuranMode) {
+        Future.microtask(() => _preloadAdjacentPagesAggressively());
+      }
+
+      notifyListeners();
+    }
   }
+
+  // ===== DISPOSAL =====
+@override
+void dispose() {
+  print('💀 SttController: DISPOSE CALLED for surah $suratId');
+  appLogger.log('DISPOSAL', 'Starting cleanup process');
+  _wsSubscription?.cancel();
+  _connectionSubscription?.cancel();
+  _audioService.dispose();
+  _webSocketService.dispose();
+  // ✅ QuranService singleton - jangan dispose, database tetap hidup
+  _scrollController.dispose();
+  appLogger.dispose();
+  super.dispose();
+}
 }

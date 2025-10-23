@@ -63,10 +63,16 @@ enum TartibStatus {
 class WordFeedback {
   final String text;
   final WordStatus status;
+  final int wordIndex;
+  final double similarity;
+  final String? transcribedWord;
 
   WordFeedback({
     required this.text,
     required this.status,
+    this.wordIndex = 0,
+    this.similarity = 0.0,
+    this.transcribedWord,
   });
 
   factory WordFeedback.fromJson(Map<String, dynamic> json) {
@@ -86,8 +92,11 @@ class WordFeedback {
     }
 
     return WordFeedback(
-      text: json['text'],
+      text: json['text'] ?? '',
       status: status,
+      wordIndex: json['word_index'] ?? 0,
+      similarity: (json['similarity'] ?? 0.0).toDouble(),
+      transcribedWord: json['transcribed_word'],
     );
   }
 }

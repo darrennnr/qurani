@@ -10,8 +10,19 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class SttPage extends StatelessWidget {
-  final int suratId;
-  const SttPage({Key? key, required this.suratId}) : super(key: key);
+  final int? suratId;
+  final int? pageId;
+  final int? juzId;
+
+  const SttPage({Key? key, this.suratId, this.pageId, this.juzId})
+    : assert(
+        (suratId != null ? 1 : 0) +
+                (pageId != null ? 1 : 0) +
+                (juzId != null ? 1 : 0) ==
+            1,
+        'Exactly one of suratId, pageId, or juzId must be provided',
+      ),
+      super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +30,11 @@ class SttPage extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(
           create: (_) {
-            final controller = SttController(suratId: suratId);
+            final controller = SttController(
+              suratId: suratId,
+              pageId: pageId,
+              juzId: juzId,
+            );
             // Delay initialization to ensure provider is ready
             Future.microtask(() => controller.initializeApp());
             return controller;
@@ -32,71 +47,70 @@ class SttPage extends StatelessWidget {
           return Scaffold(
             backgroundColor: backgroundColor,
             appBar: const QuranAppBar(),
-            body: controller.isLoading
-                ? const SizedBox.shrink() // No loading UI - instant load
-                : controller.errorMessage.isNotEmpty &&
-                      controller.errorMessage.contains('rejected')
-                ? Column(
-                    children: [
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        color: errorColor.withOpacity(0.9),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.warning,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                controller.errorMessage,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.close,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                              onPressed: controller.clearError,
-                            ),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: controller.toggleUIVisibility,
-                          child: Column(
-                            children: [
-                              Expanded(child: _buildMainContent()),
-                              if (controller.showLogs && controller.isUIVisible)
-                                const QuranLogsPanel(),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  )
-                : GestureDetector(
-                    onTap: controller.toggleUIVisibility,
-                    child: Column(
-                      children: [
-                        Expanded(child: _buildMainContent()),
-                        if (controller.showLogs && controller.isUIVisible)
-                          const QuranLogsPanel(),
-                      ],
+body: controller.isLoading
+    ? const SizedBox.shrink() // No loading UI - instant load
+    : controller.errorMessage.isNotEmpty
+        ? Column(
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                color: errorColor.withOpacity(0.9),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.warning,
+                      color: Colors.white,
+                      size: 20,
                     ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        controller.errorMessage,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      onPressed: controller.clearError,
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: GestureDetector(
+                  onTap: controller.toggleUIVisibility,
+                  child: Column(
+                    children: [
+                      Expanded(child: _buildMainContent()),
+                      if (controller.showLogs && controller.isUIVisible)
+                        const QuranLogsPanel(),
+                    ],
                   ),
+                ),
+              ),
+            ],
+          )
+        : GestureDetector(
+            onTap: controller.toggleUIVisibility,
+            child: Column(
+              children: [
+                Expanded(child: _buildMainContent()),
+                if (controller.showLogs && controller.isUIVisible)
+                  const QuranLogsPanel(),
+              ],
+            ),
+          ),
           );
         },
       ),
@@ -139,7 +153,7 @@ class SttPage extends StatelessWidget {
       ),
       child: controller.isQuranMode
           ? const MushafDisplay()
-          : const QuranListView(), // HAPUS SingleChildScrollView wrapper
+          : const QuranListView(),
     );
   }
 }

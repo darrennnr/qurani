@@ -1,5 +1,6 @@
 import 'package:cuda_qurani/screens/splash_screen.dart';
 import 'package:cuda_qurani/screens/main/stt/database/db_helper.dart';
+import 'package:cuda_qurani/services/local_database_service.dart'; // ✅ ADD THIS
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/recitation_provider.dart';
@@ -11,7 +12,7 @@ bool _isDatabaseInitialized = false;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
  
-  // Pre-initialize all databases BEFORE app starts
+  // ✅ Pre-initialize ALL databases BEFORE app starts
   await _initializeDatabases();
   await JuzService.initialize();
  
@@ -19,21 +20,32 @@ void main() async {
 }
 
 Future<void> _initializeDatabases() async {
-  if (_isDatabaseInitialized) return;
+  if (_isDatabaseInitialized) {
+    print('⚠️ Databases already initialized, skipping...');
+    return;
+  }
  
   try {
-    // Open all databases in parallel
+    print('🔄 [MAIN] Starting database pre-initialization...');
+    
+    // ✅ CRITICAL: Initialize BOTH database services in parallel
     await Future.wait([
-      DBHelper.openDB(DBType.metadata),
-      DBHelper.openDB(DBType.qpc_v1_15),
-      DBHelper.openDB(DBType.qpc_v1_wbw),
-      DBHelper.openDB(DBType.uthmani),
+      // DBHelper - untuk QuranService (qpc-v1 databases)
+      DBHelper.preInitializeAll(),
+      
+      // LocalDatabaseService - untuk search & metadata
+      LocalDatabaseService.preInitialize(),
     ]);
    
     _isDatabaseInitialized = true;
-    print('✅ All databases pre-initialized successfully');
-  } catch (e) {
-    print('❌ Database initialization failed: $e');
+    print('✅ [MAIN] All databases pre-initialized successfully');
+    print('   - DBHelper: qpc-v1 databases ready');
+    print('   - LocalDatabaseService: uthmani.db & chapters ready');
+  } catch (e, stackTrace) {
+    print('❌ [MAIN] Database initialization FAILED: $e');
+    print('🔍 Stack trace: $stackTrace');
+    // ⚠️ CRITICAL: Jangan throw error, biarkan app tetap jalan
+    // Database akan di-reinitialize on-demand jika pre-init gagal
   }
 }
 
@@ -43,7 +55,13 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => RecitationProvider(),
+      create: (_) {
+        print('🏗️ MAIN: Creating RecitationProvider...');
+        final provider = RecitationProvider();
+        print('✅ MAIN: RecitationProvider created');
+        return provider;
+      },
+      lazy: false,  // ✅ Force create immediately!
       child: MaterialApp(
         title: 'Qurani Hafidz',
         debugShowCheckedModeBanner: false,

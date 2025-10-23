@@ -51,7 +51,20 @@ class RecitationProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   void _initialize() {
-    _wsSubscription = _webSocketService.messages.listen(_handleWebSocketMessage);
+    print('🔧 RecitationProvider: Initializing subscriptions...');
+    
+    _wsSubscription = _webSocketService.messages.listen(
+      _handleWebSocketMessage,
+      onError: (error) {
+        print('❌ RecitationProvider: Stream error: $error');
+      },
+      onDone: () {
+        print('⚠️ RecitationProvider: Stream closed');
+      },
+    );
+    
+    print('✅ RecitationProvider: Message subscription created');
+    
     _connectionSubscription = _webSocketService.connectionStatus.listen((isConnected) {
       if (_isConnected != isConnected) {
         _isConnected = isConnected;
@@ -70,6 +83,9 @@ class RecitationProvider extends ChangeNotifier {
   }
 
   void _handleWebSocketMessage(Map<String, dynamic> message) {
+    print('📨 RecitationProvider: _handleWebSocketMessage CALLED!');
+    print('   Message keys: ${message.keys.toList()}');
+    
     final type = message['type'];
     print('🔔 RecitationProvider: Received message type: $type');
     
@@ -132,21 +148,44 @@ class RecitationProvider extends ChangeNotifier {
         // 📝 STRICT PER-WORD: Update status untuk 1 KATA saja
         final int ayah = message['ayah'] ?? 0;
         final int wordIndex = message['word_index'] ?? 0;
+        final String expectedWord = message['expected_word'] ?? '';
+        final String transcribedWord = message['transcribed_word'] ?? '';
+        final int totalWords = message['total_words'] ?? 0;
         final String status = message['status'] ?? 'pending';
         final double similarity = message['similarity']?.toDouble() ?? 0.0;
         final bool shouldAdvance = message['should_advance'] ?? false;
         
         print('📝 Word $wordIndex: $status (sim: ${similarity.toStringAsFixed(2)}) ${shouldAdvance ? "→ ADVANCE" : "→ RETRY"}');
         
-        // Update current verse index
-        _currentVerseIndex = ayah;
+        // 🔥 BUILD/UPDATE _currentWords untuk UI realtime
+        if (_currentVerseIndex != ayah || _currentWords.isEmpty || _currentWords.length != totalWords) {
+          print('🔥 Initializing _currentWords for ayah $ayah with $totalWords words');
+          _currentVerseIndex = ayah;
+          _currentWords = List.generate(
+            totalWords,
+            (i) => WordFeedback(
+              text: '',  // Will be filled as we receive feedback
+              status: WordStatus.pending,
+            ),
+          );
+        }
+        
+        // 🔥 UPDATE word at this index in _currentWords (for UI)
+        if (wordIndex < _currentWords.length) {
+          final wordStatus = _mapWordStatus(status);
+          _currentWords[wordIndex] = WordFeedback(
+            text: expectedWord.isNotEmpty ? expectedWord : transcribedWord,
+            status: wordStatus,
+          );
+          print('🔥 REALTIME: Updated _currentWords[$wordIndex] = ${expectedWord} (${wordStatus})');
+        }
         
         // Initialize ayah word map jika belum ada
         if (!_wordStatusMap.containsKey(ayah)) {
           _wordStatusMap[ayah] = {};
         }
         
-        // Set status untuk KATA ini
+        // Set status untuk KATA ini in wordStatusMap
         final wordStatus = _mapWordStatus(status);
         _wordStatusMap[ayah]![wordIndex] = wordStatus;
         
@@ -213,8 +252,8 @@ class RecitationProvider extends ChangeNotifier {
         break;
 
       case 'progress':
-        _currentVerseIndex = message['ayah'];
-        print('📥 Progress for ayah $_currentVerseIndex');
+        final int completedAyah = message['ayah'];
+        print('📥 Progress for ayah $completedAyah');
         print('📝 Words data: ${message['words']}');
         
         _currentWords = (message['words'] as List)
@@ -250,34 +289,42 @@ class RecitationProvider extends ChangeNotifier {
         // Update expected ayah from backend
         if (message['expected_ayah'] != null) {
           _expectedAyah = message['expected_ayah'];
+          print('✅ Updated expected_ayah to: $_expectedAyah');
         }
+        
+        // ✅ FIX: Update currentVerseIndex to expected ayah (move to next)
+        _currentVerseIndex = _expectedAyah;
+        print('✅ Moved currentVerseIndex to: $_currentVerseIndex');
 
-        // Merge permanent verse status from progress (do NOT overwrite existing)
+        // ✅ FIX: Always update verse status from backend (no check if exists)
         if (message['verse_status_map'] != null) {
           final Map<String, dynamic> statusMap = message['verse_status_map'];
           statusMap.forEach((key, value) {
             final int ayahNum = int.tryParse(key) ?? -1;
             if (ayahNum <= 0) return;
-            if (!_verseStatus.containsKey(ayahNum)) {
-              final String statusStr = value.toString().toLowerCase();
-              switch (statusStr) {
-                case 'matched':
-                case 'correct':
-                case 'success':
-                  _verseStatus[ayahNum] = WordStatus.matched;
-                  break;
-                case 'skipped':
-                case 'timeout':
-                  _verseStatus[ayahNum] = WordStatus.skipped;
-                  break;
-                case 'mismatched':
-                case 'incorrect':
-                case 'error':
-                case 'wrong':
-                default:
-                  _verseStatus[ayahNum] = WordStatus.mismatched;
-                  break;
-              }
+            
+            // ✅ ALWAYS UPDATE - no check!
+            final String statusStr = value.toString().toLowerCase();
+            switch (statusStr) {
+              case 'matched':
+              case 'correct':
+              case 'success':
+                _verseStatus[ayahNum] = WordStatus.matched;
+                print('✅ SET: verseStatus[$ayahNum] = matched');
+                break;
+              case 'skipped':
+              case 'timeout':
+                _verseStatus[ayahNum] = WordStatus.skipped;
+                print('✅ SET: verseStatus[$ayahNum] = skipped');
+                break;
+              case 'mismatched':
+              case 'incorrect':
+              case 'error':
+              case 'wrong':
+              default:
+                _verseStatus[ayahNum] = WordStatus.mismatched;
+                print('✅ SET: verseStatus[$ayahNum] = mismatched');
+                break;
             }
           });
         }
@@ -322,61 +369,64 @@ class RecitationProvider extends ChangeNotifier {
           print('  📋 Total: ${message['tartib_stats']['total']}');
         }
         
-        // Handle permanent verse status update (ONLY if not already set)
+        // ✅ FIX: Always update verse status from backend (no check if exists)
         if (message['ayah'] != null && message['status'] != null) {
           final int ayah = message['ayah'];
           final String status = message['status'];
 
-          // 🔒 PERMANENT RULE: Never overwrite existing status
-          if (!_verseStatus.containsKey(ayah)) {
-            switch (status.toLowerCase()) {
+          // ✅ ALWAYS UPDATE - no check!
+          switch (status.toLowerCase()) {
+            case 'matched':
+            case 'correct':
+            case 'success':
+              _verseStatus[ayah] = WordStatus.matched;
+              print('✅ SET: verseStatus[$ayah] = matched');
+              break;
+            case 'skipped':
+            case 'timeout':
+              _verseStatus[ayah] = WordStatus.skipped;
+              print('✅ SET: verseStatus[$ayah] = skipped');
+              break;
+            case 'mismatched':
+            case 'incorrect':
+            case 'error':
+            case 'wrong':
+            default:
+              _verseStatus[ayah] = WordStatus.mismatched;
+              print('✅ SET: verseStatus[$ayah] = mismatched');
+              break;
+          }
+        }
+        
+        // ✅ FIX: Always update verse status from backend (no check if exists)
+        if (message['verse_status_map'] != null) {
+          final Map<String, dynamic> statusMap = message['verse_status_map'];
+          statusMap.forEach((key, value) {
+            final int ayahNum = int.tryParse(key) ?? -1;
+            if (ayahNum <= 0) return;
+            
+            // ✅ ALWAYS UPDATE - no check!
+            final String statusStr = value.toString().toLowerCase();
+            switch (statusStr) {
               case 'matched':
               case 'correct':
               case 'success':
-                _verseStatus[ayah] = WordStatus.matched;
+                _verseStatus[ayahNum] = WordStatus.matched;
+                print('✅ SET: verseStatus[$ayahNum] = matched');
                 break;
               case 'skipped':
               case 'timeout':
-                _verseStatus[ayah] = WordStatus.skipped;
+                _verseStatus[ayahNum] = WordStatus.skipped;
+                print('✅ SET: verseStatus[$ayahNum] = skipped');
                 break;
               case 'mismatched':
               case 'incorrect':
               case 'error':
               case 'wrong':
               default:
-                _verseStatus[ayah] = WordStatus.mismatched;
+                _verseStatus[ayahNum] = WordStatus.mismatched;
+                print('✅ SET: verseStatus[$ayahNum] = mismatched');
                 break;
-            }
-          }
-        }
-        
-        // Handle verse status map if provided (PERMANENT)
-        if (message['verse_status_map'] != null) {
-          final Map<String, dynamic> statusMap = message['verse_status_map'];
-          statusMap.forEach((key, value) {
-            final int ayahNum = int.parse(key);
-            
-            // 🔒 PERMANENT RULE: Never overwrite existing status
-            if (!_verseStatus.containsKey(ayahNum)) {
-              final String statusStr = value.toString().toLowerCase();
-              switch (statusStr) {
-                case 'matched':
-                case 'correct':
-                case 'success':
-                  _verseStatus[ayahNum] = WordStatus.matched;
-                  break;
-                case 'skipped':
-                case 'timeout':
-                  _verseStatus[ayahNum] = WordStatus.skipped;
-                  break;
-                case 'mismatched':
-                case 'incorrect':
-                case 'error':
-                case 'wrong':
-                default:
-                  _verseStatus[ayahNum] = WordStatus.mismatched;
-                  break;
-              }
             }
           });
         }
@@ -825,10 +875,16 @@ class RecitationProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    print('🧹 RecitationProvider: Disposing...');
     _wsSubscription?.cancel();
     _connectionSubscription?.cancel();
     _audioService.dispose();
-    _webSocketService.dispose();
+    
+    // ✅ DON'T dispose singleton WebSocketService!
+    // It should live throughout app lifecycle
+    // _webSocketService.dispose(); // ← Removed
+    
+    print('✅ RecitationProvider: Disposed successfully');
     super.dispose();
   }
 }

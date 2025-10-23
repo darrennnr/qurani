@@ -402,36 +402,46 @@ for (final segment in line.ayahSegments!) {
   for (int i = 0; i < segment.words.length; i++) {
     final word = segment.words[i];
     
+    // ✅ FIX: Use wordNumber - 1 as index (wordNumber is 1-indexed, backend uses 0-indexed)
+    final wordIndex = word.wordNumber - 1;
+    
     // Get word status dari wordStatusMap
-    final wordStatus = controller.wordStatusMap[segment.ayahNumber]?[i];
+    final wordStatus = controller.wordStatusMap[segment.ayahNumber]?[wordIndex];
+    
+    // 🔥 DEBUG: Print word status dan warna yang akan diapply
+    if (controller.isRecording && segment.ayahNumber == controller.currentAyatNumber) {
+      print('🎨 UI RENDER: Ayah ${segment.ayahNumber}, Word[$wordIndex] (loop $i) = $wordStatus');
+      print('   📊 Full wordStatusMap[${segment.ayahNumber}] = ${controller.wordStatusMap[segment.ayahNumber]}');
+    }
+    
     final wordSegments = controller.segmentText(word.text);
     final hasArabicNumber = wordSegments.any((s) => s.isArabicNumber);
 
     double wordOpacity = 1.0;
     Color wordBg = Colors.transparent;
     
-    // Background color based on word status
+    // Background color based on word status - HANYA HIJAU DAN MERAH
     if (wordStatus != null) {
       switch (wordStatus) {
         case WordStatus.matched:
-          wordBg = correctColor.withOpacity(0.4);
+          wordBg = correctColor.withOpacity(0.4);  // 🟩 HIJAU - BENAR
+          if (controller.isRecording && segment.ayahNumber == controller.currentAyatNumber) {
+            print('   ✅ SET COLOR: Hijau (matched) untuk word $wordIndex');
+          }
           break;
         case WordStatus.mismatched:
-          wordBg = errorColor.withOpacity(0.4);
+        case WordStatus.skipped:
+          wordBg = errorColor.withOpacity(0.4);  // 🟥 MERAH - SALAH
+          if (controller.isRecording && segment.ayahNumber == controller.currentAyatNumber) {
+            print('   ❌ SET COLOR: Merah (salah) untuk word $wordIndex');
+          }
           break;
         case WordStatus.processing:
-          wordBg = listeningColor.withOpacity(0.5);
-          break;
-        case WordStatus.skipped:
-          wordBg = errorColor.withOpacity(0.5);
-          break;
+        case WordStatus.pending:
         default:
-          if (isCurrentAyat) {
-            wordBg = listeningColor.withOpacity(0.2);
-          }
+          wordBg = Colors.transparent;  // Tidak ada warna
+          break;
       }
-    } else if (isCurrentAyat) {
-      wordBg = listeningColor.withOpacity(0.2);
     }
     
     if (controller.hideUnreadAyat && !isCurrentAyat) {

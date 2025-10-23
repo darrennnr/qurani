@@ -5,359 +5,508 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../controllers/stt_controller.dart';
 import '../data/models.dart';
+import '../services/quran_service.dart';
 import '../utils/constants.dart';
 
-class QuranListView extends StatelessWidget {
+/// Optimized vertical Quran reading mode
+/// Uses same data source as mushaf mode for consistency
+class QuranListView extends StatefulWidget {
   const QuranListView({Key? key}) : super(key: key);
 
   @override
+  State<QuranListView> createState() => _QuranListViewState();
+}
+
+class _QuranListViewState extends State<QuranListView> {
+  final ScrollController _scrollController = ScrollController();
+  int _currentVisiblePage = 1;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+
+    // Jump to current page after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final controller = context.read<SttController>();
+      _jumpToPage(controller.currentPage);
+    });
+  }
+
+  void _jumpToPage(int pageNumber) {
+    if (!mounted || !_scrollController.hasClients) return;
+
+    // Estimate: ~600px per page (adjusted for vertical mode)
+    final offset = (pageNumber - 1) * 600.0;
+    _scrollController.jumpTo(
+      offset.clamp(0.0, _scrollController.position.maxScrollExtent),
+    );
+  }
+
+  void _onScroll() {
+    if (!mounted || !_scrollController.hasClients) return;
+
+    final offset = _scrollController.offset;
+    final pageNumber = (offset / 600.0).round() + 1;
+
+    if (pageNumber != _currentVisiblePage &&
+        pageNumber >= 1 &&
+        pageNumber <= 604) {
+      setState(() => _currentVisiblePage = pageNumber);
+      context.read<SttController>().updateVisiblePage(pageNumber);
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final controller = context.watch<SttController>();
-
     return ListView.builder(
-      controller: controller.scrollController,
-      itemCount:
-          controller.ayatList.length + 2, // +2 untuk header dan basmallah
-      addAutomaticKeepAlives: false,
+      controller: _scrollController,
+      itemCount: 604,
+      cacheExtent: 2048, // Cache 3 pages ahead/behind
+      addAutomaticKeepAlives: true,
       addRepaintBoundaries: true,
-      cacheExtent: 500,
       itemBuilder: (context, index) {
-        // Header
-        if (index == 0) {
-          return _buildVerticalModeHeader(context, controller);
-        }
-
-        // Basmallah
-        if (index == 1) {
-          return Padding(
-            padding: const EdgeInsets.fromLTRB(0, 3, 0, 0),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
-              child: const Text(
-                '﷽',
-                style: TextStyle(
-                  fontSize: 43,
-                  fontFamily: 'Quran-Common',
-                  fontWeight: FontWeight.normal,
-                  height: 0.8,
-                  color: Colors.black,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          );
-        }
-
-        // Ayat items
-        final ayatIndex = index - 2;
-        return _OptimizedAyatItem(
-          ayatIndex: ayatIndex,
-          key: ValueKey('ayat_$ayatIndex'),
+        final pageNumber = index + 1;
+        return RepaintBoundary(
+          key: ValueKey('vertical_page_$pageNumber'),
+          child: _VerticalPageWidget(pageNumber: pageNumber),
         );
       },
     );
   }
+}
 
-  Widget _buildVerticalModeHeader(
-    BuildContext context,
-    SttController controller,
-  ) {
-    if (controller.suratId <= 0) return const SizedBox.shrink();
+/// Single vertical page widget - uses cached mushaf data
+class _VerticalPageWidget extends StatelessWidget {
+  final int pageNumber;
+
+  const _VerticalPageWidget({required this.pageNumber});
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = context.read<SttController>();
+    final service = context.read<QuranService>();
+
+    // Check cache first for instant load
+    final cachedLines = controller.pageCache[pageNumber];
+
+    if (cachedLines != null && cachedLines.isNotEmpty) {
+      return _VerticalPageContent(
+        pageNumber: pageNumber,
+        pageLines: cachedLines,
+      );
+    }
+
+    // Load from database
+    return FutureBuilder<List<MushafPageLine>>(
+      key: ValueKey('page_data_$pageNumber'),
+      future: service.getMushafPageLines(pageNumber),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox(
+            height: 600,
+            child: Center(
+              child: SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          );
+        }
+
+        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+          return SizedBox(
+            height: 600,
+            child: Center(
+              child: Text(
+                'Error loading page $pageNumber',
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+            ),
+          );
+        }
+
+        final pageLines = snapshot.data!;
+
+        // Update cache asynchronously
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          controller.updatePageCache(pageNumber, pageLines);
+        });
+
+        return _VerticalPageContent(
+          pageNumber: pageNumber,
+          pageLines: pageLines,
+        );
+      },
+    );
+  }
+}
+
+/// Renders page content with optimized vertical layout
+class _VerticalPageContent extends StatelessWidget {
+  final int pageNumber;
+  final List<MushafPageLine> pageLines;
+
+  const _VerticalPageContent({
+    required this.pageNumber,
+    required this.pageLines,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = context.watch<SttController>();
+    final juz = _calculateJuzForPage();
+
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      constraints: const BoxConstraints(minHeight: 600),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Page header
+          _PageHeader(pageNumber: pageNumber, juzNumber: juz),
+
+          // Render lines in DATABASE ORDER
+          ..._buildLinesInOrder(controller),
+
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
+  /// Render lines in exact database order
+  List<Widget> _buildLinesInOrder(SttController controller) {
+    final widgets = <Widget>[];
+    final renderedAyahs = <String>{}; // Track "surahId:ayahNumber"
+
+    // Pre-aggregate complete ayahs
+    final Map<String, List<WordData>> completeAyahs = {};
+    final Map<String, AyahSegment> ayahMetadata = {};
+
+    for (final line in pageLines) {
+      if (line.lineType == 'ayah' && line.ayahSegments != null) {
+        for (final segment in line.ayahSegments!) {
+          final key = '${segment.surahId}:${segment.ayahNumber}';
+          completeAyahs.putIfAbsent(key, () => []).addAll(segment.words);
+          if (!ayahMetadata.containsKey(key)) {
+            ayahMetadata[key] = segment;
+          }
+        }
+      }
+    }
+
+    // Sort words in each ayah
+    for (final words in completeAyahs.values) {
+      words.sort((a, b) => a.wordNumber.compareTo(b.wordNumber));
+    }
+
+    // Render in database order
+    for (final line in pageLines) {
+      switch (line.lineType) {
+        case 'surah_name':
+          widgets.add(_SurahHeader(line: line));
+          break;
+
+        case 'basmallah':
+          widgets.add(const _Basmallah());
+          break;
+
+        case 'ayah':
+          if (line.ayahSegments != null) {
+            for (final segment in line.ayahSegments!) {
+              final key = '${segment.surahId}:${segment.ayahNumber}';
+
+              // Render complete ayah only once
+              if (!renderedAyahs.contains(key)) {
+                renderedAyahs.add(key);
+
+                final allWords = completeAyahs[key]!;
+                final metadata = ayahMetadata[key]!;
+
+                final completeSegment = AyahSegment(
+                  surahId: metadata.surahId,
+                  ayahNumber: metadata.ayahNumber,
+                  words: allWords,
+                  isStartOfAyah: true,
+                  isEndOfAyah: true,
+                );
+
+                widgets.add(
+                  _CompleteAyahWidget(
+                    segment: completeSegment,
+                    fontFamily: 'p$pageNumber',
+                    controller: controller,
+                  ),
+                );
+              }
+            }
+          }
+          break;
+      }
+    }
+
+    return widgets;
+  }
+
+  int _calculateJuzForPage() {
+    if (pageLines.isEmpty) return 1;
+
+    for (final line in pageLines) {
+      if (line.ayahSegments != null && line.ayahSegments!.isNotEmpty) {
+        final segment = line.ayahSegments!.first;
+        return QuranService().calculateJuzAccurate(
+          segment.surahId,
+          segment.ayahNumber,
+        );
+      }
+    }
+    return 1;
+  }
+}
+
+/// Page header with juz and page number
+class _PageHeader extends StatelessWidget {
+  final int pageNumber;
+  final int juzNumber;
+
+  const _PageHeader({required this.pageNumber, required this.juzNumber});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          'Juz $juzNumber',
+          style: const TextStyle(
+            fontSize: 12,
+            color: Colors.black,
+            fontWeight: FontWeight.w100,
+          ),
+        ),
+        Text(
+          '$pageNumber',
+          style: const TextStyle(
+            fontSize: 12,
+            color: Colors.black,
+            fontWeight: FontWeight.w100,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Surah header with decorative background
+class _SurahHeader extends StatelessWidget {
+  final MushafPageLine line;
+
+  const _SurahHeader({required this.line});
+
+  @override
+  Widget build(BuildContext context) {
+    final surahId = line.surahNumber ?? 1;
+    final surahGlyphCode = _formatSurahGlyph(surahId);
+
+    return Container(
+      alignment: Alignment.center,
+      margin: const EdgeInsets.symmetric(vertical: 12),
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Text(
+          const Text(
             'header',
             style: TextStyle(
-              fontSize: MediaQuery.of(context).size.width * 0.12,
+              fontSize: 48,
               fontFamily: 'Quran-Common',
+              color: Colors.black87,
             ),
-            textAlign: TextAlign.center,
           ),
           Text(
-            controller.formatSurahIdForGlyph(controller.suratId),
+            surahGlyphCode,
             style: const TextStyle(
-              fontSize: 40,
+              fontSize: 38,
               fontFamily: 'surah-name-v2',
-              fontWeight: FontWeight.w500,
               color: Colors.black,
             ),
-            textAlign: TextAlign.center,
+            textDirection: TextDirection.rtl,
           ),
         ],
       ),
     );
   }
+
+  String _formatSurahGlyph(int surahId) {
+    if (surahId <= 9) return 'surah00$surahId';
+    if (surahId <= 99) return 'surah0$surahId';
+    return 'surah$surahId';
+  }
 }
 
-class _OptimizedAyatItem extends StatelessWidget {
-  final int ayatIndex;
-
-  const _OptimizedAyatItem({required this.ayatIndex, Key? key})
-    : super(key: key);
+/// Basmallah text
+class _Basmallah extends StatelessWidget {
+  const _Basmallah();
 
   @override
   Widget build(BuildContext context) {
-    return RepaintBoundary(
-      child: Selector<SttController, _AyatData>(
-        selector: (_, controller) => _AyatData(
-          ayat: controller.ayatList[ayatIndex],
-          isCurrentAyat: controller.currentAyatIndex == ayatIndex,
-          hideUnread: controller.hideUnreadAyat,
+    return Container(
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: const Text(
+        '﷽',
+        style: TextStyle(
+          fontSize: 32,
+          fontFamily: 'Quran-Common',
+          color: Colors.black87,
         ),
-        shouldRebuild: (prev, next) =>
-            prev.isCurrentAyat != next.isCurrentAyat ||
-            prev.hideUnread != next.hideUnread,
-        builder: (context, data, _) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _AyatHeader(
-                ayatIndex: ayatIndex,
-                isCurrentAyat: data.isCurrentAyat,
-              ),
-              _ColoredAyatText(
-                ayat: data.ayat,
-                ayatIndex: ayatIndex,
-                isCurrentAyat: data.isCurrentAyat,
-              ),
-            ],
-          );
-        },
       ),
     );
   }
 }
 
-class _AyatData {
-  final dynamic ayat;
-  final bool isCurrentAyat;
-  final bool hideUnread;
+/// Renders ONE COMPLETE AYAH with badge and underline
+class _CompleteAyahWidget extends StatelessWidget {
+  final AyahSegment segment;
+  final String fontFamily;
+  final SttController controller;
 
-  _AyatData({
-    required this.ayat,
-    required this.isCurrentAyat,
-    required this.hideUnread,
+  const _CompleteAyahWidget({
+    required this.segment,
+    required this.fontFamily,
+    required this.controller,
   });
-}
-
-class _AyatHeader extends StatelessWidget {
-  final int ayatIndex;
-  final bool isCurrentAyat;
-
-  const _AyatHeader({
-    Key? key,
-    required this.ayatIndex,
-    required this.isCurrentAyat,
-  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.read<SttController>();
-    final progress = controller.ayatProgress[ayatIndex];
-    final completionPercentage = progress?.completionPercentage ?? 0.0;
+    final ayatIndex = controller.ayatList.indexWhere(
+      (a) => a.surah_id == segment.surahId && a.ayah == segment.ayahNumber,
+    );
+    final isCurrentAyat =
+        ayatIndex >= 0 && ayatIndex == controller.currentAyatIndex;
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: Color(0xFFE0E0E0), width: 0.5),
+        ),
+      ),
+      padding: const EdgeInsets.only(bottom: 12, top: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            child: Container(
-              height: 1,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(2),
-                child: LinearProgressIndicator(
-                  value: completionPercentage / 100,
-                  backgroundColor: Colors.transparent,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    isCurrentAyat ? primaryColor : correctColor,
+          // Ayah number badge (left side)
+          if (segment.isStartOfAyah)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    border: Border.all(
+                      color: isCurrentAyat ? primaryColor : Colors.black54,
+                      width: 1,
+                    ),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    '${segment.surahId}:${segment.ayahNumber}',
+                    style: TextStyle(
+                      color: isCurrentAyat ? primaryColor : Colors.black87,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: isCurrentAyat ? primaryColor : Colors.grey.shade400,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Text(
-              '${controller.ayatList[ayatIndex].ayah}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-              ),
+
+          // Complete ayah text with natural wrapping (NO forced line breaks)
+          Directionality(
+            textDirection: TextDirection.rtl,
+            child: Wrap(
+              alignment: WrapAlignment.start, // RTL: start = right
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 1,
+              runSpacing: 4,
+              children: segment.words.asMap().entries.map((entry) {
+                final wordIndex = entry.value.wordNumber - 1;
+                final word = entry.value;
+
+                final wordStatus =
+                    controller.wordStatusMap[segment.ayahNumber]?[wordIndex];
+
+                Color wordBg = Colors.transparent;
+                if (wordStatus != null && controller.isRecording) {
+                  switch (wordStatus) {
+                    case WordStatus.matched:
+                      wordBg = correctColor.withOpacity(0.4);
+                      break;
+                    case WordStatus.mismatched:
+                    case WordStatus.skipped:
+                      wordBg = errorColor.withOpacity(0.4);
+                      break;
+                    case WordStatus.processing:
+                      wordBg = listeningColor.withOpacity(0.3);
+                      break;
+                    default:
+                      break;
+                  }
+                }
+
+                double opacity = 1.0;
+                if (controller.hideUnreadAyat && !isCurrentAyat) {
+                  final hasNumber = RegExp(r'[٠-٩0-9]').hasMatch(word.text);
+                  opacity = hasNumber ? 1.0 : 0.0;
+                }
+
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 2,
+                    vertical: 1,
+                  ),
+                  decoration: BoxDecoration(
+                    color: wordBg,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 200),
+                    opacity: opacity,
+                    child: Text(
+                      word.text,
+                      style: TextStyle(
+                        fontSize: 25,
+                        fontFamily: fontFamily,
+                        color: isCurrentAyat ? listeningColor : Colors.black87,
+                        fontWeight: FontWeight.w400,
+                        height: 1.7,
+                        letterSpacing: -5,
+                      ),
+                      textDirection: TextDirection.rtl,
+                    ),
+                  ),
+                );
+              }).toList(),
             ),
           ),
         ],
       ),
     );
   }
-}
-
-class _ColoredAyatText extends StatelessWidget {
-  final AyatData ayat;
-  final int ayatIndex;
-  final bool isCurrentAyat;
-
-  const _ColoredAyatText({
-    Key? key,
-    required this.ayat,
-    required this.ayatIndex,
-    required this.isCurrentAyat,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      alignment: WrapAlignment.start,
-      textDirection: TextDirection.rtl,
-      spacing: 0,
-      runSpacing: 8,
-      children: ayat.words.asMap().entries.map((entry) {
-        final wordData = entry.value;
-
-        return _WordWidget(word: wordData.text, isCurrentAyat: isCurrentAyat);
-      }).toList(),
-    );
-  }
-}
-
-class _WordWidget extends StatelessWidget {
-  final String word;
-  final bool isCurrentAyat;
-
-  const _WordWidget({required this.word, required this.isCurrentAyat});
-
-  @override
-  Widget build(BuildContext context) {
-    final controller = context.read<SttController>();
-    final segments = controller.segmentText(word);
-
-    double wordOpacity = 1.0;
-    if (controller.hideUnreadAyat && !isCurrentAyat) {
-      final hasArabicNumber = segments.any((s) => s.isArabicNumber);
-      wordOpacity = hasArabicNumber ? 1.0 : 0.0;
-    }
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOutCubic,
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-      decoration: BoxDecoration(
-        color: isCurrentAyat
-            ? listeningColor.withOpacity(0.15)
-            : Colors.transparent,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 200),
-        opacity: wordOpacity,
-        child: _buildSegmentedText(word, isCurrentAyat, controller),
-      ),
-    );
-  }
-
-Widget _buildSegmentedText(
-  String text,
-  bool isCurrentAyat,
-  SttController controller,
-) {
-  final segments = controller.segmentText(text);
-  
-  // Get word index dari ayat list
-  final ayatIndex = controller.ayatList.indexWhere((a) => 
-    a.ayah == controller.ayatList[controller.currentAyatIndex].ayah
-  );
-  
-  if (ayatIndex < 0) {
-    return Text(
-      text,
-      style: TextStyle(
-        fontSize: 30,
-        fontFamily: 'UthmanTN',
-        color: isCurrentAyat ? listeningColor : Colors.black87,
-      ),
-      textDirection: TextDirection.rtl,
-    );
-  }
-  
-  final ayat = controller.ayatList[ayatIndex];
-  final wordIndex = ayat.words.indexWhere((w) => w.text == text);
-  
-  // Get word status dari wordStatusMap
-  final wordStatus = controller.wordStatusMap[ayat.ayah]?[wordIndex];
-  
-  Color wordBg = Colors.transparent;
-  if (wordStatus != null) {
-    switch (wordStatus) {
-      case WordStatus.matched:
-        wordBg = correctColor.withOpacity(0.4);
-        break;
-      case WordStatus.mismatched:
-        wordBg = errorColor.withOpacity(0.4);
-        break;
-      case WordStatus.processing:
-        wordBg = listeningColor.withOpacity(0.5);
-        break;
-      case WordStatus.skipped:
-        wordBg = errorColor.withOpacity(0.5);
-        break;
-      default:
-        break;
-    }
-  }
-
-  if (segments.length == 1 && !segments.first.isArabicNumber) {
-    return Text(
-      text,
-      style: TextStyle(
-        fontSize: 30,
-        fontFamily: 'UthmanTN',
-        color: isCurrentAyat ? listeningColor : Colors.black87,
-        backgroundColor: wordBg,
-        fontWeight: FontWeight.w400,
-        height: 1.5,
-      ),
-      textDirection: TextDirection.rtl,
-    );
-  }
-
-  List<TextSpan> spans = [];
-  for (final segment in segments) {
-    spans.add(
-      TextSpan(
-        text: segment.text,
-        style: TextStyle(
-          fontSize: 26,
-          fontFamily: segment.isArabicNumber
-              ? 'KFGQPCUthmanicScriptHAFSRegular'
-              : 'UthmanTN',
-          color: isCurrentAyat ? listeningColor : Colors.black87,
-          backgroundColor: wordBg,
-          fontWeight: FontWeight.w400,
-          height: 1.5,
-        ),
-      ),
-    );
-    if (segment != segments.last) {
-      spans.add(TextSpan(text: ' ', style: TextStyle(fontSize: 26)));
-    }
-  }
-
-  return RichText(
-    text: TextSpan(children: spans),
-    textDirection: TextDirection.rtl,
-  );
-}
 }

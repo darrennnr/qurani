@@ -13,6 +13,16 @@ class QuranAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final controller = context.watch<SttController>();
 
+    // ✅ IMPROVED: Better surah name display logic
+    String displaySurahName;
+    if (controller.suratNameSimple.isNotEmpty) {
+      displaySurahName = controller.suratNameSimple;
+    } else if (controller.ayatList.isNotEmpty) {
+      displaySurahName = 'Surah ${controller.ayatList.first.surah_id}';
+    } else {
+      displaySurahName = 'Loading...';
+    }
+
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 200),
       opacity: controller.isUIVisible ? 1.0 : 0.0,
@@ -50,7 +60,7 @@ class QuranAppBar extends StatelessWidget implements PreferredSizeWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Surat ${controller.suratNameSimple} ${controller.suratId} - ${controller.suratVersesCount} Ayat',
+                        '$displaySurahName - Halaman ${controller.currentPage}',
                         style: const TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w400,
@@ -158,10 +168,17 @@ class QuranBottomBar extends StatelessWidget {
                       child: InkWell(
                         borderRadius: BorderRadius.circular(30),
                         onTap: () async {
+                          print(
+                            '🔘 BUTTON: Pressed! isRecording=${controller.isRecording}, isConnected=${controller.isConnected}',
+                          );
                           if (controller.isRecording) {
+                            print('🔘 BUTTON: Calling stopRecording()');
                             await controller.stopRecording();
                           } else {
                             if (!controller.isConnected) {
+                              print(
+                                '⚠️ BUTTON: Not connected, showing SnackBar and reconnecting...',
+                              );
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text('Connecting to server...'),
@@ -169,8 +186,12 @@ class QuranBottomBar extends StatelessWidget {
                                 ),
                               );
                               await controller.reconnect();
-                              if (!controller.isConnected) return;
+                              if (!controller.isConnected) {
+                                print('❌ BUTTON: Reconnect failed, aborting');
+                                return;
+                              }
                             }
+                            print('🔘 BUTTON: Calling startRecording()');
                             await controller.startRecording();
                           }
                         },

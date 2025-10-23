@@ -3,6 +3,34 @@ import 'dart:convert';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 class WebSocketService {
+  // ✅ SINGLETON PATTERN - Fix memory leak on hot restart
+  static WebSocketService? _instance;
+  
+  // Factory constructor - always return same instance
+  factory WebSocketService({String? serverUrl}) {
+    if (_instance != null) {
+      print('♻️ WebSocketService: Reusing existing singleton instance');
+      return _instance!;
+    }
+    
+    print('🆕 WebSocketService: Creating new singleton instance');
+    _instance = WebSocketService._internal(
+      serverUrl: serverUrl ?? 'ws://192.168.0.185:8000/ws/recite',
+    );
+    
+    return _instance!;
+  }
+  
+  // Private constructor
+  WebSocketService._internal({required this.serverUrl});
+  
+  // Reset singleton (for testing only)
+  static void resetInstance() {
+    print('🔄 WebSocketService: Resetting singleton instance');
+    _instance?.dispose();
+    _instance = null;
+  }
+  
   WebSocketChannel? _channel;
   final String serverUrl;
   final StreamController<Map<String, dynamic>> _messageController =
@@ -10,7 +38,10 @@ class WebSocketService {
   final StreamController<bool> _connectionStatusController =
       StreamController<bool>.broadcast();
 
-  Stream<Map<String, dynamic>> get messages => _messageController.stream;
+  Stream<Map<String, dynamic>> get messages {
+    print('🎧 WebSocketService: messages getter called (has listeners: ${_messageController.hasListener})');
+    return _messageController.stream;
+  }
   Stream<bool> get connectionStatus => _connectionStatusController.stream;
   bool _isConnected = false;
   bool _isReconnecting = false;
@@ -20,16 +51,16 @@ class WebSocketService {
   final int _maxReconnectAttempts = 5;
   final Duration _reconnectDelay = const Duration(seconds: 3);
 
-  WebSocketService({this.serverUrl = 'ws://localhost:8000/ws/recite'});
-
   bool get isConnected => _isConnected;
   bool get isReconnecting => _isReconnecting;
 
   Future<void> connect() async {
     if (_isConnected || _isReconnecting) {
+      print('⚠️ WebSocket: Already connected or reconnecting, skipping...');
       return;
     }
 
+    print('🔌 WebSocket: Attempting to connect to $serverUrl');
     try {
       _channel = WebSocketChannel.connect(Uri.parse(serverUrl));
       _isConnected = true;
@@ -57,7 +88,9 @@ class WebSocketService {
               print('📥 Backend: $msgType');
             }
             
+            print('📡 WebSocketService: Adding message to controller (hasListener: ${_messageController.hasListener})');
             _messageController.add(data);
+            print('✅ WebSocketService: Message added successfully');
           } catch (e) {
             print('❌ Error parsing message: $e');
           }
@@ -188,24 +221,28 @@ class WebSocketService {
     }
   }
   
-  void sendPing() {
+  void sendHeartbeat() {
     if (_isConnected && _channel != null) {
       final message = jsonEncode({
-        'type': 'ping',
+        'type': 'heartbeat',
         'timestamp': DateTime.now().millisecondsSinceEpoch,
       });
       _channel!.sink.add(message);
-      print('💓 WebSocket: Sent PING');
+      print('💓 WebSocket: Sent HEARTBEAT');
     }
   }
 
   void disconnect() {
+    print('🔌 WebSocket: Disconnecting...');
     _shouldAutoReconnect = false;
     _reconnectTimer?.cancel();
     _channel?.sink.close();
+    _channel = null;  // ✅ Clear channel reference
     _isConnected = false;
     _isReconnecting = false;
+    _reconnectAttempts = 0;  // ✅ Reset reconnect counter
     _connectionStatusController.add(false);
+    print('🔌 WebSocket: Disconnected and cleaned up');
   }
 
   void dispose() {

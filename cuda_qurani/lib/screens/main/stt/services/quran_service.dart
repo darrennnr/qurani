@@ -9,44 +9,52 @@ class QuranService {
   factory QuranService() => _instance;
   QuranService._internal();
 
-  Database? _metadataDB;
-  Database? _qpcV1WBW;
-  Database? _uthmaniLinesDB;
-  Database? _uthmaniWords;
+  // ❌ REMOVE: Jangan simpan database reference di sini
+  // Database? _metadataDB;
+  // Database? _qpcV1WBW;
+  // etc...
+  
+  // ✅ FIX: Selalu ambil dari DBHelper (singleton source of truth)
   final Map<int, List<MushafPageLine>> _pageCache = {};
 
+  // ✅ Helper method: Always get FRESH database from DBHelper
+Future<Database> _getMetadataDB() async {
+  return await DBHelper.ensureOpen(DBType.metadata);
+}
+
+Future<Database> _getQpcV1WBW() async {
+  return await DBHelper.ensureOpen(DBType.qpc_v1_wbw);
+}
+
+Future<Database> _getQpcV1ABA() async {
+  return await DBHelper.ensureOpen(DBType.qpc_v1_aba);
+}
+
+Future<Database> _getUthmaniLinesDB() async {
+  return await DBHelper.ensureOpen(DBType.qpc_v1_15);
+}
+
+Future<Database> _getUthmaniWords() async {
+  return await DBHelper.ensureOpen(DBType.uthmani);
+}
+
   // Helper method untuk memilih database berdasarkan mode
-  Database _getWordsDatabase(bool isQuranMode) {
-    return isQuranMode ? _qpcV1WBW! : _uthmaniWords!;
+  Future<Database> _getWordsDatabase(bool isQuranMode) async {
+    return isQuranMode ? await _getQpcV1WBW() : await _getUthmaniWords();
   }
 
   Future<void> initialize() async {
-    // Force re-open if database is null or closed
-    if (_metadataDB == null || !_metadataDB!.isOpen) {
-      _metadataDB = await DBHelper.openDB(DBType.metadata);
-    }
-    if (_qpcV1WBW == null || !_qpcV1WBW!.isOpen) {
-      _qpcV1WBW = await DBHelper.openDB(DBType.qpc_v1_wbw);
-    }
-    if (_uthmaniLinesDB == null || !_uthmaniLinesDB!.isOpen) {
-      _uthmaniLinesDB = await DBHelper.openDB(DBType.qpc_v1_15);
-    }
-    if (_uthmaniWords == null || !_uthmaniWords!.isOpen) {
-      _uthmaniWords = await DBHelper.openDB(DBType.uthmani);
-    }
+    // ✅ FIX: Tidak perlu initialize, DBHelper sudah handle semuanya
+    print('[QuranService] Using DBHelper singleton - no re-init needed');
   }
 
   // ==================== OPTIMIZED BATCH LOADING ====================
-  /// Fast load surah data with minimal queries
   Future<List<AyatData>> getSurahAyatDataOptimized(
     int surahId, {
     bool isQuranMode = true,
   }) async {
-    await initialize();
+    final db = await _getWordsDatabase(isQuranMode);
     
-    final db = _getWordsDatabase(isQuranMode);
-    
-    // Single query to get all words for the surah
     final result = await db.query(
       'words',
       where: 'surah = ?',
@@ -56,25 +64,22 @@ class QuranService {
     
     if (result.isEmpty) return [];
     
-    // Group words by ayah in memory (faster than multiple queries)
     final Map<int, List<WordData>> ayahGroups = {};
     for (final row in result) {
       final word = WordData.fromSqlite(row);
       ayahGroups.putIfAbsent(word.ayah, () => []).add(word);
     }
     
-    // Get chapter info (single query)
     final chapter = await getChapterInfo(surahId);
     
-    // Build ayat list
     final List<AyatData> ayatList = [];
     for (int ayahNum = 1; ayahNum <= chapter.versesCount; ayahNum++) {
       final ayahWords = ayahGroups[ayahNum] ?? [];
       if (ayahWords.isEmpty) continue;
       
-      // Calculate page and juz efficiently
       final firstWordId = ayahWords.first.id;
-      final pageResult = await _uthmaniLinesDB!.rawQuery(
+      final uthmaniLinesDB = await _getUthmaniLinesDB();
+      final pageResult = await uthmaniLinesDB.rawQuery(
         'SELECT page_number FROM pages WHERE line_type = ? AND first_word_id <= ? AND last_word_id >= ? LIMIT 1',
         ['ayah', firstWordId, firstWordId],
       );
@@ -97,8 +102,8 @@ class QuranService {
   }
 
   Future<ChapterData> getChapterInfo(int surahId) async {
-    await initialize();
-    final result = await _metadataDB!.query(
+    final metadataDB = await _getMetadataDB();
+    final result = await metadataDB.query(
       'chapters',
       where: 'id = ?',
       whereArgs: [surahId],
@@ -112,8 +117,7 @@ class QuranService {
     int surahId, {
     bool isQuranMode = true,
   }) async {
-    await initialize();
-    final db = _getWordsDatabase(isQuranMode);
+    final db = await _getWordsDatabase(isQuranMode);
     final result = await db.query(
       'words',
       where: 'surah = ?',
@@ -128,8 +132,7 @@ class QuranService {
     int ayahNumber, {
     bool isQuranMode = true,
   }) async {
-    await initialize();
-    final db = _getWordsDatabase(isQuranMode);
+    final db = await _getWordsDatabase(isQuranMode);
     final result = await db.query(
       'words',
       where: 'surah = ? AND ayah = ?',
@@ -160,7 +163,6 @@ class QuranService {
         ayahNum,
         isQuranMode: isQuranMode,
       );
-      // FIX: Call the public method
       final juz = calculateJuzAccurate(surahId, ayahNum);
       ayatList.add(
         AyatData.fromWordsAndPage(
@@ -176,8 +178,8 @@ class QuranService {
   }
 
   Future<List<PageLayoutData>> getPageLayout(int pageNumber) async {
-    await initialize();
-    final result = await _uthmaniLinesDB!.query(
+    final uthmaniLinesDB = await _getUthmaniLinesDB();
+    final result = await uthmaniLinesDB.query(
       'pages',
       where: 'page_number = ?',
       whereArgs: [pageNumber],
@@ -191,8 +193,7 @@ class QuranService {
     int endId, {
     bool isQuranMode = true,
   }) async {
-    await initialize();
-    final db = _getWordsDatabase(isQuranMode);
+    final db = await _getWordsDatabase(isQuranMode);
     final result = await db.query(
       'words',
       where: 'id >= ? AND id <= ?',
@@ -224,7 +225,6 @@ class QuranService {
       for (final word in lineWords) {
         final key = '${word.surah}:${word.ayah}';
         if (!uniqueAyats.containsKey(key)) {
-          // FIX: Call the public method
           uniqueAyats[key] = AyatData(
             surah_id: word.surah,
             ayah: word.ayah,
@@ -245,7 +245,6 @@ class QuranService {
         ayahNum,
         isQuranMode: true,
       );
-      // FIX: Call the public method
       uniqueAyats[key] = AyatData(
         surah_id: surahId,
         ayah: ayahNum,
@@ -294,7 +293,7 @@ class QuranService {
             lineNumber: layout.lineNumber,
             lineType: layout.lineType,
             isCentered: layout.isCentered,
-            basmallahText: '﷽',
+            basmallahText: 'ï·½',
           );
           break;
         case 'ayah':
@@ -360,21 +359,17 @@ class QuranService {
     return pageLines;
   }
 
-  // ==================== BATCH LOADING FOR OPTIMIZATION ====================
-  /// Batch load multiple pages efficiently for pre-loading
   Future<Map<int, List<MushafPageLine>>> getMushafPageLinesBatch(
     List<int> pageNumbers,
   ) async {
     final result = <int, List<MushafPageLine>>{};
 
-    // Check cache first
     for (final pageNum in pageNumbers) {
       if (_pageCache.containsKey(pageNum)) {
         result[pageNum] = _pageCache[pageNum]!;
       }
     }
 
-    // Get pages that need loading
     final pagesToLoad = pageNumbers
         .where((page) => !result.containsKey(page))
         .toList();
@@ -383,7 +378,6 @@ class QuranService {
 
     print('BATCH_LOAD: Loading ${pagesToLoad.length} pages: $pagesToLoad');
 
-    // Load all pages in parallel
     final loadFutures = pagesToLoad.map((pageNum) async {
       try {
         final lines = await getMushafPageLines(pageNum);
@@ -396,7 +390,6 @@ class QuranService {
 
     final loadedPages = await Future.wait(loadFutures);
 
-    // Add successfully loaded pages to result
     for (final entry in loadedPages) {
       if (entry != null) {
         result[entry.key] = entry.value;
@@ -446,7 +439,7 @@ class QuranService {
             lineNumber: layout.lineNumber,
             lineType: MushafLineType.basmallah,
             isCentered: layout.isCentered,
-            content: '﷽',
+            content: 'ï·½',
           );
           break;
         case 'ayah':
@@ -482,7 +475,6 @@ class QuranService {
     int ayahNumber, {
     bool isQuranMode = true,
   }) async {
-    await initialize();
     final ayahWords = await getAyahWords(
       surahId,
       ayahNumber,
@@ -490,7 +482,8 @@ class QuranService {
     );
     if (ayahWords.isEmpty) return 1;
     final firstWordId = ayahWords.first.id;
-    final result = await _uthmaniLinesDB!.rawQuery(
+    final uthmaniLinesDB = await _getUthmaniLinesDB();
+    final result = await uthmaniLinesDB.rawQuery(
       '''SELECT page_number FROM pages WHERE line_type = 'ayah' AND first_word_id <= ? AND last_word_id >= ? LIMIT 1''',
       [firstWordId, firstWordId],
     );
@@ -500,7 +493,6 @@ class QuranService {
     return 1;
   }
 
-  // FIX: Make this method public by removing the underscore
   int calculateJuzAccurate(int surahId, int ayahNumber) {
     const List<Map<String, dynamic>> juzBoundaries = [
       {'juz': 1, 'surah': 1, 'ayah': 1},
@@ -547,8 +539,8 @@ class QuranService {
   }
 
   void dispose() {
-    // JANGAN close database karena menggunakan singleton pattern
-    // Database akan tetap terbuka untuk digunakan ulang
+    // ✅ ONLY clear cache, databases remain open (managed by DBHelper)
     _pageCache.clear();
+    print('[QuranService] Cache cleared, databases remain open');
   }
 }
