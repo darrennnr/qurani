@@ -168,17 +168,19 @@ class QuranBottomBar extends StatelessWidget {
                       child: InkWell(
                         borderRadius: BorderRadius.circular(30),
                         onTap: () async {
-                          print(
-                            '🔘 BUTTON: Pressed! isRecording=${controller.isRecording}, isConnected=${controller.isConnected}',
-                          );
                           if (controller.isRecording) {
                             print('🔘 BUTTON: Calling stopRecording()');
                             await controller.stopRecording();
                           } else {
-                            if (!controller.isConnected) {
-                              print(
-                                '⚠️ BUTTON: Not connected, showing SnackBar and reconnecting...',
-                              );
+                            // ✅ FIX: Check FRESH state from service, not cached state
+                            final serviceConnected = controller.isServiceConnected;
+                            print('🔘 BUTTON: Pressed!');
+                            print('   - isRecording = ${controller.isRecording}');
+                            print('   - isConnected (cached) = ${controller.isConnected}');
+                            print('   - isServiceConnected (fresh) = $serviceConnected');
+                            
+                            if (!serviceConnected) {
+                              print('⚠️ BUTTON: Not connected, reconnecting...');
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text('Connecting to server...'),
@@ -186,11 +188,14 @@ class QuranBottomBar extends StatelessWidget {
                                 ),
                               );
                               await controller.reconnect();
-                              if (!controller.isConnected) {
+                              if (!controller.isServiceConnected) {
                                 print('❌ BUTTON: Reconnect failed, aborting');
                                 return;
                               }
+                            } else {
+                              print('✅ BUTTON: Already connected, skip reconnect');
                             }
+                            
                             print('🔘 BUTTON: Calling startRecording()');
                             await controller.startRecording();
                           }

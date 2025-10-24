@@ -420,7 +420,7 @@ class _SurahListPageState extends State<SurahListPage>
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(
         horizontal: 24.0,
-        vertical: 10.0,
+        vertical: 0.0,
       ),
       onTap: () async {
         await _openSurah(context, id);
@@ -474,7 +474,7 @@ class _SurahListPageState extends State<SurahListPage>
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(
         horizontal: 24.0,
-        vertical: 10.0,
+        vertical: 0.0,
       ),
       onTap: () async {
         await _openJuz(context, juzNumber, firstVerseKey);

@@ -13,30 +13,30 @@ class QuranService {
   // Database? _metadataDB;
   // Database? _qpcV1WBW;
   // etc...
-  
+
   // ✅ FIX: Selalu ambil dari DBHelper (singleton source of truth)
   final Map<int, List<MushafPageLine>> _pageCache = {};
 
   // ✅ Helper method: Always get FRESH database from DBHelper
-Future<Database> _getMetadataDB() async {
-  return await DBHelper.ensureOpen(DBType.metadata);
-}
+  Future<Database> _getMetadataDB() async {
+    return await DBHelper.ensureOpen(DBType.metadata);
+  }
 
-Future<Database> _getQpcV1WBW() async {
-  return await DBHelper.ensureOpen(DBType.qpc_v1_wbw);
-}
+  Future<Database> _getQpcV1WBW() async {
+    return await DBHelper.ensureOpen(DBType.qpc_v1_wbw);
+  }
 
-Future<Database> _getQpcV1ABA() async {
-  return await DBHelper.ensureOpen(DBType.qpc_v1_aba);
-}
+  Future<Database> _getQpcV1ABA() async {
+    return await DBHelper.ensureOpen(DBType.qpc_v1_aba);
+  }
 
-Future<Database> _getUthmaniLinesDB() async {
-  return await DBHelper.ensureOpen(DBType.qpc_v1_15);
-}
+  Future<Database> _getUthmaniLinesDB() async {
+    return await DBHelper.ensureOpen(DBType.qpc_v1_15);
+  }
 
-Future<Database> _getUthmaniWords() async {
-  return await DBHelper.ensureOpen(DBType.uthmani);
-}
+  Future<Database> _getUthmaniWords() async {
+    return await DBHelper.ensureOpen(DBType.uthmani);
+  }
 
   // Helper method untuk memilih database berdasarkan mode
   Future<Database> _getWordsDatabase(bool isQuranMode) async {
@@ -54,38 +54,40 @@ Future<Database> _getUthmaniWords() async {
     bool isQuranMode = true,
   }) async {
     final db = await _getWordsDatabase(isQuranMode);
-    
+
     final result = await db.query(
       'words',
       where: 'surah = ?',
       whereArgs: [surahId],
       orderBy: 'ayah ASC, word ASC',
     );
-    
+
     if (result.isEmpty) return [];
-    
+
     final Map<int, List<WordData>> ayahGroups = {};
     for (final row in result) {
       final word = WordData.fromSqlite(row);
       ayahGroups.putIfAbsent(word.ayah, () => []).add(word);
     }
-    
+
     final chapter = await getChapterInfo(surahId);
-    
+
     final List<AyatData> ayatList = [];
     for (int ayahNum = 1; ayahNum <= chapter.versesCount; ayahNum++) {
       final ayahWords = ayahGroups[ayahNum] ?? [];
       if (ayahWords.isEmpty) continue;
-      
+
       final firstWordId = ayahWords.first.id;
       final uthmaniLinesDB = await _getUthmaniLinesDB();
       final pageResult = await uthmaniLinesDB.rawQuery(
         'SELECT page_number FROM pages WHERE line_type = ? AND first_word_id <= ? AND last_word_id >= ? LIMIT 1',
         ['ayah', firstWordId, firstWordId],
       );
-      final page = pageResult.isNotEmpty ? pageResult.first['page_number'] as int : 1;
+      final page = pageResult.isNotEmpty
+          ? pageResult.first['page_number'] as int
+          : 1;
       final juz = calculateJuzAccurate(surahId, ayahNum);
-      
+
       ayatList.add(
         AyatData(
           surah_id: surahId,
@@ -97,7 +99,7 @@ Future<Database> _getUthmaniWords() async {
         ),
       );
     }
-    
+
     return ayatList;
   }
 
@@ -359,25 +361,34 @@ Future<Database> _getUthmaniWords() async {
     return pageLines;
   }
 
+  /// Batch load multiple pages in parallel (optimized for navigation)
   Future<Map<int, List<MushafPageLine>>> getMushafPageLinesBatch(
     List<int> pageNumbers,
   ) async {
     final result = <int, List<MushafPageLine>>{};
 
+    // Check cache first
     for (final pageNum in pageNumbers) {
       if (_pageCache.containsKey(pageNum)) {
         result[pageNum] = _pageCache[pageNum]!;
       }
     }
 
+    // Determine pages that need loading
     final pagesToLoad = pageNumbers
         .where((page) => !result.containsKey(page))
         .toList();
 
-    if (pagesToLoad.isEmpty) return result;
+    if (pagesToLoad.isEmpty) {
+      print('BATCH_LOAD: All ${pageNumbers.length} pages already cached');
+      return result;
+    }
 
-    print('BATCH_LOAD: Loading ${pagesToLoad.length} pages: $pagesToLoad');
+    print(
+      'BATCH_LOAD: Loading ${pagesToLoad.length} pages in parallel: $pagesToLoad',
+    );
 
+    // Load all pages in parallel
     final loadFutures = pagesToLoad.map((pageNum) async {
       try {
         final lines = await getMushafPageLines(pageNum);
@@ -388,15 +399,18 @@ Future<Database> _getUthmaniWords() async {
       }
     });
 
-    final loadedPages = await Future.wait(loadFutures);
+    final loadedPages = await Future.wait(loadFutures, eagerError: false);
 
+    // Add successfully loaded pages to result
     for (final entry in loadedPages) {
       if (entry != null) {
         result[entry.key] = entry.value;
       }
     }
 
-    print('BATCH_LOAD: Successfully loaded ${result.length} pages');
+    print(
+      'BATCH_LOAD: Successfully loaded ${result.length}/${pageNumbers.length} pages',
+    );
     return result;
   }
 

@@ -33,16 +33,29 @@ class WebSocketService {
   
   WebSocketChannel? _channel;
   final String serverUrl;
-  final StreamController<Map<String, dynamic>> _messageController =
+  StreamController<Map<String, dynamic>> _messageController =
       StreamController<Map<String, dynamic>>.broadcast();
-  final StreamController<bool> _connectionStatusController =
+  StreamController<bool> _connectionStatusController =
       StreamController<bool>.broadcast();
 
   Stream<Map<String, dynamic>> get messages {
+    // ✅ FIX: Recreate controller if closed
+    if (_messageController.isClosed) {
+      print('⚠️ WebSocketService: Message controller was closed, recreating...');
+      _messageController = StreamController<Map<String, dynamic>>.broadcast();
+    }
     print('🎧 WebSocketService: messages getter called (has listeners: ${_messageController.hasListener})');
     return _messageController.stream;
   }
-  Stream<bool> get connectionStatus => _connectionStatusController.stream;
+  
+  Stream<bool> get connectionStatus {
+    // ✅ FIX: Recreate controller if closed
+    if (_connectionStatusController.isClosed) {
+      print('⚠️ WebSocketService: Connection controller was closed, recreating...');
+      _connectionStatusController = StreamController<bool>.broadcast();
+    }
+    return _connectionStatusController.stream;
+  }
   bool _isConnected = false;
   bool _isReconnecting = false;
   bool _shouldAutoReconnect = true;
@@ -61,13 +74,24 @@ class WebSocketService {
     }
 
     print('🔌 WebSocket: Attempting to connect to $serverUrl');
+    
+    // ✅ FIX: Recreate controllers if closed
+    if (_messageController.isClosed) {
+      print('🔄 WebSocket: Recreating closed message controller...');
+      _messageController = StreamController<Map<String, dynamic>>.broadcast();
+    }
+    if (_connectionStatusController.isClosed) {
+      print('🔄 WebSocket: Recreating closed connection controller...');
+      _connectionStatusController = StreamController<bool>.broadcast();
+    }
+    
     try {
       _channel = WebSocketChannel.connect(Uri.parse(serverUrl));
       _isConnected = true;
       _isReconnecting = false;
       _reconnectAttempts = 0;
       _connectionStatusController.add(true);
-      print('WebSocket connected successfully');
+      print('✅ WebSocket connected successfully');
 
       _channel!.stream.listen(
         (message) {
@@ -233,7 +257,11 @@ class WebSocketService {
   }
 
   void disconnect() {
+    // 🔍 DEBUG: Print stack trace to find WHO called disconnect
     print('🔌 WebSocket: Disconnecting...');
+    print('📍 DISCONNECT CALLED FROM:');
+    print(StackTrace.current);
+    
     _shouldAutoReconnect = false;
     _reconnectTimer?.cancel();
     _channel?.sink.close();
@@ -241,13 +269,23 @@ class WebSocketService {
     _isConnected = false;
     _isReconnecting = false;
     _reconnectAttempts = 0;  // ✅ Reset reconnect counter
-    _connectionStatusController.add(false);
+    
+    // ✅ FIX: Only add event if controller is not closed
+    if (!_connectionStatusController.isClosed) {
+      _connectionStatusController.add(false);
+    }
     print('🔌 WebSocket: Disconnected and cleaned up');
   }
 
   void dispose() {
-    disconnect();
-    _messageController.close();
-    _connectionStatusController.close();
+    print('🗑️ WebSocketService: dispose() called - DO NOT dispose singleton!');
+    print('📍 DISPOSE CALLED FROM:');
+    print(StackTrace.current);
+    
+    // ✅ DON'T close controllers or disconnect for singleton!
+    // Singleton should live throughout app lifecycle
+    // disconnect();
+    // _messageController.close();
+    // _connectionStatusController.close();
   }
 }

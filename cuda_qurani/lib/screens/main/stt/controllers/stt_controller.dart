@@ -68,6 +68,10 @@ class SttController with ChangeNotifier {
   // Getters for recording state
   bool get isRecording => _isRecording;
   bool get isConnected => _isConnected;
+
+  // ✅ NEW: Direct access to service connection state (always fresh)
+  bool get isServiceConnected => _webSocketService.isConnected;
+
   int get expectedAyah => _expectedAyah;
   Map<int, TartibStatus> get tartibStatus => _tartibStatus;
   Map<int, Map<int, WordStatus>> get wordStatusMap => _wordStatusMap;
@@ -189,84 +193,154 @@ class SttController with ChangeNotifier {
     return 1;
   }
 
-  // ADD NEW METHOD: Load single page data (OPTIMIZED)
-  Future<void> _loadSinglePageData(int pageNumber) async {
-    appLogger.log('DATA', 'Loading SINGLE page: $pageNumber');
+  // ADD NEW METHOD: Load multiple pages in parallel (instant swipe preparation)
+  Future<void> _loadMultiplePagesParallel(List<int> pageNumbers) async {
+    if (pageNumbers.isEmpty) return;
+
+    appLogger.log(
+      'PARALLEL_LOAD',
+      'Loading ${pageNumbers.length} pages: $pageNumbers',
+    );
 
     try {
-      // Load page lines (for mushaf view)
-      final pageLines = await _sqliteService.getMushafPageLines(pageNumber);
-      pageCache[pageNumber] = pageLines;
+      // Fetch all pages in parallel
+      final results = await Future.wait(
+        pageNumbers.map((pageNum) async {
+          if (pageCache.containsKey(pageNum)) {
+            appLogger.log('PARALLEL_LOAD', 'Page $pageNum already cached');
+            return MapEntry(pageNum, pageCache[pageNum]!);
+          }
 
-      // ✅ FIX: Determine and STORE surah ID from first ayah on page
-      if (pageLines.isNotEmpty) {
-        for (final line in pageLines) {
-          if (line.ayahSegments != null && line.ayahSegments!.isNotEmpty) {
-            final firstSegment = line.ayahSegments!.first;
-            _determinedSurahId =
-                firstSegment.surahId; // ✅ CRITICAL: Store surah ID
-
-            // Get surah metadata (minimal)
-            final chapter = await _sqliteService.getChapterInfo(
-              _determinedSurahId!,
+          try {
+            final lines = await _sqliteService.getMushafPageLines(pageNum);
+            appLogger.log(
+              'PARALLEL_LOAD',
+              'Page $pageNum loaded (${lines.length} lines)',
             );
-            _suratNameSimple = chapter.nameSimple;
-            _suratVersesCount = chapter.versesCount.toString();
+            return MapEntry(pageNum, lines);
+          } catch (e) {
+            appLogger.log('PARALLEL_LOAD_ERROR', 'Failed page $pageNum: $e');
+            return null;
+          }
+        }),
+        eagerError: false,
+      );
 
-            // Build minimal ayat list for THIS PAGE ONLY
-            final Set<String> uniqueAyahs = {};
-            for (final line in pageLines) {
-              if (line.ayahSegments != null) {
-                for (final segment in line.ayahSegments!) {
-                  final key = '${segment.surahId}:${segment.ayahNumber}';
-                  uniqueAyahs.add(key);
-                }
+      // Update cache with successful results
+      int successCount = 0;
+      for (final entry in results) {
+        if (entry != null) {
+          pageCache[entry.key] = entry.value;
+          successCount++;
+        }
+      }
+
+      appLogger.log(
+        'PARALLEL_LOAD',
+        'Successfully cached $successCount/${pageNumbers.length} pages',
+      );
+    } catch (e) {
+      appLogger.log('PARALLEL_LOAD_ERROR', 'Batch load failed: $e');
+    }
+  }
+
+  // REPLACE existing _loadSinglePageData method
+  Future<void> _loadSinglePageData(int pageNumber) async {
+    appLogger.log('DATA', '🚀 INSTANT LOAD: Page $pageNumber + adjacent pages');
+
+    try {
+      // ✅ STEP 1: Determine pages to load (main + 2 before + 2 after = 5 pages)
+      final pagesToLoad = <int>[];
+
+      // Add main page first (priority)
+      pagesToLoad.add(pageNumber);
+
+      // Add adjacent pages
+      if (pageNumber > 1) pagesToLoad.add(pageNumber - 1);
+      if (pageNumber > 2) pagesToLoad.add(pageNumber - 2);
+      if (pageNumber < 604) pagesToLoad.add(pageNumber + 1);
+      if (pageNumber < 603) pagesToLoad.add(pageNumber + 2);
+
+      // ✅ STEP 2: Load all pages in PARALLEL
+      await _loadMultiplePagesParallel(pagesToLoad);
+
+      // ✅ STEP 3: Extract main page data for UI
+      final pageLines = pageCache[pageNumber];
+      if (pageLines == null || pageLines.isEmpty) {
+        throw Exception('Main page $pageNumber failed to load');
+      }
+
+      // ✅ STEP 4: Determine and STORE surah ID from first ayah
+      for (final line in pageLines) {
+        if (line.ayahSegments != null && line.ayahSegments!.isNotEmpty) {
+          final firstSegment = line.ayahSegments!.first;
+          _determinedSurahId = firstSegment.surahId;
+
+          // Get surah metadata (minimal)
+          final chapter = await _sqliteService.getChapterInfo(
+            _determinedSurahId!,
+          );
+          _suratNameSimple = chapter.nameSimple;
+          _suratVersesCount = chapter.versesCount.toString();
+
+          // Build minimal ayat list for THIS PAGE ONLY
+          final Set<String> uniqueAyahs = {};
+          for (final line in pageLines) {
+            if (line.ayahSegments != null) {
+              for (final segment in line.ayahSegments!) {
+                final key = '${segment.surahId}:${segment.ayahNumber}';
+                uniqueAyahs.add(key);
               }
             }
-
-            // Load only ayahs on this page
-            _ayatList = [];
-            for (final ayahKey in uniqueAyahs) {
-              final parts = ayahKey.split(':');
-              final surahId = int.parse(parts[0]);
-              final ayahNum = int.parse(parts[1]);
-
-              final ayahWords = await _sqliteService.getAyahWords(
-                surahId,
-                ayahNum,
-                isQuranMode: true,
-              );
-              final juz = _sqliteService.calculateJuzAccurate(surahId, ayahNum);
-
-              _ayatList.add(
-                AyatData(
-                  surah_id: surahId,
-                  ayah: ayahNum,
-                  words: ayahWords,
-                  page: pageNumber,
-                  juz: juz,
-                  fullArabicText: ayahWords.map((w) => w.text).join(' '),
-                ),
-              );
-            }
-
-            // Sort by surah then ayah
-            _ayatList.sort((a, b) {
-              if (a.surah_id != b.surah_id)
-                return a.surah_id.compareTo(b.surah_id);
-              return a.ayah.compareTo(b.ayah);
-            });
-
-            _currentAyatIndex = 0;
-            _currentPageAyats = _ayatList;
-
-            appLogger.log(
-              'DATA',
-              'Loaded ${_ayatList.length} ayahs on page $pageNumber (Surah $_determinedSurahId)',
-            );
-            notifyListeners();
-            return;
           }
+
+          // Load only ayahs on this page
+          _ayatList = [];
+          for (final ayahKey in uniqueAyahs) {
+            final parts = ayahKey.split(':');
+            final surahId = int.parse(parts[0]);
+            final ayahNum = int.parse(parts[1]);
+
+            final ayahWords = await _sqliteService.getAyahWords(
+              surahId,
+              ayahNum,
+              isQuranMode: true,
+            );
+            final juz = _sqliteService.calculateJuzAccurate(surahId, ayahNum);
+
+            _ayatList.add(
+              AyatData(
+                surah_id: surahId,
+                ayah: ayahNum,
+                words: ayahWords,
+                page: pageNumber,
+                juz: juz,
+                fullArabicText: ayahWords.map((w) => w.text).join(' '),
+              ),
+            );
+          }
+
+          // Sort by surah then ayah
+          _ayatList.sort((a, b) {
+            if (a.surah_id != b.surah_id)
+              return a.surah_id.compareTo(b.surah_id);
+            return a.ayah.compareTo(b.ayah);
+          });
+
+          _currentAyatIndex = 0;
+          _currentPageAyats = _ayatList;
+
+          appLogger.log(
+            'DATA',
+            '✅ Instant load complete: ${_ayatList.length} ayahs on page $pageNumber (Surah $_determinedSurahId)',
+          );
+          appLogger.log(
+            'DATA',
+            '📦 Cache status: ${pageCache.length} pages cached (${pagesToLoad.length} just loaded)',
+          );
+
+          notifyListeners();
+          return;
         }
       }
 
@@ -410,28 +484,68 @@ class SttController with ChangeNotifier {
       return;
     }
 
-    appLogger.log('NAV', 'Navigating from page $_currentPage to $newPage');
+    appLogger.log('NAV', '🔄 Navigating from page $_currentPage to $newPage');
 
     _currentPage = newPage;
-    notifyListeners();
 
-    _loadCurrentPageAyats();
+    // ✅ Check if target page is already cached
+    if (pageCache.containsKey(newPage)) {
+      appLogger.log('NAV', '⚡ INSTANT: Page $newPage already in cache');
 
-    if (_currentPageAyats.isNotEmpty) {
-      final firstAyatOnPage = _currentPageAyats.first;
-      final newIndex = _ayatList.indexWhere(
-        (a) =>
-            a.surah_id == firstAyatOnPage.surah_id &&
-            a.ayah == firstAyatOnPage.ayah,
-      );
-      if (newIndex >= 0) {
-        _currentAyatIndex = newIndex;
-        appLogger.log('NAV', 'Updated ayat index to $_currentAyatIndex');
+      // Update current page ayats immediately (no loading)
+      _loadCurrentPageAyats();
+
+      // Update ayat index
+      if (_currentPageAyats.isNotEmpty) {
+        final firstAyatOnPage = _currentPageAyats.first;
+        final newIndex = _ayatList.indexWhere(
+          (a) =>
+              a.surah_id == firstAyatOnPage.surah_id &&
+              a.ayah == firstAyatOnPage.ayah,
+        );
+        if (newIndex >= 0) {
+          _currentAyatIndex = newIndex;
+          appLogger.log('NAV', 'Updated ayat index to $_currentAyatIndex');
+        }
       }
-      notifyListeners();
-    }
 
-    Future.microtask(() => _preloadAdjacentPagesAggressively());
+      notifyListeners();
+
+      // Preload more pages in background
+      Future.microtask(() => _preloadAdjacentPagesAggressively());
+    } else {
+      // ✅ Page not cached - load it + adjacent pages immediately
+      appLogger.log('NAV', '📥 Loading page $newPage + adjacent pages...');
+
+      // Load with parallel fetch (will cache adjacent pages too)
+      _loadSinglePageData(newPage)
+          .then((_) {
+            _loadCurrentPageAyats();
+
+            if (_currentPageAyats.isNotEmpty) {
+              final firstAyatOnPage = _currentPageAyats.first;
+              final newIndex = _ayatList.indexWhere(
+                (a) =>
+                    a.surah_id == firstAyatOnPage.surah_id &&
+                    a.ayah == firstAyatOnPage.ayah,
+              );
+              if (newIndex >= 0) {
+                _currentAyatIndex = newIndex;
+              }
+            }
+
+            notifyListeners();
+
+            // Continue preloading in background
+            Future.microtask(() => _preloadAdjacentPagesAggressively());
+          })
+          .catchError((e) {
+            appLogger.log(
+              'NAV_ERROR',
+              'Failed to navigate to page $newPage: $e',
+            );
+          });
+    }
   }
 
   void updatePageCache(int page, List<MushafPageLine> lines) {
@@ -568,22 +682,48 @@ class SttController with ChangeNotifier {
 
   // ===== WEBSOCKET & RECORDING =====
   void _initializeWebSocket() {
+    print('🔌 SttController: Initializing WebSocket subscriptions...');
+
+    // ✅ Cancel old subscriptions if they exist
+    _wsSubscription?.cancel();
+    _connectionSubscription?.cancel();
+
+    // ✅ Create new subscriptions (will get fresh streams if controllers were recreated)
     _wsSubscription = _webSocketService.messages.listen(
       _handleWebSocketMessage,
+      onError: (error) {
+        print('❌ SttController: Message stream error: $error');
+      },
+      onDone: () {
+        print('⚠️ SttController: Message stream closed');
+      },
     );
-    _connectionSubscription = _webSocketService.connectionStatus.listen((
-      isConnected,
-    ) {
-      if (_isConnected != isConnected) {
-        _isConnected = isConnected;
-        if (_isConnected) {
-          _errorMessage = '';
-        } else if (_isRecording) {
-          _errorMessage = 'Connection lost. Attempting to reconnect...';
+
+    _connectionSubscription = _webSocketService.connectionStatus.listen(
+      (isConnected) {
+        if (_isConnected != isConnected) {
+          _isConnected = isConnected;
+          if (_isConnected) {
+            _errorMessage = '';
+            print('✅ SttController: Connection status changed to CONNECTED');
+          } else if (_isRecording) {
+            _errorMessage = 'Connection lost. Attempting to reconnect...';
+            print(
+              '⚠️ SttController: Connection status changed to DISCONNECTED',
+            );
+          }
+          notifyListeners();
         }
-        notifyListeners();
-      }
-    });
+      },
+      onError: (error) {
+        print('❌ SttController: Connection stream error: $error');
+      },
+      onDone: () {
+        print('⚠️ SttController: Connection stream closed');
+      },
+    );
+
+    print('✅ SttController: WebSocket subscriptions initialized');
 
     // Auto-connect
     _connectWebSocket();
@@ -778,7 +918,13 @@ class SttController with ChangeNotifier {
   }
 
   Future<void> startRecording() async {
-    print('🎤 startRecording(): Called. isConnected=$_isConnected');
+    // ✅ FIX: Sync provider flag from service FIRST
+    final serviceConnected = _webSocketService.isConnected;
+    _isConnected = serviceConnected;
+    print('🎤 startRecording(): Called.');
+    print('   - _isConnected (cached) = $_isConnected');
+    print('   - service.isConnected (fresh) = $serviceConnected');
+
     if (!_isConnected) {
       print('⚠️ startRecording(): Not connected, attempting to connect...');
       _errorMessage = 'Connecting...';
@@ -909,17 +1055,23 @@ class SttController with ChangeNotifier {
   }
 
   // ===== DISPOSAL =====
-@override
-void dispose() {
-  print('💀 SttController: DISPOSE CALLED for surah $suratId');
-  appLogger.log('DISPOSAL', 'Starting cleanup process');
-  _wsSubscription?.cancel();
-  _connectionSubscription?.cancel();
-  _audioService.dispose();
-  _webSocketService.dispose();
-  // ✅ QuranService singleton - jangan dispose, database tetap hidup
-  _scrollController.dispose();
-  appLogger.dispose();
-  super.dispose();
-}
+  @override
+  void dispose() {
+    print('💀 SttController: DISPOSE CALLED for surah $suratId');
+    appLogger.log('DISPOSAL', 'Starting cleanup process');
+
+    // ✅ Cancel subscriptions
+    _wsSubscription?.cancel();
+    _connectionSubscription?.cancel();
+
+    // ✅ Dispose audio service
+    _audioService.dispose();
+
+    // ✅ DON'T dispose singleton WebSocketService!
+    // _webSocketService.dispose();  // ← REMOVED: Singleton should not be disposed
+    // ✅ QuranService singleton - jangan dispose, database tetap hidup
+    _scrollController.dispose();
+    appLogger.dispose();
+    super.dispose();
+  }
 }

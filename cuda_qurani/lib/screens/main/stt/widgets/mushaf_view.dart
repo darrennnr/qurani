@@ -183,81 +183,40 @@ class _MushafDisplayState extends State<MushafDisplay> {
     final pageNumber = controller.currentPage;
     final cachedLines = controller.pageCache[pageNumber];
 
-    // FAST PATH: If page is cached, render immediately
+    // ✅ FAST PATH: If page is cached, render immediately (NO LOADING)
     if (cachedLines != null && cachedLines.isNotEmpty) {
       return MushafPageContent(pageLines: cachedLines, pageNumber: pageNumber);
     }
 
-    // SLOW PATH: Load from database with minimal loading indicator
-    return FutureBuilder<List<MushafPageLine>>(
-      key: ValueKey('page_$pageNumber'), // Force rebuild on page change
-      future: context.read<QuranService>().getMushafPageLines(pageNumber),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          // Ultra-minimal loading indicator
-          return SizedBox(
-            height: MushafRenderer.PAGE_HEIGHT,
-            child: Center(
-              child: SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    Colors.grey.shade300,
-                  ),
-                ),
-              ),
-            ),
-          );
-        }
+    // ⚠️ FALLBACK: This should RARELY happen due to aggressive preloading
+    // If it does, show minimal loading and trigger emergency load
+    print('⚠️ CACHE MISS: Page $pageNumber not cached, emergency loading...');
 
-        if (snapshot.hasError) {
-          return SizedBox(
-            height: MushafRenderer.PAGE_HEIGHT,
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.error_outline,
-                    color: Colors.grey.shade400,
-                    size: 32,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Error loading page $pageNumber',
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
+    // Trigger emergency load in controller
+    Future.microtask(() async {
+      try {
+        final lines = await context.read<QuranService>().getMushafPageLines(
+          pageNumber,
+        );
+        controller.updatePageCache(pageNumber, lines);
+      } catch (e) {
+        print('❌ Emergency load failed: $e');
+      }
+    });
 
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return SizedBox(
-            height: MushafRenderer.PAGE_HEIGHT,
-            child: Center(
-              child: Text(
-                'No data for page $pageNumber',
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-              ),
-            ),
-          );
-        }
-
-        final pageLines = snapshot.data!;
-
-        // Update cache asynchronously after frame renders
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            controller.updatePageCache(pageNumber, pageLines);
-          }
-        });
-
-        return MushafPageContent(pageLines: pageLines, pageNumber: pageNumber);
-      },
+    // Show ultra-minimal loading (should be < 100ms)
+    return SizedBox(
+      height: MushafRenderer.PAGE_HEIGHT,
+      child: Center(
+        child: SizedBox(
+          width: 12,
+          height: 12,
+          child: CircularProgressIndicator(
+            strokeWidth: 1.5,
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.grey.shade400),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -393,78 +352,87 @@ class _JustifiedAyahLine extends StatelessWidget {
     // Font family berdasarkan mode
     final fontFamily = controller.isQuranMode ? 'p$pageNumber' : 'UthmanTN';
 
-for (final segment in line.ayahSegments!) {
-  final ayatIndex = controller.ayatList.indexWhere(
-    (a) => a.surah_id == segment.surahId && a.ayah == segment.ayahNumber,
-  );
-  final isCurrentAyat = ayatIndex >= 0 && ayatIndex == controller.currentAyatIndex;
-  
-  for (int i = 0; i < segment.words.length; i++) {
-    final word = segment.words[i];
-    
-    // ✅ FIX: Use wordNumber - 1 as index (wordNumber is 1-indexed, backend uses 0-indexed)
-    final wordIndex = word.wordNumber - 1;
-    
-    // Get word status dari wordStatusMap
-    final wordStatus = controller.wordStatusMap[segment.ayahNumber]?[wordIndex];
-    
-    // 🔥 DEBUG: Print word status dan warna yang akan diapply
-    if (controller.isRecording && segment.ayahNumber == controller.currentAyatNumber) {
-      print('🎨 UI RENDER: Ayah ${segment.ayahNumber}, Word[$wordIndex] (loop $i) = $wordStatus');
-      print('   📊 Full wordStatusMap[${segment.ayahNumber}] = ${controller.wordStatusMap[segment.ayahNumber]}');
-    }
-    
-    final wordSegments = controller.segmentText(word.text);
-    final hasArabicNumber = wordSegments.any((s) => s.isArabicNumber);
+    for (final segment in line.ayahSegments!) {
+      final ayatIndex = controller.ayatList.indexWhere(
+        (a) => a.surah_id == segment.surahId && a.ayah == segment.ayahNumber,
+      );
+      final isCurrentAyat =
+          ayatIndex >= 0 && ayatIndex == controller.currentAyatIndex;
 
-    double wordOpacity = 1.0;
-    Color wordBg = Colors.transparent;
-    
-    // Background color based on word status - HANYA HIJAU DAN MERAH
-    if (wordStatus != null) {
-      switch (wordStatus) {
-        case WordStatus.matched:
-          wordBg = correctColor.withOpacity(0.4);  // 🟩 HIJAU - BENAR
-          if (controller.isRecording && segment.ayahNumber == controller.currentAyatNumber) {
-            print('   ✅ SET COLOR: Hijau (matched) untuk word $wordIndex');
+      for (int i = 0; i < segment.words.length; i++) {
+        final word = segment.words[i];
+
+        // ✅ FIX: Use wordNumber - 1 as index (wordNumber is 1-indexed, backend uses 0-indexed)
+        final wordIndex = word.wordNumber - 1;
+
+        // Get word status dari wordStatusMap
+        final wordStatus =
+            controller.wordStatusMap[segment.ayahNumber]?[wordIndex];
+
+        // 🔥 DEBUG: Print word status dan warna yang akan diapply
+        if (controller.isRecording &&
+            segment.ayahNumber == controller.currentAyatNumber) {
+          print(
+            '🎨 UI RENDER: Ayah ${segment.ayahNumber}, Word[$wordIndex] (loop $i) = $wordStatus',
+          );
+          print(
+            '   📊 Full wordStatusMap[${segment.ayahNumber}] = ${controller.wordStatusMap[segment.ayahNumber]}',
+          );
+        }
+
+        final wordSegments = controller.segmentText(word.text);
+        final hasArabicNumber = wordSegments.any((s) => s.isArabicNumber);
+
+        double wordOpacity = 1.0;
+        Color wordBg = Colors.transparent;
+
+        // Background color based on word status - HANYA HIJAU DAN MERAH
+        if (wordStatus != null) {
+          switch (wordStatus) {
+            case WordStatus.matched:
+              wordBg = correctColor.withOpacity(0.4); // 🟩 HIJAU - BENAR
+              if (controller.isRecording &&
+                  segment.ayahNumber == controller.currentAyatNumber) {
+                print('   ✅ SET COLOR: Hijau (matched) untuk word $wordIndex');
+              }
+              break;
+            case WordStatus.mismatched:
+            case WordStatus.skipped:
+              wordBg = errorColor.withOpacity(0.4); // 🟥 MERAH - SALAH
+              if (controller.isRecording &&
+                  segment.ayahNumber == controller.currentAyatNumber) {
+                print('   ❌ SET COLOR: Merah (salah) untuk word $wordIndex');
+              }
+              break;
+            case WordStatus.processing:
+            case WordStatus.pending:
+            default:
+              wordBg = Colors.transparent; // Tidak ada warna
+              break;
           }
-          break;
-        case WordStatus.mismatched:
-        case WordStatus.skipped:
-          wordBg = errorColor.withOpacity(0.4);  // 🟥 MERAH - SALAH
-          if (controller.isRecording && segment.ayahNumber == controller.currentAyatNumber) {
-            print('   ❌ SET COLOR: Merah (salah) untuk word $wordIndex');
-          }
-          break;
-        case WordStatus.processing:
-        case WordStatus.pending:
-        default:
-          wordBg = Colors.transparent;  // Tidak ada warna
-          break;
+        }
+
+        if (controller.hideUnreadAyat && !isCurrentAyat) {
+          wordOpacity = hasArabicNumber ? 1.0 : 0.0;
+        }
+
+        final segments = controller.segmentText(word.text);
+        for (final textSegment in segments) {
+          spans.add(
+            TextSpan(
+              text: textSegment.text,
+              style: TextStyle(
+                fontSize: 26.0,
+                fontFamily: fontFamily,
+                color: _getWordColor(isCurrentAyat).withOpacity(wordOpacity),
+                backgroundColor: wordBg,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          );
+        }
       }
     }
-    
-    if (controller.hideUnreadAyat && !isCurrentAyat) {
-      wordOpacity = hasArabicNumber ? 1.0 : 0.0;
-    }
-
-    final segments = controller.segmentText(word.text);
-    for (final textSegment in segments) {
-      spans.add(
-        TextSpan(
-          text: textSegment.text,
-          style: TextStyle(
-            fontSize: 26.0,
-            fontFamily: fontFamily,
-            color: _getWordColor(isCurrentAyat).withOpacity(wordOpacity),
-            backgroundColor: wordBg,
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-      );
-    }
-  }
-}
     return MushafRenderer.renderJustifiedLine(
       wordSpans: spans,
       isCentered: line.isCentered,
@@ -478,7 +446,6 @@ for (final segment in line.ayahSegments!) {
   Color _getWordColor(bool isCurrentWord) {
     return isCurrentWord ? listeningColor : Colors.black87;
   }
-
 }
 
 class MushafPageHeader extends StatelessWidget {
