@@ -68,10 +68,17 @@ class SttController with ChangeNotifier {
   // Getters for recording state
   bool get isRecording => _isRecording;
   bool get isConnected => _isConnected;
+<<<<<<< HEAD
 
   // ✅ NEW: Direct access to service connection state (always fresh)
   bool get isServiceConnected => _webSocketService.isConnected;
 
+=======
+  
+  // ✅ NEW: Direct access to service connection state (always fresh)
+  bool get isServiceConnected => _webSocketService.isConnected;
+  
+>>>>>>> 9e576932e9651d1cf86c16c935f47e8cf883cf7b
   int get expectedAyah => _expectedAyah;
   Map<int, TartibStatus> get tartibStatus => _tartibStatus;
   Map<int, Map<int, WordStatus>> get wordStatusMap => _wordStatusMap;
@@ -683,11 +690,19 @@ class SttController with ChangeNotifier {
   // ===== WEBSOCKET & RECORDING =====
   void _initializeWebSocket() {
     print('🔌 SttController: Initializing WebSocket subscriptions...');
+<<<<<<< HEAD
 
     // ✅ Cancel old subscriptions if they exist
     _wsSubscription?.cancel();
     _connectionSubscription?.cancel();
 
+=======
+    
+    // ✅ Cancel old subscriptions if they exist
+    _wsSubscription?.cancel();
+    _connectionSubscription?.cancel();
+    
+>>>>>>> 9e576932e9651d1cf86c16c935f47e8cf883cf7b
     // ✅ Create new subscriptions (will get fresh streams if controllers were recreated)
     _wsSubscription = _webSocketService.messages.listen(
       _handleWebSocketMessage,
@@ -698,6 +713,7 @@ class SttController with ChangeNotifier {
         print('⚠️ SttController: Message stream closed');
       },
     );
+<<<<<<< HEAD
 
     _connectionSubscription = _webSocketService.connectionStatus.listen(
       (isConnected) {
@@ -723,6 +739,29 @@ class SttController with ChangeNotifier {
       },
     );
 
+=======
+    
+    _connectionSubscription = _webSocketService.connectionStatus.listen((
+      isConnected,
+    ) {
+      if (_isConnected != isConnected) {
+        _isConnected = isConnected;
+        if (_isConnected) {
+          _errorMessage = '';
+          print('✅ SttController: Connection status changed to CONNECTED');
+        } else if (_isRecording) {
+          _errorMessage = 'Connection lost. Attempting to reconnect...';
+          print('⚠️ SttController: Connection status changed to DISCONNECTED');
+        }
+        notifyListeners();
+      }
+    }, onError: (error) {
+      print('❌ SttController: Connection stream error: $error');
+    }, onDone: () {
+      print('⚠️ SttController: Connection stream closed');
+    });
+    
+>>>>>>> 9e576932e9651d1cf86c16c935f47e8cf883cf7b
     print('✅ SttController: WebSocket subscriptions initialized');
 
     // Auto-connect
@@ -924,7 +963,11 @@ class SttController with ChangeNotifier {
     print('🎤 startRecording(): Called.');
     print('   - _isConnected (cached) = $_isConnected');
     print('   - service.isConnected (fresh) = $serviceConnected');
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 9e576932e9651d1cf86c16c935f47e8cf883cf7b
     if (!_isConnected) {
       print('⚠️ startRecording(): Not connected, attempting to connect...');
       _errorMessage = 'Connecting...';
@@ -1055,6 +1098,7 @@ class SttController with ChangeNotifier {
   }
 
   // ===== DISPOSAL =====
+<<<<<<< HEAD
   @override
   void dispose() {
     print('💀 SttController: DISPOSE CALLED for surah $suratId');
@@ -1074,4 +1118,25 @@ class SttController with ChangeNotifier {
     appLogger.dispose();
     super.dispose();
   }
+=======
+@override
+void dispose() {
+  print('💀 SttController: DISPOSE CALLED for surah $suratId');
+  appLogger.log('DISPOSAL', 'Starting cleanup process');
+  
+  // ✅ Cancel subscriptions
+  _wsSubscription?.cancel();
+  _connectionSubscription?.cancel();
+  
+  // ✅ Dispose audio service
+  _audioService.dispose();
+  
+  // ✅ DON'T dispose singleton WebSocketService!
+  // _webSocketService.dispose();  // ← REMOVED: Singleton should not be disposed
+  // ✅ QuranService singleton - jangan dispose, database tetap hidup
+  _scrollController.dispose();
+  appLogger.dispose();
+  super.dispose();
+}
+>>>>>>> 9e576932e9651d1cf86c16c935f47e8cf883cf7b
 }

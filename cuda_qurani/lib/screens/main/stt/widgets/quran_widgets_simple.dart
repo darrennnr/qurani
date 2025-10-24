@@ -109,4 +109,8 @@ class QuranBottomBar extends StatelessWidget {
       ),
     );
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 9e576932e9651d1cf86c16c935f47e8cf883cf7b
