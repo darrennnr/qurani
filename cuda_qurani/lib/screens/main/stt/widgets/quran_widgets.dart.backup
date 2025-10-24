@@ -13,16 +13,6 @@ class QuranAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final controller = context.watch<SttController>();
 
-    // ✅ IMPROVED: Better surah name display logic
-    String displaySurahName;
-    if (controller.suratNameSimple.isNotEmpty) {
-      displaySurahName = controller.suratNameSimple;
-    } else if (controller.ayatList.isNotEmpty) {
-      displaySurahName = 'Surah ${controller.ayatList.first.surah_id}';
-    } else {
-      displaySurahName = 'Loading...';
-    }
-
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 200),
       opacity: controller.isUIVisible ? 1.0 : 0.0,
@@ -60,7 +50,7 @@ class QuranAppBar extends StatelessWidget implements PreferredSizeWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '$displaySurahName - Halaman ${controller.currentPage}',
+                        'Surat ${controller.suratNameSimple} ${controller.suratId} - ${controller.suratVersesCount} Ayat',
                         style: const TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w400,
@@ -136,16 +126,62 @@ class QuranBottomBar extends StatelessWidget {
       opacity: controller.isUIVisible ? 1.0 : 0.0,
       child: IgnorePointer(
         ignoring: !controller.isUIVisible,
-        child: Container(
-          height: 90,
-          child: Stack(
-            children: [
-              Positioned(
-                bottom: 25,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: Container(
+        child: Stack(
+          children: [
+            // 🔧 FIXED: Connection Indicator Overlay (doesn't auto-close)
+            Positioned(
+              top: 0,
+              right: 16,
+              child: GestureDetector(
+                onTap: !controller.isConnected ? () async {
+                  print('🔄 Connection indicator tapped - attempting reconnect');
+                  await controller.reconnect();
+                } : null,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: controller.isConnected 
+                        ? Colors.green.withOpacity(0.9) 
+                        : Colors.red.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        controller.isConnected ? Icons.wifi : Icons.wifi_off,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        controller.isConnected ? 'Connected' : 'Tap to reconnect',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // Record button at bottom
+            Positioned(
+              bottom: 25,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
                     width: 65,
                     height: 65,
                     decoration: BoxDecoration(
@@ -168,19 +204,13 @@ class QuranBottomBar extends StatelessWidget {
                       child: InkWell(
                         borderRadius: BorderRadius.circular(30),
                         onTap: () async {
+                          print('🔘 BUTTON: Pressed! isRecording=${controller.isRecording}, isConnected=${controller.isConnected}');
                           if (controller.isRecording) {
                             print('🔘 BUTTON: Calling stopRecording()');
                             await controller.stopRecording();
                           } else {
-                            // ✅ FIX: Check FRESH state from service, not cached state
-                            final serviceConnected = controller.isServiceConnected;
-                            print('🔘 BUTTON: Pressed!');
-                            print('   - isRecording = ${controller.isRecording}');
-                            print('   - isConnected (cached) = ${controller.isConnected}');
-                            print('   - isServiceConnected (fresh) = $serviceConnected');
-                            
-                            if (!serviceConnected) {
-                              print('⚠️ BUTTON: Not connected, reconnecting...');
+                            if (!controller.isConnected) {
+                              print('⚠️ BUTTON: Not connected, showing SnackBar and reconnecting...');
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text('Connecting to server...'),
@@ -188,14 +218,11 @@ class QuranBottomBar extends StatelessWidget {
                                 ),
                               );
                               await controller.reconnect();
-                              if (!controller.isServiceConnected) {
+                              if (!controller.isConnected) {
                                 print('❌ BUTTON: Reconnect failed, aborting');
                                 return;
                               }
-                            } else {
-                              print('✅ BUTTON: Already connected, skip reconnect');
                             }
-                            
                             print('🔘 BUTTON: Calling startRecording()');
                             await controller.startRecording();
                           }
@@ -215,7 +242,6 @@ class QuranBottomBar extends StatelessWidget {
                     ),
                   ),
                 ),
-              ),
             ],
           ),
         ),

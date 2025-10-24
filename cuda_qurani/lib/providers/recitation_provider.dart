@@ -45,6 +45,10 @@ class RecitationProvider extends ChangeNotifier {
 
   bool get isRecording => _isRecording;
   bool get isConnected => _isConnected;
+  
+  // ✅ NEW: Direct access to service connection state (always fresh)
+  bool get isServiceConnected => _webSocketService.isConnected;
+  
   int? get currentVerseIndex => _currentVerseIndex;
   List<WordFeedback> get currentWords => _currentWords;
   RecitationSummary? get summary => _summary;
@@ -510,8 +514,16 @@ class RecitationProvider extends ChangeNotifier {
   Future<void> startRecitation(int surahNumber) async {
     print('🎬 Starting recitation for Surah $surahNumber...');
     
-    // 🔄 AUTO-RECONNECT: Always try to connect/reconnect before starting
-    if (!_isConnected || !_webSocketService.isConnected) {
+    // ✅ FIX: Sync provider flag from service FIRST to prevent false reconnect
+    final serviceConnected = _webSocketService.isConnected;
+    _isConnected = serviceConnected;
+    print('🔍 Connection check BEFORE start:');
+    print('   - provider._isConnected (before sync) = $_isConnected');
+    print('   - service.isConnected = $serviceConnected');
+    print('   - provider._isConnected (after sync) = $_isConnected');
+    
+    // 🔄 AUTO-RECONNECT: Only reconnect if TRULY not connected
+    if (!_isConnected) {
       print('🔌 Not connected, attempting to connect...');
       _errorMessage = 'Connecting to server...';
       notifyListeners();
@@ -610,12 +622,16 @@ class RecitationProvider extends ChangeNotifier {
   /// Manual reconnect method
   Future<void> reconnect() async {
     print('🔄 Manual reconnect triggered...');
+    print('📍 RECONNECT CALLED FROM:');
+    print(StackTrace.current);
+    
     _errorMessage = 'Reconnecting...';
     _isConnected = false;
     notifyListeners();
     
     try {
       // Disconnect terlebih dahulu
+      print('⚠️ About to call disconnect()...');
       _webSocketService.disconnect();
       await Future.delayed(const Duration(milliseconds: 500));
       

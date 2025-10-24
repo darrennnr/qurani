@@ -68,6 +68,10 @@ class SttController with ChangeNotifier {
   // Getters for recording state
   bool get isRecording => _isRecording;
   bool get isConnected => _isConnected;
+  
+  // ✅ NEW: Direct access to service connection state (always fresh)
+  bool get isServiceConnected => _webSocketService.isConnected;
+  
   int get expectedAyah => _expectedAyah;
   Map<int, TartibStatus> get tartibStatus => _tartibStatus;
   Map<int, Map<int, WordStatus>> get wordStatusMap => _wordStatusMap;
@@ -568,9 +572,23 @@ class SttController with ChangeNotifier {
 
   // ===== WEBSOCKET & RECORDING =====
   void _initializeWebSocket() {
+    print('🔌 SttController: Initializing WebSocket subscriptions...');
+    
+    // ✅ Cancel old subscriptions if they exist
+    _wsSubscription?.cancel();
+    _connectionSubscription?.cancel();
+    
+    // ✅ Create new subscriptions (will get fresh streams if controllers were recreated)
     _wsSubscription = _webSocketService.messages.listen(
       _handleWebSocketMessage,
+      onError: (error) {
+        print('❌ SttController: Message stream error: $error');
+      },
+      onDone: () {
+        print('⚠️ SttController: Message stream closed');
+      },
     );
+    
     _connectionSubscription = _webSocketService.connectionStatus.listen((
       isConnected,
     ) {
@@ -578,12 +596,20 @@ class SttController with ChangeNotifier {
         _isConnected = isConnected;
         if (_isConnected) {
           _errorMessage = '';
+          print('✅ SttController: Connection status changed to CONNECTED');
         } else if (_isRecording) {
           _errorMessage = 'Connection lost. Attempting to reconnect...';
+          print('⚠️ SttController: Connection status changed to DISCONNECTED');
         }
         notifyListeners();
       }
+    }, onError: (error) {
+      print('❌ SttController: Connection stream error: $error');
+    }, onDone: () {
+      print('⚠️ SttController: Connection stream closed');
     });
+    
+    print('✅ SttController: WebSocket subscriptions initialized');
 
     // Auto-connect
     _connectWebSocket();
@@ -778,7 +804,13 @@ class SttController with ChangeNotifier {
   }
 
   Future<void> startRecording() async {
-    print('🎤 startRecording(): Called. isConnected=$_isConnected');
+    // ✅ FIX: Sync provider flag from service FIRST
+    final serviceConnected = _webSocketService.isConnected;
+    _isConnected = serviceConnected;
+    print('🎤 startRecording(): Called.');
+    print('   - _isConnected (cached) = $_isConnected');
+    print('   - service.isConnected (fresh) = $serviceConnected');
+    
     if (!_isConnected) {
       print('⚠️ startRecording(): Not connected, attempting to connect...');
       _errorMessage = 'Connecting...';
@@ -913,10 +945,16 @@ class SttController with ChangeNotifier {
 void dispose() {
   print('💀 SttController: DISPOSE CALLED for surah $suratId');
   appLogger.log('DISPOSAL', 'Starting cleanup process');
+  
+  // ✅ Cancel subscriptions
   _wsSubscription?.cancel();
   _connectionSubscription?.cancel();
+  
+  // ✅ Dispose audio service
   _audioService.dispose();
-  _webSocketService.dispose();
+  
+  // ✅ DON'T dispose singleton WebSocketService!
+  // _webSocketService.dispose();  // ← REMOVED: Singleton should not be disposed
   // ✅ QuranService singleton - jangan dispose, database tetap hidup
   _scrollController.dispose();
   appLogger.dispose();
