@@ -338,7 +338,7 @@ class _SurahHeader extends StatelessWidget {
     final surahGlyphCode = _formatSurahGlyph(surahId);
     final screenHeight = MediaQuery.of(context).size.height;
 
-    final headerSize = screenHeight * 0.06; // ✅ ~48px pada 800px
+    final headerSize = screenHeight * 0.056; // ✅ ~48px pada 800px
     final surahNameSize = screenHeight * 0.0475; // ✅ ~38px pada 800px
     final verticalMargin = screenHeight * 0.015; // ✅ ~12px pada 800px
 

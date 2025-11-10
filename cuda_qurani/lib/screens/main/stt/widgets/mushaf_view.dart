@@ -14,7 +14,7 @@ class MushafRenderer {
   }
 
   static double lineHeight(BuildContext context) {
-    return MediaQuery.of(context).size.height * 0.055; // ~5.5% screen height
+    return MediaQuery.of(context).size.height * 0.050; // ~5.5% screen height
   }
 
   static const double PAGE_PADDING = 0.0; // Minimal side padding
@@ -281,8 +281,8 @@ class _SurahNameLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
-    final headerSize = screenHeight * 0.065;
-    final surahNameSize = screenHeight * 0.053;
+    final headerSize = screenHeight * 0.060;
+    final surahNameSize = screenHeight * 0.050;
     final controller = context.read<SttController>();
     final surahGlyphCode = line.surahNumber != null
         ? controller.formatSurahIdForGlyph(line.surahNumber!)
@@ -321,7 +321,7 @@ class _BasmallahLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
-    final basmallahSize = screenHeight * 0.043;
+    final basmallahSize = screenHeight * 0.040;
 
     return Container(
       height: MushafRenderer.lineHeight(context),
