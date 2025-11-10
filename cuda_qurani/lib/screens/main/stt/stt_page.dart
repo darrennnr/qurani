@@ -47,70 +47,82 @@ class SttPage extends StatelessWidget {
           return Scaffold(
             backgroundColor: backgroundColor,
             appBar: const QuranAppBar(),
-body: controller.isLoading
-    ? const SizedBox.shrink() // No loading UI - instant load
-    : controller.errorMessage.isNotEmpty
-        ? Column(
-            children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                color: errorColor.withOpacity(0.9),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.warning,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        controller.errorMessage,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
+            body: controller.isLoading
+                ? const SizedBox.shrink() // No loading UI - instant load
+                : controller.errorMessage.isNotEmpty
+                ? Column(
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.symmetric(
+                          horizontal:
+                              MediaQuery.of(context).size.width *
+                              0.04, // ✅ GANTI
+                          vertical:
+                              MediaQuery.of(context).size.height *
+                              0.015, // ✅ GANTI
+                        ),
+                        color: errorColor.withOpacity(0.9),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.warning,
+                              color: Colors.white,
+                              size:
+                                  MediaQuery.of(context).size.width *
+                                  0.05, // ✅ GANTI dari 20
+                            ),
+                            SizedBox(
+                              width: MediaQuery.of(context).size.width * 0.02,
+                            ), // ✅ GANTI dari 8
+                            Expanded(
+                              child: Text(
+                                controller.errorMessage,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize:
+                                      MediaQuery.of(context).size.width *
+                                      0.035, // ✅ GANTI dari 14
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                Icons.close,
+                                color: Colors.white,
+                                size:
+                                    MediaQuery.of(context).size.width *
+                                    0.05, // ✅ GANTI dari 20
+                              ),
+                              onPressed: controller.clearError,
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.close,
-                        color: Colors.white,
-                        size: 20,
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: controller.toggleUIVisibility,
+                          child: Column(
+                            children: [
+                              Expanded(child: _buildMainContent()),
+                              if (controller.showLogs && controller.isUIVisible)
+                                const QuranLogsPanel(),
+                            ],
+                          ),
+                        ),
                       ),
-                      onPressed: controller.clearError,
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: GestureDetector(
-                  onTap: controller.toggleUIVisibility,
-                  child: Column(
-                    children: [
-                      Expanded(child: _buildMainContent()),
-                      if (controller.showLogs && controller.isUIVisible)
-                        const QuranLogsPanel(),
                     ],
+                  )
+                : GestureDetector(
+                    onTap: controller.toggleUIVisibility,
+                    child: Column(
+                      children: [
+                        Expanded(child: _buildMainContent()),
+                        if (controller.showLogs && controller.isUIVisible)
+                          const QuranLogsPanel(),
+                      ],
+                    ),
                   ),
-                ),
-              ),
-            ],
-          )
-        : GestureDetector(
-            onTap: controller.toggleUIVisibility,
-            child: Column(
-              children: [
-                Expanded(child: _buildMainContent()),
-                if (controller.showLogs && controller.isUIVisible)
-                  const QuranLogsPanel(),
-              ],
-            ),
-          ),
           );
         },
       ),
@@ -122,16 +134,7 @@ body: controller.isLoading
       builder: (context, controller, child) {
         return Stack(
           children: [
-            Column(
-              children: [
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 80),
-                    child: _buildQuranText(controller),
-                  ),
-                ),
-              ],
-            ),
+            _buildQuranText(context, controller), // ✅ FIX: pass context
             const Positioned(
               bottom: 0,
               left: 0,
@@ -144,9 +147,12 @@ body: controller.isLoading
     );
   }
 
-  Widget _buildQuranText(SttController controller) {
+  Widget _buildQuranText(BuildContext context, SttController controller) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final margin = screenWidth * 0.01; // ✅ ~4px pada 400px width
+
     return Container(
-      margin: const EdgeInsets.fromLTRB(4, 0, 4, 0),
+      margin: EdgeInsets.fromLTRB(margin, 0, margin, 0),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),

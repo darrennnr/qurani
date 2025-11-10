@@ -8,13 +8,27 @@ class QuranTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    
+    final containerHeight = screenHeight * 0.1125; // ✅ ~90px
+    final containerPaddingTop = screenHeight * 0.02; // ✅ ~16px
+    final containerPaddingRight = screenWidth * 0.04; // ✅ ~16px
+    final badgePaddingH = screenWidth * 0.03; // ✅ ~12px
+    final badgePaddingV = screenHeight * 0.01; // ✅ ~8px
+    final iconSize = screenWidth * 0.04; // ✅ ~16px
+    final textSize = screenWidth * 0.03; // ✅ ~12px
+    final spacing = screenWidth * 0.015; // ✅ ~6px
+
     return Container(
-      height: 90,
-      padding: const EdgeInsets.only(top: 16, right: 16),
+      height: containerHeight, // ✅ GANTI dari 90
+      padding: EdgeInsets.only(
+        top: containerPaddingTop, // ✅ GANTI dari 16
+        right: containerPaddingRight, // ✅ GANTI dari 16
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          // Connection indicator
           Consumer<SttController>(
             builder: (context, controller, child) {
               return GestureDetector(
@@ -22,7 +36,10 @@ class QuranTopBar extends StatelessWidget {
                   await controller.reconnect();
                 } : null,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: badgePaddingH, // ✅ GANTI dari 12
+                    vertical: badgePaddingV, // ✅ GANTI dari 8
+                  ),
                   decoration: BoxDecoration(
                     color: controller.isConnected ? Colors.green : Colors.red,
                     borderRadius: BorderRadius.circular(20),
@@ -33,14 +50,14 @@ class QuranTopBar extends StatelessWidget {
                       Icon(
                         controller.isConnected ? Icons.wifi : Icons.wifi_off,
                         color: Colors.white,
-                        size: 16,
+                        size: iconSize, // ✅ GANTI dari 16
                       ),
-                      const SizedBox(width: 6),
+                      SizedBox(width: spacing), // ✅ GANTI dari 6
                       Text(
                         controller.isConnected ? 'Connected' : 'Tap to reconnect',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
-                          fontSize: 12,
+                          fontSize: textSize, // ✅ GANTI dari 12
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -61,14 +78,21 @@ class QuranBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    
+    final containerHeight = screenHeight * 0.1125; // ✅ ~90px
+    final buttonSize = screenWidth * 0.1625; // ✅ ~65px
+    final iconSize = screenWidth * 0.065; // ✅ ~26px
+
     return Container(
-      height: 90,
+      height: containerHeight, // ✅ GANTI dari 90
       alignment: Alignment.center,
       child: Consumer<SttController>(
         builder: (context, controller, child) {
           return Container(
-            width: 65,
-            height: 65,
+            width: buttonSize, // ✅ GANTI dari 65
+            height: buttonSize, // ✅ GANTI dari 65
             decoration: BoxDecoration(
               color: controller.isRecording ? errorColor : primaryColor,
               shape: BoxShape.circle,
@@ -83,7 +107,7 @@ class QuranBottomBar extends StatelessWidget {
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                borderRadius: BorderRadius.circular(30),
+                borderRadius: BorderRadius.circular(buttonSize / 2), // ✅ GANTI dari 30
                 onTap: () async {
                   if (controller.isRecording) {
                     await controller.stopRecording();
@@ -100,7 +124,7 @@ class QuranBottomBar extends StatelessWidget {
                 child: Icon(
                   controller.isRecording ? Icons.stop : Icons.mic,
                   color: Colors.white,
-                  size: 26,
+                  size: iconSize, // ✅ GANTI dari 26
                 ),
               ),
             ),
@@ -109,8 +133,4 @@ class QuranBottomBar extends StatelessWidget {
       ),
     );
   }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 9e576932e9651d1cf86c16c935f47e8cf883cf7b

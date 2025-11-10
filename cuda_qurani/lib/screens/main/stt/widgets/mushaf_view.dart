@@ -9,12 +9,18 @@ import '../services/quran_service.dart';
 import '../utils/constants.dart';
 
 class MushafRenderer {
-  static const double PAGE_HEIGHT = 750.0; // Total page height
+  static double pageHeight(BuildContext context) {
+    return MediaQuery.of(context).size.height * 0.85; // 85% screen height
+  }
+
+  static double lineHeight(BuildContext context) {
+    return MediaQuery.of(context).size.height * 0.055; // ~5.5% screen height
+  }
+
   static const double PAGE_PADDING = 0.0; // Minimal side padding
   static const double WORD_SPACING_MIN = 0.0; // Minimum gap between words
   static const double WORD_SPACING_MAX =
       0.0; // Maximum gap to prevent huge spaces
-  static const double LINE_HEIGHT = 46.0; // Line height
 
   // Render justified text for ayah lines
   static Widget renderJustifiedLine({
@@ -26,10 +32,11 @@ class MushafRenderer {
   }) {
     if (wordSpans.isEmpty) return const SizedBox.shrink();
 
-    // For centered lines (surah names, basmallah)
+    final lineH = lineHeight(context);
+
     if (isCentered) {
       return SizedBox(
-        height: LINE_HEIGHT,
+        height: lineH,
         width: availableWidth,
         child: Center(
           child: RichText(
@@ -42,14 +49,14 @@ class MushafRenderer {
       );
     }
 
-    // For justified ayah lines
     return SizedBox(
-      height: LINE_HEIGHT,
+      height: lineH,
       width: availableWidth,
       child: _buildJustifiedText(
         wordSpans: wordSpans,
         maxWidth: availableWidth,
         allowOverflow: allowOverflow,
+        context: context,
       ),
     );
   }
@@ -58,8 +65,11 @@ class MushafRenderer {
     required List<InlineSpan> wordSpans,
     required double maxWidth,
     bool allowOverflow = false,
+    required BuildContext context,
   }) {
     if (wordSpans.isEmpty) return const SizedBox.shrink();
+
+    final lineH = lineHeight(context);
 
     // Single word case
     if (wordSpans.length == 1) {
@@ -102,7 +112,7 @@ class MushafRenderer {
     // Build justified row
     return SizedBox(
       width: maxWidth,
-      height: LINE_HEIGHT,
+      height: lineH,
       child: Row(
         textDirection: TextDirection.rtl,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -183,14 +193,16 @@ class _MushafDisplayState extends State<MushafDisplay> {
     final pageNumber = controller.currentPage;
     final cachedLines = controller.pageCache[pageNumber];
 
-    // ✅ FAST PATH: If page is cached, render immediately (NO LOADING)
+    // âœ… FAST PATH: If page is cached, render immediately (NO LOADING)
     if (cachedLines != null && cachedLines.isNotEmpty) {
       return MushafPageContent(pageLines: cachedLines, pageNumber: pageNumber);
     }
 
-    // ⚠️ FALLBACK: This should RARELY happen due to aggressive preloading
+    // âš ï¸ FALLBACK: This should RARELY happen due to aggressive preloading
     // If it does, show minimal loading and trigger emergency load
-    print('⚠️ CACHE MISS: Page $pageNumber not cached, emergency loading...');
+    print(
+      'âš ï¸ CACHE MISS: Page $pageNumber not cached, emergency loading...',
+    );
 
     // Trigger emergency load in controller
     Future.microtask(() async {
@@ -200,17 +212,17 @@ class _MushafDisplayState extends State<MushafDisplay> {
         );
         controller.updatePageCache(pageNumber, lines);
       } catch (e) {
-        print('❌ Emergency load failed: $e');
+        print('âŒ Emergency load failed: $e');
       }
     });
 
     // Show ultra-minimal loading (should be < 100ms)
     return SizedBox(
-      height: MushafRenderer.PAGE_HEIGHT,
+      height: MushafRenderer.pageHeight(context),
       child: Center(
         child: SizedBox(
-          width: 12,
-          height: 12,
+          width: MediaQuery.of(context).size.width * 0.03,
+          height: MediaQuery.of(context).size.width * 0.03,
           child: CircularProgressIndicator(
             strokeWidth: 1.5,
             valueColor: AlwaysStoppedAnimation<Color>(Colors.grey.shade400),
@@ -232,27 +244,20 @@ class MushafPageContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: MushafRenderer.PAGE_HEIGHT,
+    return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 0),
       child: Column(
         children: [
           const MushafPageHeader(),
           const SizedBox(height: 0),
-          Expanded(child: Column(children: _buildPageLines())),
+          ..._buildPageLines(),
         ],
       ),
     );
   }
 
   List<Widget> _buildPageLines() {
-    List<Widget> widgets = pageLines
-        .map((line) => _buildMushafLine(line))
-        .toList();
-    while (widgets.length < 15) {
-      widgets.add(const SizedBox(height: MushafRenderer.LINE_HEIGHT));
-    }
-    return widgets;
+    return pageLines.map((line) => _buildMushafLine(line)).toList();
   }
 
   Widget _buildMushafLine(MushafPageLine line) {
@@ -262,10 +267,7 @@ class MushafPageContent extends StatelessWidget {
       case 'basmallah':
         return _BasmallahLine();
       case 'ayah':
-        return _JustifiedAyahLine(
-          line: line,
-          pageNumber: pageNumber,
-        ); // TAMBAH pageNumber
+        return _JustifiedAyahLine(line: line, pageNumber: pageNumber);
       default:
         return const SizedBox.shrink();
     }
@@ -278,6 +280,9 @@ class _SurahNameLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final headerSize = screenHeight * 0.065;
+    final surahNameSize = screenHeight * 0.053;
     final controller = context.read<SttController>();
     final surahGlyphCode = line.surahNumber != null
         ? controller.formatSurahIdForGlyph(line.surahNumber!)
@@ -287,10 +292,10 @@ class _SurahNameLine extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          const Text(
+          Text(
             'header',
             style: TextStyle(
-              fontSize: 52,
+              fontSize: headerSize,
               fontFamily: 'Quran-Common',
               color: Colors.black87,
             ),
@@ -298,8 +303,8 @@ class _SurahNameLine extends StatelessWidget {
           ),
           Text(
             surahGlyphCode,
-            style: const TextStyle(
-              fontSize: 42,
+            style: TextStyle(
+              fontSize: surahNameSize,
               fontFamily: 'surah-name-v2',
               color: Colors.black,
             ),
@@ -315,13 +320,16 @@ class _SurahNameLine extends StatelessWidget {
 class _BasmallahLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final basmallahSize = screenHeight * 0.043;
+
     return Container(
-      height: MushafRenderer.LINE_HEIGHT,
+      height: MushafRenderer.lineHeight(context),
       alignment: Alignment.center,
-      child: const Text(
+      child: Text(
         '﷽',
         style: TextStyle(
-          fontSize: 34,
+          fontSize: basmallahSize,
           fontFamily: 'Quran-Common',
           color: Colors.black87,
           fontWeight: FontWeight.normal,
@@ -343,9 +351,11 @@ class _JustifiedAyahLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (line.ayahSegments == null || line.ayahSegments!.isEmpty) {
-      return const SizedBox(height: MushafRenderer.LINE_HEIGHT);
-    }
+    final screenWidth = MediaQuery.of(context).size.width;
+    final baseFontSize = screenWidth * 0.065;
+if (line.ayahSegments == null || line.ayahSegments!.isEmpty) {
+  return SizedBox(height: MushafRenderer.lineHeight(context));
+}
     final controller = context.watch<SttController>();
     List<InlineSpan> spans = [];
 
@@ -362,21 +372,21 @@ class _JustifiedAyahLine extends StatelessWidget {
       for (int i = 0; i < segment.words.length; i++) {
         final word = segment.words[i];
 
-        // ✅ FIX: Use wordNumber - 1 as index (wordNumber is 1-indexed, backend uses 0-indexed)
+        // âœ… FIX: Use wordNumber - 1 as index (wordNumber is 1-indexed, backend uses 0-indexed)
         final wordIndex = word.wordNumber - 1;
 
         // Get word status dari wordStatusMap
         final wordStatus =
             controller.wordStatusMap[segment.ayahNumber]?[wordIndex];
 
-        // 🔥 DEBUG: Print word status dan warna yang akan diapply
+        // ðŸ”¥ DEBUG: Print word status dan warna yang akan diapply
         if (controller.isRecording &&
             segment.ayahNumber == controller.currentAyatNumber) {
           print(
-            '🎨 UI RENDER: Ayah ${segment.ayahNumber}, Word[$wordIndex] (loop $i) = $wordStatus',
+            'ðŸŽ¨ UI RENDER: Ayah ${segment.ayahNumber}, Word[$wordIndex] (loop $i) = $wordStatus',
           );
           print(
-            '   📊 Full wordStatusMap[${segment.ayahNumber}] = ${controller.wordStatusMap[segment.ayahNumber]}',
+            '   ðŸ“Š Full wordStatusMap[${segment.ayahNumber}] = ${controller.wordStatusMap[segment.ayahNumber]}',
           );
         }
 
@@ -390,18 +400,20 @@ class _JustifiedAyahLine extends StatelessWidget {
         if (wordStatus != null) {
           switch (wordStatus) {
             case WordStatus.matched:
-              wordBg = correctColor.withOpacity(0.4); // 🟩 HIJAU - BENAR
+              wordBg = correctColor.withOpacity(0.4); // ðŸŸ© HIJAU - BENAR
               if (controller.isRecording &&
                   segment.ayahNumber == controller.currentAyatNumber) {
-                print('   ✅ SET COLOR: Hijau (matched) untuk word $wordIndex');
+                print(
+                  '   âœ… SET COLOR: Hijau (matched) untuk word $wordIndex',
+                );
               }
               break;
             case WordStatus.mismatched:
             case WordStatus.skipped:
-              wordBg = errorColor.withOpacity(0.4); // 🟥 MERAH - SALAH
+              wordBg = errorColor.withOpacity(0.4); // ðŸŸ¥ MERAH - SALAH
               if (controller.isRecording &&
                   segment.ayahNumber == controller.currentAyatNumber) {
-                print('   ❌ SET COLOR: Merah (salah) untuk word $wordIndex');
+                print('   âŒ SET COLOR: Merah (salah) untuk word $wordIndex');
               }
               break;
             case WordStatus.processing:
@@ -422,7 +434,7 @@ class _JustifiedAyahLine extends StatelessWidget {
             TextSpan(
               text: textSegment.text,
               style: TextStyle(
-                fontSize: 26.0,
+                fontSize: baseFontSize,
                 fontFamily: fontFamily,
                 color: _getWordColor(isCurrentAyat).withOpacity(wordOpacity),
                 backgroundColor: wordBg,
@@ -433,6 +445,7 @@ class _JustifiedAyahLine extends StatelessWidget {
         }
       }
     }
+
     return MushafRenderer.renderJustifiedLine(
       wordSpans: spans,
       isCentered: line.isCentered,
@@ -453,6 +466,8 @@ class MushafPageHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final headerFontSize = screenWidth * 0.035;
     final controller = context.watch<SttController>();
     final juzNumber = controller.currentPageAyats.isNotEmpty
         ? controller.calculateJuz(
@@ -467,7 +482,7 @@ class MushafPageHeader extends StatelessWidget {
         Text(
           'Juz $juzNumber',
           style: TextStyle(
-            fontSize: 14,
+            fontSize: headerFontSize,
             color: Colors.grey.shade700,
             fontWeight: FontWeight.w500,
           ),
@@ -476,7 +491,7 @@ class MushafPageHeader extends StatelessWidget {
         Text(
           '${controller.currentPage}',
           style: TextStyle(
-            fontSize: 14,
+            fontSize: headerFontSize,
             color: Colors.grey.shade700,
             fontWeight: FontWeight.w500,
           ),

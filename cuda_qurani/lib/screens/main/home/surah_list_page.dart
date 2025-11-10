@@ -270,7 +270,7 @@ class _SurahListPageState extends State<SurahListPage>
         controller: _searchController,
         style: const TextStyle(fontSize: 16, color: Colors.black87),
         decoration: InputDecoration(
-          hintText: 'Cari surah atau ayat...',
+          hintText: 'Cari surah, juz atau halaman...',
           hintStyle: TextStyle(color: Colors.grey[500], fontSize: 16),
           prefixIcon: Icon(Icons.search, color: Colors.grey[500]),
           suffixIcon: _searchController.text.isNotEmpty

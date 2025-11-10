@@ -37,8 +37,11 @@ class _QuranListViewState extends State<QuranListView> {
   void _jumpToPage(int pageNumber) {
     if (!mounted || !_scrollController.hasClients) return;
 
-    // Estimate: ~600px per page (adjusted for vertical mode)
-    final offset = (pageNumber - 1) * 600.0;
+    // ✅ GANTI estimasi dengan persentase screen height
+    final screenHeight = MediaQuery.of(context).size.height;
+    final estimatedPageHeight = screenHeight * 0.75; // ~600px pada 800px height
+    final offset = (pageNumber - 1) * estimatedPageHeight;
+
     _scrollController.jumpTo(
       offset.clamp(0.0, _scrollController.position.maxScrollExtent),
     );
@@ -48,7 +51,9 @@ class _QuranListViewState extends State<QuranListView> {
     if (!mounted || !_scrollController.hasClients) return;
 
     final offset = _scrollController.offset;
-    final pageNumber = (offset / 600.0).round() + 1;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final estimatedPageHeight = screenHeight * 0.75; // ✅ TAMBAH ini
+    final pageNumber = (offset / estimatedPageHeight).round() + 1; // ✅ GANTI
 
     if (pageNumber != _currentVisiblePage &&
         pageNumber >= 1 &&
@@ -111,13 +116,16 @@ class _VerticalPageWidget extends StatelessWidget {
       future: service.getMushafPageLines(pageNumber),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SizedBox(
-            height: 600,
+          return SizedBox(
+            height:
+                MediaQuery.of(context).size.height * 0.75, // ✅ GANTI dari 600
             child: Center(
               child: SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
+                width:
+                    MediaQuery.of(context).size.width *
+                    0.045, // ✅ GANTI dari 18
+                height: MediaQuery.of(context).size.width * 0.045,
+                child: const CircularProgressIndicator(strokeWidth: 2),
               ),
             ),
           );
@@ -125,16 +133,21 @@ class _VerticalPageWidget extends StatelessWidget {
 
         if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
           return SizedBox(
-            height: 600,
+            height:
+                MediaQuery.of(context).size.height * 0.75, // ✅ GANTI dari 600
             child: Center(
               child: Text(
                 'Error loading page $pageNumber',
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize:
+                      MediaQuery.of(context).size.width *
+                      0.03, // ✅ GANTI dari 12
+                ),
               ),
             ),
           );
         }
-
         final pageLines = snapshot.data!;
 
         // Update cache asynchronously
@@ -165,20 +178,23 @@ class _VerticalPageContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = context.watch<SttController>();
     final juz = _calculateJuzForPage();
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
 
     return Container(
-      constraints: const BoxConstraints(minHeight: 600),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      constraints: BoxConstraints(
+        minHeight: screenHeight * 0.75, // ✅ GANTI dari 600
+      ),
+      padding: EdgeInsets.symmetric(
+        horizontal: screenWidth * 0.04, // ✅ GANTI dari 16
+        vertical: screenHeight * 0.015, // ✅ GANTI dari 12
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Page header
           _PageHeader(pageNumber: pageNumber, juzNumber: juz),
-
-          // Render lines in DATABASE ORDER
           ..._buildLinesInOrder(controller),
-
-          const SizedBox(height: 20),
+          SizedBox(height: screenHeight * 0.025), // ✅ GANTI dari 20
         ],
       ),
     );
@@ -283,21 +299,24 @@ class _PageHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fontSize =
+        MediaQuery.of(context).size.width * 0.03; // ✅ ~12px pada 400px
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           'Juz $juzNumber',
-          style: const TextStyle(
-            fontSize: 12,
+          style: TextStyle(
+            fontSize: fontSize, // ✅ GANTI dari 12
             color: Colors.black,
             fontWeight: FontWeight.w100,
           ),
         ),
         Text(
           '$pageNumber',
-          style: const TextStyle(
-            fontSize: 12,
+          style: TextStyle(
+            fontSize: fontSize, // ✅ GANTI dari 12
             color: Colors.black,
             fontWeight: FontWeight.w100,
           ),
@@ -317,25 +336,30 @@ class _SurahHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final surahId = line.surahNumber ?? 1;
     final surahGlyphCode = _formatSurahGlyph(surahId);
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    final headerSize = screenHeight * 0.06; // ✅ ~48px pada 800px
+    final surahNameSize = screenHeight * 0.0475; // ✅ ~38px pada 800px
+    final verticalMargin = screenHeight * 0.015; // ✅ ~12px pada 800px
 
     return Container(
       alignment: Alignment.center,
-      margin: const EdgeInsets.symmetric(vertical: 12),
+      margin: EdgeInsets.symmetric(vertical: verticalMargin), // ✅ GANTI
       child: Stack(
         alignment: Alignment.center,
         children: [
-          const Text(
+          Text(
             'header',
             style: TextStyle(
-              fontSize: 48,
+              fontSize: headerSize, // ✅ GANTI dari 48
               fontFamily: 'Quran-Common',
               color: Colors.black87,
             ),
           ),
           Text(
             surahGlyphCode,
-            style: const TextStyle(
-              fontSize: 38,
+            style: TextStyle(
+              fontSize: surahNameSize, // ✅ GANTI dari 38
               fontFamily: 'surah-name-v2',
               color: Colors.black,
             ),
@@ -359,13 +383,17 @@ class _Basmallah extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final basmallahSize = screenHeight * 0.04; // ✅ ~32px pada 800px
+    final verticalPadding = screenHeight * 0.01; // ✅ ~8px pada 800px
+
     return Container(
       alignment: Alignment.center,
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: const Text(
+      padding: EdgeInsets.symmetric(vertical: verticalPadding), // ✅ GANTI
+      child: Text(
         '﷽',
         style: TextStyle(
-          fontSize: 32,
+          fontSize: basmallahSize, // ✅ GANTI dari 32
           fontFamily: 'Quran-Common',
           color: Colors.black87,
         ),
@@ -394,6 +422,17 @@ class _CompleteAyahWidget extends StatelessWidget {
     final isCurrentAyat =
         ayatIndex >= 0 && ayatIndex == controller.currentAyatIndex;
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    final badgeFontSize = screenWidth * 0.0275; // ✅ ~11px pada 400px
+    final badgePaddingH = screenWidth * 0.02; // ✅ ~8px
+    final badgePaddingV = screenHeight * 0.005; // ✅ ~4px
+    final badgeBottomMargin = screenHeight * 0.01; // ✅ ~8px
+    final containerBottomPadding = screenHeight * 0.015; // ✅ ~12px
+    final containerTopPadding = screenHeight * 0.005; // ✅ ~4px
+    final wordFontSize = screenWidth * 0.0625; // ✅ ~25px pada 400px
+
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
@@ -401,20 +440,23 @@ class _CompleteAyahWidget extends StatelessWidget {
           bottom: BorderSide(color: Color(0xFFE0E0E0), width: 0.5),
         ),
       ),
-      padding: const EdgeInsets.only(bottom: 12, top: 4),
+      padding: EdgeInsets.only(
+        bottom: containerBottomPadding, // ✅ GANTI
+        top: containerTopPadding, // ✅ GANTI
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Ayah number badge (left side)
+          // Ayah number badge
           if (segment.isStartOfAyah)
             Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: EdgeInsets.only(bottom: badgeBottomMargin), // ✅ GANTI
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: badgePaddingH, // ✅ GANTI
+                    vertical: badgePaddingV, // ✅ GANTI
                   ),
                   decoration: BoxDecoration(
                     color: Colors.transparent,
@@ -429,18 +471,18 @@ class _CompleteAyahWidget extends StatelessWidget {
                     style: TextStyle(
                       color: isCurrentAyat ? primaryColor : Colors.black87,
                       fontWeight: FontWeight.w600,
-                      fontSize: 11,
+                      fontSize: badgeFontSize, // ✅ GANTI dari 11
                     ),
                   ),
                 ),
               ),
             ),
 
-          // Complete ayah text with natural wrapping (NO forced line breaks)
+          // Complete ayah text
           Directionality(
             textDirection: TextDirection.rtl,
             child: Wrap(
-              alignment: WrapAlignment.start, // RTL: start = right
+              alignment: WrapAlignment.start,
               crossAxisAlignment: WrapCrossAlignment.center,
               spacing: 1,
               runSpacing: 4,
@@ -477,9 +519,9 @@ class _CompleteAyahWidget extends StatelessWidget {
 
                 return AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 2,
-                    vertical: 1,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: screenWidth * 0.005, // ✅ GANTI dari 2
+                    vertical: screenHeight * 0.00125, // ✅ GANTI dari 1
                   ),
                   decoration: BoxDecoration(
                     color: wordBg,
@@ -491,7 +533,7 @@ class _CompleteAyahWidget extends StatelessWidget {
                     child: Text(
                       word.text,
                       style: TextStyle(
-                        fontSize: 25,
+                        fontSize: wordFontSize, // ✅ GANTI dari 25
                         fontFamily: fontFamily,
                         color: isCurrentAyat ? listeningColor : Colors.black87,
                         fontWeight: FontWeight.w400,
