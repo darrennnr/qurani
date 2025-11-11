@@ -298,6 +298,7 @@ class _SurahNameLine extends StatelessWidget {
               fontSize: headerSize,
               fontFamily: 'Quran-Common',
               color: Colors.black87,
+              height: MediaQuery.of(context).size.height * 0.0010,
             ),
             textAlign: TextAlign.center,
           ),
@@ -353,9 +354,9 @@ class _JustifiedAyahLine extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final baseFontSize = screenWidth * 0.065;
-if (line.ayahSegments == null || line.ayahSegments!.isEmpty) {
-  return SizedBox(height: MushafRenderer.lineHeight(context));
-}
+    if (line.ayahSegments == null || line.ayahSegments!.isEmpty) {
+      return SizedBox(height: MushafRenderer.lineHeight(context));
+    }
     final controller = context.watch<SttController>();
     List<InlineSpan> spans = [];
 

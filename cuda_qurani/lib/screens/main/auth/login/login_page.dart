@@ -7,7 +7,6 @@ import 'package:cuda_qurani/screens/main/home/surah_list_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
-
   @override
   State<LoginPage> createState() => _LoginPageState();
 }
@@ -33,15 +32,12 @@ class _LoginPageState extends State<LoginPage> {
       setState(() {
         _isLoading = true;
       });
-
       // Simulate API call
       await Future.delayed(const Duration(seconds: 2));
-
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
-
         // Navigate to home page
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
@@ -54,92 +50,97 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    // --- Responsive Setup ---
+    const double designWidth = 406.0;
+    final double s = MediaQuery.of(context).size.width / designWidth;
+    // --- End Responsive Setup ---
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            padding: EdgeInsets.symmetric(horizontal: 24.0 * s),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 50),
+                SizedBox(height: 50 * s),
                 
-                // Logo Section - Improved with better spacing and hierarchy
+                // Logo Section
                 Center(
                   child: Column(
                     children: [
-                      // Logo container with subtle shadow
+                      // Logo container
                       Container(
-                        width: 137,
-                        height: 137,
+                        width: 137 * s,
+                        height: 137 * s,
                         decoration: BoxDecoration(
                           color: const Color.fromARGB(255, 255, 255, 255).withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: BorderRadius.circular(24 * s),
                           boxShadow: [
                             BoxShadow(
                               color: constants.primaryColor.withOpacity(0.1),
-                              blurRadius: 20,
-                              offset: const Offset(0, 4),
+                              blurRadius: 20 * s,
+                              offset: Offset(0, 4 * s),
                             ),
                           ],
                         ),
-                        child: const Center(
+                        child: Center(
                           child: Text(
                             'ﲐ',
                             style: TextStyle(
                               fontFamily: 'surah_names',
-                              fontSize: 110,
+                              fontSize: 110 * s,
                               color: constants.primaryColor,
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 24),
-                      // Brand name with better spacing
+                      SizedBox(height: 24 * s),
+                      // Brand name
                       Image.asset(
                         'assets/images/qurani-white-text.png',
-                        height: 36,
+                        height: 36 * s,
                         color: constants.primaryColor,
                       ),
-                      const SizedBox(height: 6),
-                      const Text(
+                      SizedBox(height: 6 * s),
+                      Text(
                         'Hafidz',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 16 * s,
                           fontWeight: FontWeight.w600,
                           color: constants.primaryColor,
-                          letterSpacing: 2,
+                          letterSpacing: 2 * s,
                         ),
                       ),
                     ],
                   ),
                 ),
                 
-                const SizedBox(height: 40),
+                SizedBox(height: 40 * s),
                 
-                // Welcome Text - Better typography
-                const Text(
+                // Welcome Text
+                Text(
                   'Selamat Datang',
                   style: TextStyle(
-                    fontSize: 32,
+                    fontSize: 32 * s,
                     fontWeight: FontWeight.w700,
                     color: Colors.black87,
-                    letterSpacing: -0.5,
+                    letterSpacing: -0.5 * s,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8 * s),
                 Text(
                   'Masuk untuk melanjutkan perjalanan Quran Anda',
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: 15 * s,
                     color: Colors.grey[600],
                     fontWeight: FontWeight.w400,
-                    height: 1.5,
+                    height: 1.5, // Tetap
                   ),
                 ),
                 
-                const SizedBox(height: 40),
+                SizedBox(height: 40 * s),
                 
                 // Form Section
                 Form(
@@ -147,12 +148,12 @@ class _LoginPageState extends State<LoginPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Email Field with improved design
+                      // Email Field
                       TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
-                        style: const TextStyle(
-                          fontSize: 15,
+                        style: TextStyle(
+                          fontSize: 15 * s,
                           color: Colors.black87,
                           fontWeight: FontWeight.w500,
                         ),
@@ -160,50 +161,50 @@ class _LoginPageState extends State<LoginPage> {
                           labelText: 'Email',
                           labelStyle: TextStyle(
                             color: Colors.grey[600],
-                            fontSize: 15,
+                            fontSize: 15 * s,
                             fontWeight: FontWeight.w500,
                           ),
                           prefixIcon: Container(
-                            margin: const EdgeInsets.only(right: 12),
+                            margin: EdgeInsets.only(right: 12 * s),
                             child: Icon(
                               Icons.email_outlined,
                               color: Colors.grey[600],
-                              size: 22,
+                              size: 22 * s,
                             ),
                           ),
                           filled: true,
                           fillColor: Colors.grey[50],
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(14 * s),
                             borderSide: BorderSide(color: Colors.grey[300]!),
                           ),
                           enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(14 * s),
                             borderSide: BorderSide(color: Colors.grey[300]!),
                           ),
                           focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(
+                            borderRadius: BorderRadius.circular(14 * s),
+                            borderSide: BorderSide(
                               color: constants.primaryColor,
-                              width: 2,
+                              width: 2 * s,
                             ),
                           ),
                           errorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(14 * s),
                             borderSide: const BorderSide(
                               color: constants.errorColor,
                             ),
                           ),
                           focusedErrorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(
+                            borderRadius: BorderRadius.circular(14 * s),
+                            borderSide: BorderSide(
                               color: constants.errorColor,
-                              width: 2,
+                              width: 2 * s,
                             ),
                           ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 18,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 20 * s,
+                            vertical: 18 * s,
                           ),
                         ),
                         validator: (value) {
@@ -218,14 +219,14 @@ class _LoginPageState extends State<LoginPage> {
                         },
                       ),
                       
-                      const SizedBox(height: 18),
+                      SizedBox(height: 18 * s),
                       
                       // Password Field
                       TextFormField(
                         controller: _passwordController,
                         obscureText: !_isPasswordVisible,
-                        style: const TextStyle(
-                          fontSize: 15,
+                        style: TextStyle(
+                          fontSize: 15 * s,
                           color: Colors.black87,
                           fontWeight: FontWeight.w500,
                         ),
@@ -233,15 +234,15 @@ class _LoginPageState extends State<LoginPage> {
                           labelText: 'Password',
                           labelStyle: TextStyle(
                             color: Colors.grey[600],
-                            fontSize: 15,
+                            fontSize: 15 * s,
                             fontWeight: FontWeight.w500,
                           ),
                           prefixIcon: Container(
-                            margin: const EdgeInsets.only(right: 12),
+                            margin: EdgeInsets.only(right: 12 * s),
                             child: Icon(
                               Icons.lock_outline,
                               color: Colors.grey[600],
-                              size: 22,
+                              size: 22 * s,
                             ),
                           ),
                           suffixIcon: IconButton(
@@ -250,7 +251,7 @@ class _LoginPageState extends State<LoginPage> {
                                   ? Icons.visibility_outlined
                                   : Icons.visibility_off_outlined,
                               color: Colors.grey[600],
-                              size: 22,
+                              size: 22 * s,
                             ),
                             onPressed: () {
                               setState(() {
@@ -261,36 +262,36 @@ class _LoginPageState extends State<LoginPage> {
                           filled: true,
                           fillColor: Colors.grey[50],
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(14 * s),
                             borderSide: BorderSide(color: Colors.grey[300]!),
                           ),
                           enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(14 * s),
                             borderSide: BorderSide(color: Colors.grey[300]!),
                           ),
                           focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(
+                            borderRadius: BorderRadius.circular(14 * s),
+                            borderSide: BorderSide(
                               color: constants.primaryColor,
-                              width: 2,
+                              width: 2 * s,
                             ),
                           ),
                           errorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(14 * s),
                             borderSide: const BorderSide(
                               color: constants.errorColor,
                             ),
                           ),
                           focusedErrorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(
+                            borderRadius: BorderRadius.circular(14 * s),
+                            borderSide: BorderSide(
                               color: constants.errorColor,
-                              width: 2,
+                              width: 2 * s,
                             ),
                           ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 18,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 20 * s,
+                            vertical: 18 * s,
                           ),
                         ),
                         validator: (value) {
@@ -304,17 +305,17 @@ class _LoginPageState extends State<LoginPage> {
                         },
                       ),
                       
-                      const SizedBox(height: 18),
+                      SizedBox(height: 18 * s),
                       
-                      // Remember Me & Forgot Password - Better alignment
+                      // Remember Me & Forgot Password
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Row(
                             children: [
                               SizedBox(
-                                height: 22,
-                                width: 22,
+                                height: 22 * s,
+                                width: 22 * s,
                                 child: Checkbox(
                                   value: _rememberMe,
                                   onChanged: (value) {
@@ -324,15 +325,15 @@ class _LoginPageState extends State<LoginPage> {
                                   },
                                   activeColor: constants.primaryColor,
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(5),
+                                    borderRadius: BorderRadius.circular(5 * s),
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 10),
+                              SizedBox(width: 10 * s),
                               Text(
                                 'Ingat saya',
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: 14 * s,
                                   color: Colors.grey[700],
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -344,14 +345,14 @@ class _LoginPageState extends State<LoginPage> {
                               // Handle forgot password
                             },
                             style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                              padding: EdgeInsets.symmetric(horizontal: 4 * s, vertical: 8 * s),
                               minimumSize: const Size(0, 0),
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
-                            child: const Text(
+                            child: Text(
                               'Lupa Password?',
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: 14 * s,
                                 color: constants.primaryColor,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -360,18 +361,18 @@ class _LoginPageState extends State<LoginPage> {
                         ],
                       ),
                       
-                      const SizedBox(height: 32),
+                      SizedBox(height: 32 * s),
                       
-                      // Login Button - Enhanced design
+                      // Login Button
                       Container(
-                        height: 56,
+                        height: 56 * s,
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(14 * s),
                           boxShadow: [
                             BoxShadow(
                               color: constants.primaryColor.withOpacity(0.3),
-                              blurRadius: 12,
-                              offset: const Offset(0, 6),
+                              blurRadius: 12 * s,
+                              offset: Offset(0, 6 * s),
                             ),
                           ],
                         ),
@@ -382,50 +383,50 @@ class _LoginPageState extends State<LoginPage> {
                             foregroundColor: Colors.white,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(14 * s),
                             ),
                             disabledBackgroundColor:
                                 constants.primaryColor.withOpacity(0.6),
                           ),
                           child: _isLoading
-                              ? const SizedBox(
-                                  height: 22,
-                                  width: 22,
+                              ? SizedBox(
+                                  height: 22 * s,
+                                  width: 22 * s,
                                   child: CircularProgressIndicator(
-                                    strokeWidth: 2.5,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                    strokeWidth: 2.5 * s,
+                                    valueColor: const AlwaysStoppedAnimation<Color>(
                                       Colors.white,
                                     ),
                                   ),
                                 )
-                              : const Text(
+                              : Text(
                                   'Masuk',
                                   style: TextStyle(
-                                    fontSize: 16,
+                                    fontSize: 16 * s,
                                     fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.5,
+                                    letterSpacing: 0.5 * s,
                                   ),
                                 ),
                         ),
                       ),
                       
-                      const SizedBox(height: 28),
+                      SizedBox(height: 28 * s),
                       
-                      // Divider with better spacing
+                      // Divider
                       Row(
                         children: [
                           Expanded(
                             child: Divider(
                               color: Colors.grey[300],
-                              thickness: 1,
+                              thickness: 1 * s,
                             ),
                           ),
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            padding: EdgeInsets.symmetric(horizontal: 20 * s),
                             child: Text(
                               'atau',
                               style: TextStyle(
-                                fontSize: 13,
+                                fontSize: 13 * s,
                                 color: Colors.grey[500],
                                 fontWeight: FontWeight.w500,
                               ),
@@ -434,47 +435,47 @@ class _LoginPageState extends State<LoginPage> {
                           Expanded(
                             child: Divider(
                               color: Colors.grey[300],
-                              thickness: 1,
+                              thickness: 1 * s,
                             ),
                           ),
                         ],
                       ),
                       
-                      const SizedBox(height: 28),
+                      SizedBox(height: 28 * s),
                       
-                      // Google Sign In Button - Enhanced
+                      // Google Sign In Button
                       SizedBox(
-                        height: 56,
+                        height: 56 * s,
                         child: OutlinedButton.icon(
                           onPressed: () {
                             // Handle Google sign in
                           },
                           style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: Colors.grey[300]!, width: 1.5),
+                            side: BorderSide(color: Colors.grey[300]!, width: 1.5 * s),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(14 * s),
                             ),
                             backgroundColor: Colors.white,
                           ),
                           icon: Image.asset(
                             'assets/images/google-icon.png',
-                            height: 24,
-                            width: 24,
+                            height: 24 * s,
+                            width: 24 * s,
                             errorBuilder: (context, error, stackTrace) {
-                              return const Icon(
+                              return Icon(
                                 Icons.g_mobiledata,
-                                size: 24,
+                                size: 24 * s,
                                 color: Colors.black87,
                               );
                             },
                           ),
-                          label: const Text(
+                          label: Text(
                             'Masuk dengan Google',
                             style: TextStyle(
-                              fontSize: 15,
+                              fontSize: 15 * s,
                               fontWeight: FontWeight.w600,
                               color: Colors.black87,
-                              letterSpacing: 0.3,
+                              letterSpacing: 0.3 * s,
                             ),
                           ),
                         ),
@@ -483,16 +484,16 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 
-                const SizedBox(height: 32),
+                SizedBox(height: 32 * s),
                 
-                // Register Link - Better design
+                // Register Link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       'Belum punya akun? ',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 14 * s,
                         color: Colors.grey[600],
                         fontWeight: FontWeight.w500,
                       ),
@@ -506,14 +507,14 @@ class _LoginPageState extends State<LoginPage> {
                         );
                       },
                       style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                        padding: EdgeInsets.symmetric(horizontal: 4 * s, vertical: 8 * s),
                         minimumSize: const Size(0, 0),
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
-                      child: const Text(
+                      child: Text(
                         'Daftar Sekarang',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 14 * s,
                           color: constants.primaryColor,
                           fontWeight: FontWeight.w700,
                         ),
@@ -522,7 +523,7 @@ class _LoginPageState extends State<LoginPage> {
                   ],
                 ),
                 
-                const SizedBox(height: 40),
+                SizedBox(height: 40 * s),
               ],
             ),
           ),

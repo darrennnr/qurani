@@ -1,11 +1,10 @@
 import 'package:cuda_qurani/screens/main/auth/login/login_page.dart';
 import 'package:cuda_qurani/screens/main/stt/utils/constants.dart' as constants;
 import 'package:flutter/material.dart';
-import 'package:cuda_qurani/screens/main/home/surah_list_page.dart';
+// import 'package:cuda_qurani/screens/main/home/surah_list_page.dart'; // Tidak terpakai
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
-
   @override
   State<SplashScreen> createState() => _SplashScreenState();
 }
@@ -20,12 +19,10 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
-
     _controller = AnimationController(
       duration: const Duration(milliseconds: 2000),
       vsync: this,
     );
-
     // Fade in animation
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
@@ -33,7 +30,6 @@ class _SplashScreenState extends State<SplashScreen>
         curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
       ),
     );
-
     // Scale animation for icon
     _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
       CurvedAnimation(
@@ -41,15 +37,14 @@ class _SplashScreenState extends State<SplashScreen>
         curve: const Interval(0.0, 0.6, curve: Curves.elasticOut),
       ),
     );
-
     // Slide up animation for logo
+    // Nilai 30.0 akan kita skala nanti di 'build' menggunakan 's'
     _slideAnimation = Tween<double>(begin: 30.0, end: 0.0).animate(
       CurvedAnimation(
         parent: _controller,
         curve: const Interval(0.3, 0.8, curve: Curves.easeOut),
       ),
     );
-
     // Start animation
     _controller.forward();
 
@@ -62,8 +57,8 @@ class _SplashScreenState extends State<SplashScreen>
                 const LoginPage(),
             transitionsBuilder:
                 (context, animation, secondaryAnimation, child) {
-                  return FadeTransition(opacity: animation, child: child);
-                },
+              return FadeTransition(opacity: animation, child: child);
+            },
             transitionDuration: const Duration(milliseconds: 500),
           ),
         );
@@ -79,6 +74,11 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    // --- Responsive Setup ---
+    const double designWidth = 406.0;
+    final double s = MediaQuery.of(context).size.width / designWidth;
+    // --- End Responsive Setup ---
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Container(
@@ -105,16 +105,16 @@ class _SplashScreenState extends State<SplashScreen>
                     opacity: _fadeAnimation,
                     child: ScaleTransition(
                       scale: _scaleAnimation,
-                      child: Container(
-                        width: 200,
-                        height: 200,
+                      child: SizedBox(
+                        width: 200 * s,
+                        height: 200 * s,
                         child: Center(
                           child: Text(
                             'ﲐ',
                             style: TextStyle(
                               fontFamily: 'surah_names',
-                              fontSize: 150,
-                              color: constants.primaryColor
+                              fontSize: 150 * s,
+                              color: constants.primaryColor,
                             ),
                           ),
                         ),
@@ -122,21 +122,22 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   ),
 
-                  const SizedBox(height: 40),
+                  SizedBox(height: 40 * s),
 
                   // Animated Logo
                   FadeTransition(
                     opacity: _fadeAnimation,
                     child: Transform.translate(
-                      offset: Offset(0, _slideAnimation.value),
+                      // Skala nilai slide animation dengan 's'
+                      offset: Offset(0, _slideAnimation.value * s),
                       child: Column(
                         children: [
                           Image.asset(
                             'assets/images/qurani-white-text.png',
-                            height: 40,
+                            height: 40 * s,
                             color: constants.primaryColor,
                           ),
-                          const SizedBox(height: 20),
+                          SizedBox(height: 20 * s),
                         ],
                       ),
                     ),

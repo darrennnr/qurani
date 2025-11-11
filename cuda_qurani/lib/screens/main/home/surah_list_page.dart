@@ -17,25 +17,21 @@ class _SurahListPageState extends State<SurahListPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   late PageController _pageController;
-
   final TextEditingController _searchController = TextEditingController();
   bool _isSearching = false;
   List<Map<String, dynamic>> _searchResults = [];
   bool _isSearchLoading = false;
-
   late Future<List<Map<String, dynamic>>> _futureSurahs;
   late Future<List<Map<String, dynamic>>> _futureJuz;
 
   @override
   void initState() {
     super.initState();
-
     _tabController = TabController(length: 2, vsync: this);
     _pageController = PageController();
 
     _futureSurahs = LocalDatabaseService.getSurahs();
     _futureJuz = JuzService.getAllJuz();
-
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) {
         _pageController.animateToPage(
@@ -45,7 +41,6 @@ class _SurahListPageState extends State<SurahListPage>
         );
       }
     });
-
     _searchController.addListener(_onSearchChanged);
   }
 
@@ -87,10 +82,8 @@ class _SurahListPageState extends State<SurahListPage>
       _isSearching = true;
       _isSearchLoading = true;
     });
-
     try {
       final results = <Map<String, dynamic>>[];
-
       // 🔍 SEARCH BY NUMBER (Juz, Page, Surah)
       final numQuery = int.tryParse(query.trim());
       if (numQuery != null) {
@@ -189,11 +182,9 @@ class _SurahListPageState extends State<SurahListPage>
   ) async {
     // Get page for this ayah
     final page = await LocalDatabaseService.getPageNumber(surahId, ayahNumber);
-
     await Navigator.of(
       context,
     ).pushReplacement(MaterialPageRoute(builder: (_) => SttPage(pageId: page)));
-
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -212,7 +203,6 @@ class _SurahListPageState extends State<SurahListPage>
     await Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => SttPage(juzId: juzNumber)),
     );
-
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -225,23 +215,28 @@ class _SurahListPageState extends State<SurahListPage>
 
   @override
   Widget build(BuildContext context) {
+    // --- Responsive Setup ---
+    const double designWidth = 406.0;
+    final double s = MediaQuery.of(context).size.width / designWidth;
+    // --- End Responsive Setup ---
+
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: _buildAppBar(),
+      appBar: _buildAppBar(s),
       body: SafeArea(
         bottom: false,
         child: Column(
           children: [
-            _buildSearchBar(),
-            _buildTabBar(),
-            Expanded(child: _buildBodyContent()),
+            _buildSearchBar(s),
+            _buildTabBar(s),
+            Expanded(child: _buildBodyContent(s)),
           ],
         ),
       ),
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
+  PreferredSizeWidget _buildAppBar(double s) {
     return AppBar(
       backgroundColor: Colors.white,
       elevation: 0,
@@ -251,27 +246,27 @@ class _SurahListPageState extends State<SurahListPage>
       centerTitle: false,
       title: Image.asset(
         'assets/images/qurani-white-text.png',
-        height: 30,
+        height: 30 * s,
         fit: BoxFit.contain,
         alignment: Alignment.centerLeft,
         color: constants.primaryColor,
       ),
       bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(1.0),
-        child: Container(color: Colors.grey[200], height: 1.0),
+        preferredSize: Size.fromHeight(1.0 * s),
+        child: Container(color: Colors.grey[200], height: 1.0 * s),
       ),
     );
   }
 
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(double s) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
+      padding: EdgeInsets.fromLTRB(16.0 * s, 16.0 * s, 16.0 * s, 8.0 * s),
       child: TextField(
         controller: _searchController,
-        style: const TextStyle(fontSize: 16, color: Colors.black87),
+        style: TextStyle(fontSize: 16 * s, color: Colors.black87),
         decoration: InputDecoration(
           hintText: 'Cari surah, juz atau halaman...',
-          hintStyle: TextStyle(color: Colors.grey[500], fontSize: 16),
+          hintStyle: TextStyle(color: Colors.grey[500], fontSize: 16 * s),
           prefixIcon: Icon(Icons.search, color: Colors.grey[500]),
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
@@ -284,30 +279,30 @@ class _SurahListPageState extends State<SurahListPage>
           filled: true,
           fillColor: Colors.grey[100],
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12.0),
+            borderRadius: BorderRadius.circular(12.0 * s),
             borderSide: BorderSide.none,
           ),
-          contentPadding: const EdgeInsets.symmetric(vertical: 14.0),
+          contentPadding: EdgeInsets.symmetric(vertical: 14.0 * s),
         ),
       ),
     );
   }
 
-  Widget _buildTabBar() {
+  Widget _buildTabBar(double s) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 0.0),
+      padding: EdgeInsets.symmetric(horizontal: 16.0 * s, vertical: 0.0),
       child: TabBar(
         controller: _tabController,
         indicatorSize: TabBarIndicatorSize.tab,
-        indicator: const UnderlineTabIndicator(
-          borderSide: BorderSide(width: 3.0, color: constants.primaryColor),
-          insets: EdgeInsets.symmetric(horizontal: 28.0),
+        indicator: UnderlineTabIndicator(
+          borderSide: BorderSide(width: 3.0 * s, color: constants.primaryColor),
+          insets: EdgeInsets.symmetric(horizontal: 28.0 * s),
         ),
         labelColor: constants.primaryColor,
         unselectedLabelColor: Colors.grey,
-        labelStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-        unselectedLabelStyle: const TextStyle(
-          fontSize: 15,
+        labelStyle: TextStyle(fontSize: 15 * s, fontWeight: FontWeight.w700),
+        unselectedLabelStyle: TextStyle(
+          fontSize: 15 * s,
           fontWeight: FontWeight.w500,
         ),
         tabs: const [
@@ -318,9 +313,9 @@ class _SurahListPageState extends State<SurahListPage>
     );
   }
 
-  Widget _buildBodyContent() {
+  Widget _buildBodyContent(double s) {
     if (_isSearching) {
-      return _buildSearchResults();
+      return _buildSearchResults(s);
     }
 
     return PageView(
@@ -328,11 +323,11 @@ class _SurahListPageState extends State<SurahListPage>
       onPageChanged: (index) {
         _tabController.animateTo(index);
       },
-      children: [_buildSurahList(), _buildJuzList()],
+      children: [_buildSurahList(s), _buildJuzList(s)],
     );
   }
 
-  Widget _buildSurahList() {
+  Widget _buildSurahList(double s) {
     return FutureBuilder<List<Map<String, dynamic>>>(
       future: _futureSurahs,
       builder: (context, snapshot) {
@@ -342,7 +337,7 @@ class _SurahListPageState extends State<SurahListPage>
           );
         }
         if (snapshot.hasError) {
-          return _buildErrorWidget(snapshot.error.toString());
+          return _buildErrorWidget(s, snapshot.error.toString());
         }
 
         final surahs = snapshot.data ?? [];
@@ -351,25 +346,25 @@ class _SurahListPageState extends State<SurahListPage>
         }
 
         return ListView.separated(
-          padding: const EdgeInsets.only(bottom: 80),
+          padding: EdgeInsets.only(bottom: 80 * s),
           itemCount: surahs.length,
           separatorBuilder: (context, index) => Divider(
-            height: 1,
-            thickness: 1,
+            height: 1 * s,
+            thickness: 1 * s,
             color: Colors.grey[200],
-            indent: 16,
-            endIndent: 16,
+            indent: 16 * s,
+            endIndent: 16 * s,
           ),
           itemBuilder: (context, index) {
-            final s = surahs[index];
-            return _buildSurahTile(context, s);
+            final sData = surahs[index];
+            return _buildSurahTile(context, sData, s);
           },
         );
       },
     );
   }
 
-  Widget _buildJuzList() {
+  Widget _buildJuzList(double s) {
     return FutureBuilder<List<Map<String, dynamic>>>(
       future: _futureJuz,
       builder: (context, snapshot) {
@@ -379,7 +374,7 @@ class _SurahListPageState extends State<SurahListPage>
           );
         }
         if (snapshot.hasError) {
-          return _buildErrorWidget(snapshot.error.toString());
+          return _buildErrorWidget(s, snapshot.error.toString());
         }
 
         final juzList = snapshot.data ?? [];
@@ -388,137 +383,136 @@ class _SurahListPageState extends State<SurahListPage>
         }
 
         return ListView.separated(
-          padding: const EdgeInsets.only(bottom: 80),
+          padding: EdgeInsets.only(bottom: 80 * s),
           itemCount: juzList.length,
           separatorBuilder: (context, index) => Divider(
-            height: 1,
-            thickness: 1,
+            height: 1 * s,
+            thickness: 1 * s,
             color: Colors.grey[200],
-            indent: 16,
-            endIndent: 16,
+            indent: 16 * s,
+            endIndent: 16 * s,
           ),
           itemBuilder: (context, index) {
             final juz = juzList[index];
-            return _buildJuzTile(context, juz);
+            return _buildJuzTile(context, juz, s);
           },
         );
       },
     );
   }
 
-  Widget _buildSurahTile(BuildContext context, Map<String, dynamic> s) {
-    final int id = s['id'] as int;
-    final String latin = s['name_simple'] ?? s['name'] ?? 'Surah $id';
-    final int ayat = s['verses_count'] ?? 0;
-    final String place = (s['revelation_place'] ?? '').toString().toLowerCase();
+  Widget _buildSurahTile(BuildContext context, Map<String, dynamic> sData, double s) {
+    final int id = sData['id'] as int;
+    final String latin = sData['name_simple'] ?? sData['name'] ?? 'Surah $id';
+    final int ayat = sData['verses_count'] ?? 0;
+    final String place = (sData['revelation_place'] ?? '').toString().toLowerCase();
     final String typePretty = place == 'makkah' || place == 'mecca'
         ? 'Makkiyah'
         : place == 'madinah' || place == 'medina'
             ? 'Madaniyah'
             : (id < 90 ? 'Makkiyah' : 'Madaniyah');
-
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 24.0,
+      contentPadding: EdgeInsets.symmetric(
+        horizontal: 24.0 * s,
         vertical: 0.0,
       ),
       onTap: () async {
         await _openSurah(context, id);
       },
       leading: Container(
-        width: 44,
-        height: 44,
+        width: 44 * s,
+        height: 44 * s,
         decoration: BoxDecoration(
           color: constants.primaryColor.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(10 * s),
         ),
         alignment: Alignment.center,
         child: Text(
           id.toString(),
-          style: const TextStyle(
+          style: TextStyle(
             color: constants.primaryColor,
             fontWeight: FontWeight.w600,
-            fontSize: 16,
+            fontSize: 16 * s,
           ),
         ),
       ),
       title: Text(
         latin,
-        style: const TextStyle(
-          fontSize: 17,
+        style: TextStyle(
+          fontSize: 17 * s,
           fontWeight: FontWeight.w600,
           color: Colors.black87,
         ),
       ),
       subtitle: Text(
         '$typePretty • $ayat Ayat',
-        style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+        style: TextStyle(fontSize: 13 * s, color: Colors.grey[600]),
       ),
       trailing: Text(
         'surah${id.toString().padLeft(3, '0')}',
-        style: const TextStyle(
+        style: TextStyle(
           fontFamily: 'surah-name-v1',
-          fontSize: 22,
+          fontSize: 22 * s,
           color: constants.primaryColor,
         ),
       ),
     );
   }
 
-  Widget _buildJuzTile(BuildContext context, Map<String, dynamic> juz) {
+  Widget _buildJuzTile(BuildContext context, Map<String, dynamic> juz, double s) {
     final int juzNumber = juz['juz_number'] as int;
     final String firstVerseKey = juz['first_verse_key'] as String;
     final String lastVerseKey = juz['last_verse_key'] as String;
     final int verseCount = juz['verses_count'] as int;
 
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 24.0,
+      contentPadding: EdgeInsets.symmetric(
+        horizontal: 24.0 * s,
         vertical: 0.0,
       ),
       onTap: () async {
         await _openJuz(context, juzNumber, firstVerseKey);
       },
       leading: Container(
-        width: 44,
-        height: 44,
+        width: 44 * s,
+        height: 44 * s,
         decoration: BoxDecoration(
           color: constants.primaryColor.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(10 * s),
         ),
         alignment: Alignment.center,
         child: Text(
           juzNumber.toString(),
-          style: const TextStyle(
+          style: TextStyle(
             color: constants.primaryColor,
             fontWeight: FontWeight.w600,
-            fontSize: 16,
+            fontSize: 16 * s,
           ),
         ),
       ),
       title: Text(
         'Juz $juzNumber',
-        style: const TextStyle(
-          fontSize: 17,
+        style: TextStyle(
+          fontSize: 17 * s,
           fontWeight: FontWeight.w600,
           color: Colors.black87,
         ),
       ),
       subtitle: Text(
         '$firstVerseKey - $lastVerseKey • $verseCount Ayat',
-        style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+        style: TextStyle(fontSize: 13 * s, color: Colors.grey[600]),
       ),
       trailing: Icon(
         Icons.bookmark_outline,
         color: constants.primaryColor.withOpacity(0.6),
-        size: 24,
+        size: 24 * s,
       ),
     );
   }
 
-  // --- 💡 UI SEARCH RESULTS YANG DISIMPLIFIKASI DIMULAI DARI SINI 💡 ---
+  // --- 💡 UI SEARCH RESULTS 💡 ---
 
-  Widget _buildSearchResults() {
+  Widget _buildSearchResults(double s) {
     if (_isSearchLoading) {
       return const Center(
         child: CircularProgressIndicator(color: constants.primaryColor),
@@ -530,20 +524,20 @@ class _SurahListPageState extends State<SurahListPage>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.search_off_outlined, size: 64, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            const Text(
+            Icon(Icons.search_off_outlined, size: 64 * s, color: Colors.grey[400]),
+            SizedBox(height: 16 * s),
+            Text(
               'Tidak ada hasil',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 18 * s,
                 fontWeight: FontWeight.w600,
                 color: Colors.black54,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8 * s),
             Text(
               'Coba cari dengan kata kunci lain',
-              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+              style: TextStyle(fontSize: 14 * s, color: Colors.grey[500]),
             ),
           ],
         ),
@@ -561,45 +555,42 @@ class _SurahListPageState extends State<SurahListPage>
     final verseResults = _searchResults
         .where((r) => r['type'] == 'verse')
         .toList();
-
     return ListView(
-      // Padding diatur agar ListTile bisa mepet ke tepi
-      padding: const EdgeInsets.only(bottom: 80),
+      padding: EdgeInsets.only(bottom: 80 * s),
       children: [
         if (juzResults.isNotEmpty) ...[
-          _buildCategoryHeader('Juz', juzResults.length),
-          ...juzResults.map((r) => _buildJuzResultTile(context, r)),
-          const SizedBox(height: 10),
+          _buildCategoryHeader('Juz', juzResults.length, s),
+          ...juzResults.map((r) => _buildJuzResultTile(context, r, s)),
+          SizedBox(height: 10 * s),
         ],
         if (pageResults.isNotEmpty) ...[
-          _buildCategoryHeader('Halaman', pageResults.length),
-          ...pageResults.map((r) => _buildPageResultTile(context, r)),
-          const SizedBox(height: 10),
+          _buildCategoryHeader('Halaman', pageResults.length, s),
+          ...pageResults.map((r) => _buildPageResultTile(context, r, s)),
+          SizedBox(height: 10 * s),
         ],
         if (surahResults.isNotEmpty) ...[
-          _buildCategoryHeader('Surah', surahResults.length),
-          ...surahResults.map((r) => _buildSurahResultTile(context, r)),
-          const SizedBox(height: 10),
+          _buildCategoryHeader('Surah', surahResults.length, s),
+          ...surahResults.map((r) => _buildSurahResultTile(context, r, s)),
+          SizedBox(height: 10 * s),
         ],
         if (verseResults.isNotEmpty) ...[
-          _buildCategoryHeader('Ayat', verseResults.length),
-          ...verseResults.map((r) => _buildVerseResultTile(context, r)),
+          _buildCategoryHeader('Ayat', verseResults.length, s),
+          ...verseResults.map((r) => _buildVerseResultTile(context, r, s)),
         ],
       ],
     );
   }
 
-  Widget _buildCategoryHeader(String title, int count) {
-    // Count tidak dipakai, tapi signature dijaga
+  Widget _buildCategoryHeader(String title, int count, double s) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24.0, 16.0, 24.0, 8.0),
+      padding: EdgeInsets.fromLTRB(24.0 * s, 16.0 * s, 24.0 * s, 8.0 * s),
       child: Text(
-        title.toUpperCase(), // Dibuat uppercase agar mirip referensi
+        title.toUpperCase(),
         style: TextStyle(
-          fontSize: 13,
+          fontSize: 13 * s,
           fontWeight: FontWeight.w600,
           color: Colors.grey[600],
-          letterSpacing: 0.5,
+          letterSpacing: 0.5 * s,
         ),
       ),
     );
@@ -608,31 +599,31 @@ class _SurahListPageState extends State<SurahListPage>
   Widget _buildJuzResultTile(
     BuildContext context,
     Map<String, dynamic> result,
+    double s,
   ) {
     final juzNum = result['juz_number'] as int;
     final firstVerse = result['first_verse_key'] as String;
     final lastVerse = result['last_verse_key'] as String;
     final versesCount = result['verses_count'] as int;
-
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 4.0),
+      contentPadding: EdgeInsets.symmetric(horizontal: 24.0 * s, vertical: 4.0 * s),
       leading: Icon(
         Icons.book_outlined,
         color: Colors.grey[600],
       ),
       title: Text(
         'Juz $juzNum',
-        style: const TextStyle(
-          fontSize: 16,
+        style: TextStyle(
+          fontSize: 16 * s,
           fontWeight: FontWeight.w600,
           color: Colors.black87,
         ),
       ),
       subtitle: Text(
         '$firstVerse - $lastVerse • $versesCount Ayat',
-        style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+        style: TextStyle(fontSize: 13 * s, color: Colors.grey[600]),
       ),
-      trailing: Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 16),
+      trailing: Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 16 * s),
       onTap: () => _openJuz(context, juzNum, firstVerse),
     );
   }
@@ -640,28 +631,28 @@ class _SurahListPageState extends State<SurahListPage>
   Widget _buildPageResultTile(
     BuildContext context,
     Map<String, dynamic> result,
+    double s,
   ) {
     final pageNum = result['page_number'] as int;
-
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 4.0),
+      contentPadding: EdgeInsets.symmetric(horizontal: 24.0 * s, vertical: 4.0 * s),
       leading: Icon(
         Icons.article_outlined,
         color: Colors.grey[600],
       ),
       title: Text(
         'Halaman $pageNum',
-        style: const TextStyle(
-          fontSize: 16,
+        style: TextStyle(
+          fontSize: 16 * s,
           fontWeight: FontWeight.w600,
           color: Colors.black87,
         ),
       ),
       subtitle: Text(
         'Mushaf Al-Quran',
-        style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+        style: TextStyle(fontSize: 13 * s, color: Colors.grey[600]),
       ),
-      trailing: Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 16),
+      trailing: Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 16 * s),
       onTap: () => _openPage(context, pageNum),
     );
   }
@@ -669,21 +660,21 @@ class _SurahListPageState extends State<SurahListPage>
   Widget _buildSurahResultTile(
     BuildContext context,
     Map<String, dynamic> result,
+    double s,
   ) {
     final surahNum = result['surah_number'] as int;
     final surahName = result['surah_name'] as String;
     final versesCount = result['verses_count'] as int?;
-
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 4.0),
+      contentPadding: EdgeInsets.symmetric(horizontal: 24.0 * s, vertical: 4.0 * s),
       leading: Icon(
         Icons.auto_stories_outlined,
         color: Colors.grey[600],
       ),
       title: Text(
         surahName,
-        style: const TextStyle(
-          fontSize: 16,
+        style: TextStyle(
+          fontSize: 16 * s,
           fontWeight: FontWeight.w600,
           color: Colors.black87,
         ),
@@ -691,10 +682,10 @@ class _SurahListPageState extends State<SurahListPage>
       subtitle: (versesCount != null)
           ? Text(
               '$versesCount Ayat',
-              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 13 * s, color: Colors.grey[600]),
             )
           : null,
-      trailing: Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 16),
+      trailing: Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 16 * s),
       onTap: () => _openSurah(context, surahNum),
     );
   }
@@ -702,83 +693,81 @@ class _SurahListPageState extends State<SurahListPage>
   Widget _buildVerseResultTile(
     BuildContext context,
     Map<String, dynamic> result,
+    double s,
   ) {
     final surahNumber = result['surah_number'];
     final ayahNumber = result['ayah_number'];
     final text = result['text'];
     final surahName = result['surah_name'];
-
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+      contentPadding: EdgeInsets.symmetric(horizontal: 24.0 * s, vertical: 12.0 * s),
       title: Row(
-        // Tag diletakkan di title
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 10,
-              vertical: 4,
+            padding: EdgeInsets.symmetric(
+              horizontal: 10 * s,
+              vertical: 4 * s,
             ),
             decoration: BoxDecoration(
               color: constants.primaryColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(8 * s),
             ),
             child: Text(
               '$surahName : $ayahNumber',
-              style: const TextStyle(
-                fontSize: 13,
+              style: TextStyle(
+                fontSize: 13 * s,
                 fontWeight: FontWeight.w600,
                 color: constants.primaryColor,
               ),
             ),
           ),
-          const Spacer(), // Dorong tag ke kiri
+          const Spacer(),
         ],
       ),
       subtitle: Padding(
-        // Teks arab diletakkan di subtitle
-        padding: const EdgeInsets.only(top: 12.0),
+        padding: EdgeInsets.only(top: 12.0 * s),
         child: Text(
           text,
           textAlign: TextAlign.right,
           textDirection: TextDirection.rtl,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'UthmanicHafs',
-            fontSize: 20,
+            fontSize: 20 * s,
             color: Colors.black87,
-            height: 1.8,
+            height: 1.8, // Tetap
           ),
           maxLines: 3,
           overflow: TextOverflow.ellipsis,
         ),
       ),
-      isThreeLine: true, // Izinkan ListTile untuk expand
+      isThreeLine: true,
       onTap: () async {
         await _openSurahAtAyah(context, surahNumber, ayahNumber);
       },
     );
   }
 
-  // --- 💡 UI LAMA (TIDAK TERPAKAI) DIBAWAH INI TETAP DISERTAKAN 💡 ---
+  // --- 💡 UI LAMA (TIDAK TERPAKAI) - JUGA DISESUAIKAN 💡 ---
 
   Widget _buildSearchResultCard(
     BuildContext context,
     Map<String, dynamic> result,
+    double s,
   ) {
     final int surahNumber = result['surah_number'];
     final int ayahNumber = result['ayah_number'];
     final String text = result['text'];
     final String surahName = result['surah_name'];
-
     return InkWell(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(12 * s),
       onTap: () async {
         await _openSurahAtAyah(context, surahNumber, ayahNumber);
       },
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16 * s),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(12 * s),
           border: Border.all(color: Colors.grey[200]!),
         ),
         child: Column(
@@ -786,22 +775,22 @@ class _SurahListPageState extends State<SurahListPage>
           children: [
             Text(
               '$surahName : $ayahNumber',
-              style: const TextStyle(
-                fontSize: 14,
+              style: TextStyle(
+                fontSize: 14 * s,
                 fontWeight: FontWeight.w600,
                 color: constants.primaryColor,
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12 * s),
             Text(
               text,
               textAlign: TextAlign.right,
               textDirection: TextDirection.rtl,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'UthmanicHafs',
-                fontSize: 22,
+                fontSize: 22 * s,
                 color: Colors.black87,
-                height: 1.8,
+                height: 1.8, // Tetap
               ),
             ),
           ],
@@ -810,31 +799,31 @@ class _SurahListPageState extends State<SurahListPage>
     );
   }
 
-  Widget _buildErrorWidget(String error) {
+  Widget _buildErrorWidget(double s, String error) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: EdgeInsets.all(24.0 * s),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Icons.error_outline,
               color: constants.errorColor,
-              size: 48,
+              size: 48 * s,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16 * s),
             Text(
               'Gagal memuat daftar\n$error',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[700], fontSize: 16),
+              style: TextStyle(color: Colors.grey[700], fontSize: 16 * s),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20 * s),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: constants.primaryColor,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(8 * s),
                 ),
               ),
               onPressed: () => setState(() {

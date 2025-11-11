@@ -6,7 +6,6 @@ import 'package:cuda_qurani/screens/main/home/surah_list_page.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
-
   @override
   State<RegisterPage> createState() => _RegisterPageState();
 }
@@ -33,6 +32,15 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Future<void> _handleRegister() async {
+    // --- Responsive Scaling ---
+    // (diperlukan di sini untuk SnackBar sebelum build selesai)
+    // Ambil 's' dari konteks jika ada, jika tidak, hitung dengan cepat.
+    // Ini adalah fallback, idealnya 's' didapat dari build.
+    // Tapi untuk SnackBar, kita perlu konteks.
+    const double designWidth = 406.0;
+    final double s = MediaQuery.of(context).size.width / designWidth;
+    // --- End Responsive Scaling ---
+
     if (!_agreeToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -40,9 +48,9 @@ class _RegisterPageState extends State<RegisterPage> {
           backgroundColor: constants.errorColor,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(12 * s),
           ),
-          margin: const EdgeInsets.all(16),
+          margin: EdgeInsets.all(16 * s),
         ),
       );
       return;
@@ -52,15 +60,12 @@ class _RegisterPageState extends State<RegisterPage> {
       setState(() {
         _isLoading = true;
       });
-
       // Simulate API call
       await Future.delayed(const Duration(seconds: 2));
-
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
-
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -68,12 +73,11 @@ class _RegisterPageState extends State<RegisterPage> {
             backgroundColor: constants.correctColor,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(12 * s),
             ),
-            margin: const EdgeInsets.all(16),
+            margin: EdgeInsets.all(16 * s),
           ),
         );
-
         // Navigate to home page
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
@@ -86,6 +90,14 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
+    // --- Responsive Setup ---
+    // Berdasarkan perangkat referensi: 1220px (lebar)
+    // Asumsi ~3.0x device pixel ratio: 1220 / 3.0 = 406.6 logical pixels
+    // Kita gunakan 406.0 sebagai lebar desain.
+    const double designWidth = 406.0;
+    final double s = MediaQuery.of(context).size.width / designWidth;
+    // --- End Responsive Setup ---
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -94,15 +106,15 @@ class _RegisterPageState extends State<RegisterPage> {
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: Container(
-            padding: const EdgeInsets.all(8),
+            padding: EdgeInsets.all(8 * s),
             decoration: BoxDecoration(
               color: const Color.fromARGB(0, 245, 245, 245),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(10 * s),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.arrow_back_ios_new,
               color: Colors.black87,
-              size: 18,
+              size: 18 * s,
             ),
           ),
           onPressed: () => Navigator.of(context).pop(),
@@ -111,87 +123,87 @@ class _RegisterPageState extends State<RegisterPage> {
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            padding: EdgeInsets.symmetric(horizontal: 24.0 * s),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 0),
+                SizedBox(height: 0),
                 
-                // Logo Section - Improved with better hierarchy
+                // Logo Section
                 Center(
                   child: Column(
                     children: [
-                      // Logo container with subtle shadow
+                      // Logo container
                       Container(
-                        width: 137,
-                        height: 137,
+                        width: 137 * s,
+                        height: 137 * s,
                         decoration: BoxDecoration(
                           color: const Color.fromARGB(255, 255, 255, 255).withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: BorderRadius.circular(24 * s),
                           boxShadow: [
                             BoxShadow(
                               color: constants.primaryColor.withOpacity(0.1),
-                              blurRadius: 20,
-                              offset: const Offset(0, 4),
+                              blurRadius: 20 * s,
+                              offset: Offset(0, 4 * s),
                             ),
                           ],
                         ),
-                        child: const Center(
+                        child: Center(
                           child: Text(
                             'ﲐ',
                             style: TextStyle(
                               fontFamily: 'surah_names',
-                              fontSize: 110,
+                              fontSize: 110 * s,
                               color: constants.primaryColor,
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 24),
-                      // Brand name with better spacing
+                      SizedBox(height: 24 * s),
+                      // Brand name
                       Image.asset(
                         'assets/images/qurani-white-text.png',
-                        height: 36,
+                        height: 36 * s,
                         color: constants.primaryColor,
                       ),
-                      const SizedBox(height: 6),
-                      const Text(
+                      SizedBox(height: 6 * s),
+                      Text(
                         'Hafidz',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 16 * s,
                           fontWeight: FontWeight.w600,
                           color: constants.primaryColor,
-                          letterSpacing: 2,
+                          letterSpacing: 2 * s,
                         ),
                       ),
                     ],
                   ),
                 ),
                 
-                const SizedBox(height: 40),
+                SizedBox(height: 40 * s),
                 
-                // Welcome Text - Better typography
-                const Text(
+                // Welcome Text
+                Text(
                   'Buat Akun Baru',
                   style: TextStyle(
-                    fontSize: 30,
+                    fontSize: 30 * s,
                     fontWeight: FontWeight.w700,
                     color: Colors.black87,
-                    letterSpacing: -0.5,
+                    letterSpacing: -0.5 * s,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8 * s),
                 Text(
                   'Daftar untuk memulai perjalanan Quran Anda',
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: 15 * s,
                     color: Colors.grey[600],
                     fontWeight: FontWeight.w400,
-                    height: 1.5,
+                    height: 1.5, // Line height (faktor) biasanya tetap
                   ),
                 ),
                 
-                const SizedBox(height: 32),
+                SizedBox(height: 32 * s),
                 
                 // Form Section
                 Form(
@@ -203,8 +215,8 @@ class _RegisterPageState extends State<RegisterPage> {
                       TextFormField(
                         controller: _nameController,
                         textCapitalization: TextCapitalization.words,
-                        style: const TextStyle(
-                          fontSize: 15,
+                        style: TextStyle(
+                          fontSize: 15 * s,
                           color: Colors.black87,
                           fontWeight: FontWeight.w500,
                         ),
@@ -212,50 +224,50 @@ class _RegisterPageState extends State<RegisterPage> {
                           labelText: 'Nama Lengkap',
                           labelStyle: TextStyle(
                             color: Colors.grey[600],
-                            fontSize: 15,
+                            fontSize: 15 * s,
                             fontWeight: FontWeight.w500,
                           ),
                           prefixIcon: Container(
-                            margin: const EdgeInsets.only(right: 12),
+                            margin: EdgeInsets.only(right: 12 * s),
                             child: Icon(
                               Icons.person_outline,
                               color: Colors.grey[600],
-                              size: 22,
+                              size: 22 * s,
                             ),
                           ),
                           filled: true,
                           fillColor: Colors.grey[50],
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(14 * s),
                             borderSide: BorderSide(color: Colors.grey[300]!),
                           ),
                           enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(14 * s),
                             borderSide: BorderSide(color: Colors.grey[300]!),
                           ),
                           focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(
+                            borderRadius: BorderRadius.circular(14 * s),
+                            borderSide: BorderSide(
                               color: constants.primaryColor,
-                              width: 2,
+                              width: 2 * s,
                             ),
                           ),
                           errorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(14 * s),
                             borderSide: const BorderSide(
                               color: constants.errorColor,
                             ),
                           ),
                           focusedErrorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(
+                            borderRadius: BorderRadius.circular(14 * s),
+                            borderSide: BorderSide(
                               color: constants.errorColor,
-                              width: 2,
+                              width: 2 * s,
                             ),
                           ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 18,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 20 * s,
+                            vertical: 18 * s,
                           ),
                         ),
                         validator: (value) {
@@ -269,14 +281,14 @@ class _RegisterPageState extends State<RegisterPage> {
                         },
                       ),
                       
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16 * s),
                       
                       // Email Field
                       TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
-                        style: const TextStyle(
-                          fontSize: 15,
+                        style: TextStyle(
+                          fontSize: 15 * s,
                           color: Colors.black87,
                           fontWeight: FontWeight.w500,
                         ),
@@ -284,50 +296,50 @@ class _RegisterPageState extends State<RegisterPage> {
                           labelText: 'Email',
                           labelStyle: TextStyle(
                             color: Colors.grey[600],
-                            fontSize: 15,
+                            fontSize: 15 * s,
                             fontWeight: FontWeight.w500,
                           ),
                           prefixIcon: Container(
-                            margin: const EdgeInsets.only(right: 12),
+                            margin: EdgeInsets.only(right: 12 * s),
                             child: Icon(
                               Icons.email_outlined,
                               color: Colors.grey[600],
-                              size: 22,
+                              size: 22 * s,
                             ),
                           ),
                           filled: true,
                           fillColor: Colors.grey[50],
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(14 * s),
                             borderSide: BorderSide(color: Colors.grey[300]!),
                           ),
                           enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(14 * s),
                             borderSide: BorderSide(color: Colors.grey[300]!),
                           ),
                           focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(
+                            borderRadius: BorderRadius.circular(14 * s),
+                            borderSide: BorderSide(
                               color: constants.primaryColor,
-                              width: 2,
+                              width: 2 * s,
                             ),
                           ),
                           errorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(14 * s),
                             borderSide: const BorderSide(
                               color: constants.errorColor,
                             ),
                           ),
                           focusedErrorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(
+                            borderRadius: BorderRadius.circular(14 * s),
+                            borderSide: BorderSide(
                               color: constants.errorColor,
-                              width: 2,
+                              width: 2 * s,
                             ),
                           ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 18,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 20 * s,
+                            vertical: 18 * s,
                           ),
                         ),
                         validator: (value) {
@@ -342,14 +354,14 @@ class _RegisterPageState extends State<RegisterPage> {
                         },
                       ),
                       
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16 * s),
                       
                       // Password Field
                       TextFormField(
                         controller: _passwordController,
                         obscureText: !_isPasswordVisible,
-                        style: const TextStyle(
-                          fontSize: 15,
+                        style: TextStyle(
+                          fontSize: 15 * s,
                           color: Colors.black87,
                           fontWeight: FontWeight.w500,
                         ),
@@ -357,15 +369,15 @@ class _RegisterPageState extends State<RegisterPage> {
                           labelText: 'Password',
                           labelStyle: TextStyle(
                             color: Colors.grey[600],
-                            fontSize: 15,
+                            fontSize: 15 * s,
                             fontWeight: FontWeight.w500,
                           ),
                           prefixIcon: Container(
-                            margin: const EdgeInsets.only(right: 12),
+                            margin: EdgeInsets.only(right: 12 * s),
                             child: Icon(
                               Icons.lock_outline,
                               color: Colors.grey[600],
-                              size: 22,
+                              size: 22 * s,
                             ),
                           ),
                           suffixIcon: IconButton(
@@ -374,7 +386,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                   ? Icons.visibility_outlined
                                   : Icons.visibility_off_outlined,
                               color: Colors.grey[600],
-                              size: 22,
+                              size: 22 * s,
                             ),
                             onPressed: () {
                               setState(() {
@@ -385,36 +397,36 @@ class _RegisterPageState extends State<RegisterPage> {
                           filled: true,
                           fillColor: Colors.grey[50],
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(14 * s),
                             borderSide: BorderSide(color: Colors.grey[300]!),
                           ),
                           enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(14 * s),
                             borderSide: BorderSide(color: Colors.grey[300]!),
                           ),
                           focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(
+                            borderRadius: BorderRadius.circular(14 * s),
+                            borderSide: BorderSide(
                               color: constants.primaryColor,
-                              width: 2,
+                              width: 2 * s,
                             ),
                           ),
                           errorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(14 * s),
                             borderSide: const BorderSide(
                               color: constants.errorColor,
                             ),
                           ),
                           focusedErrorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(
+                            borderRadius: BorderRadius.circular(14 * s),
+                            borderSide: BorderSide(
                               color: constants.errorColor,
-                              width: 2,
+                              width: 2 * s,
                             ),
                           ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 18,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 20 * s,
+                            vertical: 18 * s,
                           ),
                         ),
                         validator: (value) {
@@ -428,14 +440,14 @@ class _RegisterPageState extends State<RegisterPage> {
                         },
                       ),
                       
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16 * s),
                       
                       // Confirm Password Field
                       TextFormField(
                         controller: _confirmPasswordController,
                         obscureText: !_isConfirmPasswordVisible,
-                        style: const TextStyle(
-                          fontSize: 15,
+                        style: TextStyle(
+                          fontSize: 15 * s,
                           color: Colors.black87,
                           fontWeight: FontWeight.w500,
                         ),
@@ -443,15 +455,15 @@ class _RegisterPageState extends State<RegisterPage> {
                           labelText: 'Konfirmasi Password',
                           labelStyle: TextStyle(
                             color: Colors.grey[600],
-                            fontSize: 15,
+                            fontSize: 15 * s,
                             fontWeight: FontWeight.w500,
                           ),
                           prefixIcon: Container(
-                            margin: const EdgeInsets.only(right: 12),
+                            margin: EdgeInsets.only(right: 12 * s),
                             child: Icon(
                               Icons.lock_outline,
                               color: Colors.grey[600],
-                              size: 22,
+                              size: 22 * s,
                             ),
                           ),
                           suffixIcon: IconButton(
@@ -460,7 +472,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                   ? Icons.visibility_outlined
                                   : Icons.visibility_off_outlined,
                               color: Colors.grey[600],
-                              size: 22,
+                              size: 22 * s,
                             ),
                             onPressed: () {
                               setState(() {
@@ -472,36 +484,36 @@ class _RegisterPageState extends State<RegisterPage> {
                           filled: true,
                           fillColor: Colors.grey[50],
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(14 * s),
                             borderSide: BorderSide(color: Colors.grey[300]!),
                           ),
                           enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(14 * s),
                             borderSide: BorderSide(color: Colors.grey[300]!),
                           ),
                           focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(
+                            borderRadius: BorderRadius.circular(14 * s),
+                            borderSide: BorderSide(
                               color: constants.primaryColor,
-                              width: 2,
+                              width: 2 * s,
                             ),
                           ),
                           errorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(14 * s),
                             borderSide: const BorderSide(
                               color: constants.errorColor,
                             ),
                           ),
                           focusedErrorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(
+                            borderRadius: BorderRadius.circular(14 * s),
+                            borderSide: BorderSide(
                               color: constants.errorColor,
-                              width: 2,
+                              width: 2 * s,
                             ),
                           ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 18,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 20 * s,
+                            vertical: 18 * s,
                           ),
                         ),
                         validator: (value) {
@@ -515,15 +527,15 @@ class _RegisterPageState extends State<RegisterPage> {
                         },
                       ),
                       
-                      const SizedBox(height: 20),
+                      SizedBox(height: 20 * s),
                       
-                      // Terms & Conditions - Better design
+                      // Terms & Conditions
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           SizedBox(
-                            height: 22,
-                            width: 22,
+                            height: 22 * s,
+                            width: 22 * s,
                             child: Checkbox(
                               value: _agreeToTerms,
                               onChanged: (value) {
@@ -533,20 +545,20 @@ class _RegisterPageState extends State<RegisterPage> {
                               },
                               activeColor: constants.primaryColor,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(5),
+                                borderRadius: BorderRadius.circular(5 * s),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          SizedBox(width: 12 * s),
                           Expanded(
                             child: Padding(
-                              padding: const EdgeInsets.only(top: 2),
+                              padding: EdgeInsets.only(top: 2 * s),
                               child: RichText(
                                 text: TextSpan(
                                   style: TextStyle(
-                                    fontSize: 13,
+                                    fontSize: 13 * s,
                                     color: Colors.grey[700],
-                                    height: 1.5,
+                                    height: 1.5, // Tetap
                                     fontWeight: FontWeight.w500,
                                   ),
                                   children: [
@@ -556,10 +568,10 @@ class _RegisterPageState extends State<RegisterPage> {
                                         onTap: () {
                                           // Handle terms tap
                                         },
-                                        child: const Text(
+                                        child: Text(
                                           'Syarat dan Ketentuan',
                                           style: TextStyle(
-                                            fontSize: 13,
+                                            fontSize: 13 * s,
                                             color: constants.primaryColor,
                                             fontWeight: FontWeight.w700,
                                             decoration: TextDecoration.underline,
@@ -574,10 +586,10 @@ class _RegisterPageState extends State<RegisterPage> {
                                         onTap: () {
                                           // Handle privacy tap
                                         },
-                                        child: const Text(
+                                        child: Text(
                                           'Kebijakan Privasi',
                                           style: TextStyle(
-                                            fontSize: 13,
+                                            fontSize: 13 * s,
                                             color: constants.primaryColor,
                                             fontWeight: FontWeight.w700,
                                             decoration: TextDecoration.underline,
@@ -594,18 +606,18 @@ class _RegisterPageState extends State<RegisterPage> {
                         ],
                       ),
                       
-                      const SizedBox(height: 28),
+                      SizedBox(height: 28 * s),
                       
-                      // Register Button - Enhanced design
+                      // Register Button
                       Container(
-                        height: 56,
+                        height: 56 * s,
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(14 * s),
                           boxShadow: [
                             BoxShadow(
                               color: constants.primaryColor.withOpacity(0.3),
-                              blurRadius: 12,
-                              offset: const Offset(0, 6),
+                              blurRadius: 12 * s,
+                              offset: Offset(0, 6 * s),
                             ),
                           ],
                         ),
@@ -616,50 +628,50 @@ class _RegisterPageState extends State<RegisterPage> {
                             foregroundColor: Colors.white,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(14 * s),
                             ),
                             disabledBackgroundColor:
                                 constants.primaryColor.withOpacity(0.6),
                           ),
                           child: _isLoading
-                              ? const SizedBox(
-                                  height: 22,
-                                  width: 22,
+                              ? SizedBox(
+                                  height: 22 * s,
+                                  width: 22 * s,
                                   child: CircularProgressIndicator(
-                                    strokeWidth: 2.5,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                    strokeWidth: 2.5 * s,
+                                    valueColor: const AlwaysStoppedAnimation<Color>(
                                       Colors.white,
                                     ),
                                   ),
                                 )
-                              : const Text(
+                              : Text(
                                   'Daftar',
                                   style: TextStyle(
-                                    fontSize: 16,
+                                    fontSize: 16 * s,
                                     fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.5,
+                                    letterSpacing: 0.5 * s,
                                   ),
                                 ),
                         ),
                       ),
                       
-                      const SizedBox(height: 26),
+                      SizedBox(height: 26 * s),
                       
-                      // Divider with better spacing
+                      // Divider
                       Row(
                         children: [
                           Expanded(
                             child: Divider(
                               color: Colors.grey[300],
-                              thickness: 1,
+                              thickness: 1 * s,
                             ),
                           ),
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            padding: EdgeInsets.symmetric(horizontal: 20 * s),
                             child: Text(
                               'atau',
                               style: TextStyle(
-                                fontSize: 13,
+                                fontSize: 13 * s,
                                 color: Colors.grey[500],
                                 fontWeight: FontWeight.w500,
                               ),
@@ -668,47 +680,47 @@ class _RegisterPageState extends State<RegisterPage> {
                           Expanded(
                             child: Divider(
                               color: Colors.grey[300],
-                              thickness: 1,
+                              thickness: 1 * s,
                             ),
                           ),
                         ],
                       ),
                       
-                      const SizedBox(height: 26),
+                      SizedBox(height: 26 * s),
                       
-                      // Google Sign Up Button - Enhanced
+                      // Google Sign Up Button
                       SizedBox(
-                        height: 56,
+                        height: 56 * s,
                         child: OutlinedButton.icon(
                           onPressed: () {
                             // Handle Google sign up
                           },
                           style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: Colors.grey[300]!, width: 1.5),
+                            side: BorderSide(color: Colors.grey[300]!, width: 1.5 * s),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(14 * s),
                             ),
                             backgroundColor: Colors.white,
                           ),
                           icon: Image.asset(
                             'assets/images/google-icon.png',
-                            height: 24,
-                            width: 24,
+                            height: 24 * s,
+                            width: 24 * s,
                             errorBuilder: (context, error, stackTrace) {
-                              return const Icon(
+                              return Icon(
                                 Icons.g_mobiledata,
-                                size: 24,
+                                size: 24 * s,
                                 color: Colors.black87,
                               );
                             },
                           ),
-                          label: const Text(
+                          label: Text(
                             'Daftar dengan Google',
                             style: TextStyle(
-                              fontSize: 15,
+                              fontSize: 15 * s,
                               fontWeight: FontWeight.w600,
                               color: Colors.black87,
-                              letterSpacing: 0.3,
+                              letterSpacing: 0.3 * s,
                             ),
                           ),
                         ),
@@ -717,16 +729,16 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                 ),
                 
-                const SizedBox(height: 28),
+                SizedBox(height: 28 * s),
                 
-                // Login Link - Better design
+                // Login Link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       'Sudah punya akun? ',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 14 * s,
                         color: Colors.grey[600],
                         fontWeight: FontWeight.w500,
                       ),
@@ -736,14 +748,14 @@ class _RegisterPageState extends State<RegisterPage> {
                         Navigator.of(context).pop();
                       },
                       style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                        padding: EdgeInsets.symmetric(horizontal: 4 * s, vertical: 8 * s),
                         minimumSize: const Size(0, 0),
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
-                      child: const Text(
+                      child: Text(
                         'Masuk',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 14 * s,
                           color: constants.primaryColor,
                           fontWeight: FontWeight.w700,
                         ),
@@ -752,7 +764,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   ],
                 ),
                 
-                const SizedBox(height: 40),
+                SizedBox(height: 40 * s),
               ],
             ),
           ),
