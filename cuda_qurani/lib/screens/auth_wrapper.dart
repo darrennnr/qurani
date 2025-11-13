@@ -1,3 +1,4 @@
+import 'package:cuda_qurani/screens/main/home/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
@@ -48,7 +49,7 @@ class AuthWrapper extends StatelessWidget {
         // Authenticated -> Home
         if (auth.isAuthenticated) {
           print('   → Navigating to HOME');
-          return const SurahListPage();
+          return const HomePage();
         }
 
         // Not authenticated -> Login
