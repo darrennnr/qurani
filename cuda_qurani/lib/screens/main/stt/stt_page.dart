@@ -24,110 +24,102 @@ class SttPage extends StatelessWidget {
       ),
       super(key: key);
 
-  @override
-  Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(
-          create: (_) {
-            final controller = SttController(
-              suratId: suratId,
-              pageId: pageId,
-              juzId: juzId,
-            );
-            // Delay initialization to ensure provider is ready
-            Future.microtask(() => controller.initializeApp());
-            return controller;
-          },
-        ),
-        Provider(create: (_) => QuranService()),
-      ],
-      child: Consumer<SttController>(
-        builder: (context, controller, child) {
-          return Scaffold(
-            backgroundColor: backgroundColor,
-            appBar: const QuranAppBar(),
-            body: controller.isLoading
-                ? const SizedBox.shrink() // No loading UI - instant load
-                : controller.errorMessage.isNotEmpty
-                ? Column(
-                    children: [
-                      Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.symmetric(
-                          horizontal:
-                              MediaQuery.of(context).size.width *
-                              0.04, // ✅ GANTI
-                          vertical:
-                              MediaQuery.of(context).size.height *
-                              0.015, // ✅ GANTI
-                        ),
-                        color: errorColor.withOpacity(0.9),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.warning,
-                              color: Colors.white,
-                              size:
-                                  MediaQuery.of(context).size.width *
-                                  0.05, // ✅ GANTI dari 20
-                            ),
-                            SizedBox(
-                              width: MediaQuery.of(context).size.width * 0.02,
-                            ), // ✅ GANTI dari 8
-                            Expanded(
-                              child: Text(
-                                controller.errorMessage,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize:
-                                      MediaQuery.of(context).size.width *
-                                      0.035, // ✅ GANTI dari 14
-                                ),
-                              ),
-                            ),
-                            IconButton(
-                              icon: Icon(
-                                Icons.close,
+@override
+Widget build(BuildContext context) {
+  return MultiProvider(
+    providers: [
+      ChangeNotifierProvider(
+        create: (_) {
+          final controller = SttController(
+            suratId: suratId,
+            pageId: pageId,
+            juzId: juzId,
+          );
+          Future.microtask(() => controller.initializeApp());
+          return controller;
+        },
+      ),
+      Provider(create: (_) => QuranService()),
+    ],
+    child: Consumer<SttController>(
+      builder: (context, controller, child) {
+        return Scaffold(
+          backgroundColor: backgroundColor,
+          extendBodyBehindAppBar: true, // ✅ Key: Body extends behind AppBar
+          appBar: const QuranAppBar(),
+          body: controller.isLoading
+              ? const SizedBox.shrink()
+              : controller.errorMessage.isNotEmpty
+              ? Column(
+                  children: [
+                    // Error banner below AppBar
+                    SizedBox(height: kToolbarHeight * 0.86),
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: MediaQuery.of(context).size.width * 0.04,
+                        vertical: MediaQuery.of(context).size.height * 0.015,
+                      ),
+                      color: errorColor.withOpacity(0.9),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.warning,
+                            color: Colors.white,
+                            size: MediaQuery.of(context).size.width * 0.05,
+                          ),
+                          SizedBox(
+                            width: MediaQuery.of(context).size.width * 0.02,
+                          ),
+                          Expanded(
+                            child: Text(
+                              controller.errorMessage,
+                              style: TextStyle(
                                 color: Colors.white,
-                                size:
-                                    MediaQuery.of(context).size.width *
-                                    0.05, // ✅ GANTI dari 20
+                                fontSize: MediaQuery.of(context).size.width * 0.035,
                               ),
-                              onPressed: controller.clearError,
                             ),
+                          ),
+                          IconButton(
+                            icon: Icon(
+                              Icons.close,
+                              color: Colors.white,
+                              size: MediaQuery.of(context).size.width * 0.05,
+                            ),
+                            onPressed: controller.clearError,
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: controller.toggleUIVisibility,
+                        child: Column(
+                          children: [
+                            Expanded(child: _buildMainContent()),
+                            if (controller.showLogs && controller.isUIVisible)
+                              const QuranLogsPanel(),
                           ],
                         ),
                       ),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: controller.toggleUIVisibility,
-                          child: Column(
-                            children: [
-                              Expanded(child: _buildMainContent()),
-                              if (controller.showLogs && controller.isUIVisible)
-                                const QuranLogsPanel(),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  )
-                : GestureDetector(
-                    onTap: controller.toggleUIVisibility,
-                    child: Column(
-                      children: [
-                        Expanded(child: _buildMainContent()),
-                        if (controller.showLogs && controller.isUIVisible)
-                          const QuranLogsPanel(),
-                      ],
                     ),
+                  ],
+                )
+              : GestureDetector(
+                  onTap: controller.toggleUIVisibility,
+                  child: Column(
+                    children: [
+                      Expanded(child: _buildMainContent()),
+                      if (controller.showLogs && controller.isUIVisible)
+                        const QuranLogsPanel(),
+                    ],
                   ),
-          );
-        },
-      ),
-    );
-  }
+                ),
+        );
+      },
+    ),
+  );
+}
 
   Widget _buildMainContent() {
     return Consumer<SttController>(

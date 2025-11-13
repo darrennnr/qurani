@@ -244,11 +244,15 @@ class MushafPageContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final appBarHeight = kToolbarHeight * 0.95; // Match QuranAppBar height
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 0),
+      padding: EdgeInsets.only(
+        top: appBarHeight,
+      ), // ✅ Push content below AppBar
       child: Column(
         children: [
-          const MushafPageHeader(),
+          const MushafPageHeader(), // Will be hidden behind AppBar
           const SizedBox(height: 0),
           ..._buildPageLines(),
         ],
@@ -442,6 +446,7 @@ class _JustifiedAyahLine extends StatelessWidget {
                 fontWeight: FontWeight.w400,
               ),
             ),
+            
           );
         }
       }
@@ -468,7 +473,10 @@ class MushafPageHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
     final headerFontSize = screenWidth * 0.035;
+    final headerHeight = screenHeight * 0.035;
+
     final controller = context.watch<SttController>();
     final juzNumber = controller.currentPageAyats.isNotEmpty
         ? controller.calculateJuz(
@@ -477,27 +485,82 @@ class MushafPageHeader extends StatelessWidget {
           )
         : 1;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          'Juz $juzNumber',
-          style: TextStyle(
-            fontSize: headerFontSize,
-            color: Colors.grey.shade700,
-            fontWeight: FontWeight.w500,
+    return Container(
+      height: headerHeight,
+      color: Colors.white, // ✅ ADD: Background to blend when hidden
+      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.02),
+      alignment: Alignment.center,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Juz $juzNumber',
+            style: TextStyle(
+              fontSize: headerFontSize,
+              color: Colors.grey.shade700,
+              fontWeight: FontWeight.w500,
+            ),
+            textDirection: TextDirection.rtl,
           ),
-          textDirection: TextDirection.rtl,
-        ),
-        Text(
-          '${controller.currentPage}',
-          style: TextStyle(
-            fontSize: headerFontSize,
-            color: Colors.grey.shade700,
-            fontWeight: FontWeight.w500,
+          // const SizedBox(width: 3),
+          // Container(
+          //   width: 1,
+          //   height: screenHeight * 0.016,
+          //   color: const Color.fromARGB(255, 0, 0, 0).withOpacity(0.3),
+          // ),
+          // Text(
+          //   'Al-Ikhlas',
+          //   style: TextStyle(
+          //     fontSize: headerFontSize * 90 / 100,
+          //     color: Colors.grey.shade700,
+          //     fontWeight: FontWeight.w500,
+          //   ),
+          //   textDirection: TextDirection.rtl,
+          // ),
+          // Container(
+          //   width: 1,
+          //   height: screenHeight * 0.016,
+          //   color: const Color.fromARGB(255, 0, 0, 0).withOpacity(0.3),
+          // ),
+          // Text(
+          //   'Al-Falaq',
+          //   style: TextStyle(
+          //     fontSize: headerFontSize * 90 / 100,
+          //     color: Colors.grey.shade700,
+          //     fontWeight: FontWeight.w500,
+          //   ),
+          //   textDirection: TextDirection.rtl,
+          // ),
+          // Container(
+          //   width: 1,
+          //   height: screenHeight * 0.016,
+          //   color: const Color.fromARGB(255, 0, 0, 0).withOpacity(0.3),
+          // ),
+          // Text(
+          //   'An-Nas',
+          //   style: TextStyle(
+          //     fontSize: headerFontSize * 90 / 100,
+          //     color: Colors.grey.shade700,
+          //     fontWeight: FontWeight.w500,
+          //   ),
+          //   textDirection: TextDirection.rtl,
+          // ),
+          // Container(
+          //   width: 1,
+          //   height: screenHeight * 0.016,
+          //   color: const Color.fromARGB(255, 0, 0, 0).withOpacity(0.3),
+          // ),
+          // const SizedBox(width: 3),
+          Text(
+            '${controller.currentPage}',
+            style: TextStyle(
+              fontSize: headerFontSize,
+              color: Colors.grey.shade700,
+              fontWeight: FontWeight.w500,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

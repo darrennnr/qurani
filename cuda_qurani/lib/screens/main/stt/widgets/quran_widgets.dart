@@ -15,11 +15,13 @@ class QuranAppBar extends StatelessWidget implements PreferredSizeWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
-    final iconSize = screenWidth * 0.06;
-    final logoHeight = screenHeight * 0.016;
-    final subtitleSize = screenWidth * 0.025;
-    final horizontalPadding = screenWidth * 0.0375;
+    // Responsive sizing
+    final iconSize = screenWidth * 0.060;
+    final titleSize = screenWidth * 0.028;
+    final subtitleSize = screenWidth * 0.028;
+    final badgeSize = screenWidth * 0.028;
 
+    // Determine display name
     String displaySurahName;
     if (controller.suratNameSimple.isNotEmpty) {
       displaySurahName = controller.suratNameSimple;
@@ -29,6 +31,13 @@ class QuranAppBar extends StatelessWidget implements PreferredSizeWidget {
       displaySurahName = 'Loading...';
     }
 
+    final int currentJuz = controller.currentPageAyats.isNotEmpty
+        ? controller.calculateJuz(
+            controller.currentPageAyats.first.surah_id,
+            controller.currentPageAyats.first.ayah,
+          )
+        : 1;
+
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 200),
       opacity: controller.isUIVisible ? 1.0 : 0.0,
@@ -37,89 +46,172 @@ class QuranAppBar extends StatelessWidget implements PreferredSizeWidget {
         child: AppBar(
           backgroundColor: primaryColor,
           foregroundColor: Colors.white,
-          elevation: 0,
-          title: Padding(
-            padding: EdgeInsets.only(left: horizontalPadding),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                IconButton(
-                  icon: Icon(Icons.menu, size: iconSize, color: Colors.white),
-                  onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => SurahListPage()),
-                    );
-                  },
-                ),
-                SizedBox(width: screenWidth * 0.03),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Image.asset(
-                        'assets/images/qurani-white-text.png',
-                        height: logoHeight,
-                        fit: BoxFit.contain,
-                        alignment: Alignment.centerLeft,
+          toolbarHeight: kToolbarHeight * 0.80,
+          leading: IconButton(
+            icon: Icon(Icons.menu, size: iconSize * 120 / 100),
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => SurahListPage()),
+              );
+            },
+            tooltip: 'Menu',
+          ),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Logo
+              Image.asset(
+                'assets/images/qurani-white-text.png',
+                height: screenHeight * 0.016,
+                fit: BoxFit.contain,
+                alignment: Alignment.centerLeft,
+              ),
+              SizedBox(height: screenHeight * 0.006),
+              // Info Row with structured layout
+              Row(
+                children: [
+                  // Surah Name
+                  Flexible(
+                    child: Text(
+                      displaySurahName,
+                      style: TextStyle(
+                        fontSize: titleSize,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.white.withOpacity(0.9),
+                        height: 1.1,
                       ),
-                      SizedBox(height: screenHeight * 0.005),
-                      Text(
-                        '$displaySurahName - Halaman ${controller.currentPage}',
-                        style: TextStyle(
-                          fontSize: subtitleSize,
-                          fontWeight: FontWeight.w400,
-                          height: 1.2,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
                   ),
-                ),
-              ],
-            ),
+                  SizedBox(width: screenWidth * 0.015),
+                  // Separator
+                  Container(
+                    width: 1,
+                    height: screenHeight * 0.016,
+                    color: Colors.white.withOpacity(0.3),
+                  ),
+                  SizedBox(width: screenWidth * 0.015),
+                  // Juz Badge
+                  Text(
+                    'Juz $currentJuz',
+                    style: TextStyle(
+                      fontSize: badgeSize,
+                      fontWeight: FontWeight.w400,
+                      color: Colors.white.withOpacity(0.9),
+                      height: 1.1,
+                    ),
+                  ),
+                  SizedBox(width: screenWidth * 0.015),
+                  // Separator
+                  Container(
+                    width: 1,
+                    height: screenHeight * 0.016,
+                    color: Colors.white.withOpacity(0.3),
+                  ),
+                  SizedBox(width: screenWidth * 0.015),
+                  // Page Number
+                  Text(
+                    'Hal ${controller.currentPage}',
+                    style: TextStyle(
+                      fontSize: subtitleSize,
+                      fontWeight: FontWeight.w400,
+                      color: Colors.white.withOpacity(0.9),
+                      height: 1.1,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
           titleSpacing: 0,
           actions: [
+            // Mode Toggle
             IconButton(
               icon: Icon(
-                controller.isQuranMode ? Icons.list_alt : Icons.auto_stories,
-                size: iconSize * 0.833,
+                controller.isQuranMode
+                    ? Icons.vertical_split
+                    : Icons.auto_stories,
+                size: iconSize * 0.9,
               ),
               onPressed: controller.toggleQuranMode,
               tooltip: controller.isQuranMode
                   ? 'Switch to List Mode'
                   : 'Switch to Mushaf Mode',
+              splashRadius: iconSize * 1.1,
             ),
+            // Visibility Toggle
             IconButton(
               icon: Icon(
                 controller.hideUnreadAyat
-                    ? Icons.visibility_outlined
-                    : Icons.visibility_off_outlined,
-                size: iconSize * 0.833,
+                    ? Icons.visibility
+                    : Icons.visibility_off,
+                size: iconSize * 0.9,
               ),
               onPressed: controller.toggleHideUnread,
               tooltip: controller.hideUnreadAyat
                   ? 'Show All Text'
                   : 'Hide Unread',
+              splashRadius: iconSize * 1.1,
             ),
+            // More Options Menu
             PopupMenuButton<String>(
               onSelected: (action) =>
                   controller.handleMenuAction(context, action),
-              iconSize: iconSize * 0.833,
+              icon: Icon(Icons.settings, size: iconSize * 0.9),
+              splashRadius: iconSize * 1.1,
+              offset: Offset(0, screenHeight * 0.05),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               itemBuilder: (BuildContext context) => [
-                const PopupMenuItem(value: 'logs', child: Text('Debug Logs')),
-                const PopupMenuItem(
-                  value: 'reset',
-                  child: Text('Reset Session'),
+                PopupMenuItem(
+                  value: 'logs',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.bug_report_outlined,
+                        size: iconSize * 0.75,
+                        color: primaryColor,
+                      ),
+                      SizedBox(width: screenWidth * 0.03),
+                      Text('Debug Logs'),
+                    ],
+                  ),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
+                  value: 'reset',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.refresh_outlined,
+                        size: iconSize * 0.75,
+                        color: primaryColor,
+                      ),
+                      SizedBox(width: screenWidth * 0.03),
+                      Text('Reset Session'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
                   value: 'export',
-                  child: Text('Export Session'),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.file_download_outlined,
+                        size: iconSize * 0.75,
+                        color: primaryColor,
+                      ),
+                      SizedBox(width: screenWidth * 0.03),
+                      Text('Export Session'),
+                    ],
+                  ),
                 ),
               ],
             ),
+            SizedBox(width: screenWidth * 0.01),
           ],
         ),
       ),
@@ -127,7 +219,7 @@ class QuranAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight * 0.86);
 }
 
 class QuranBottomBar extends StatelessWidget {
@@ -142,7 +234,7 @@ class QuranBottomBar extends StatelessWidget {
     final containerHeight = screenHeight * 0.15; // ✅ ~120px pada 800px height
     final buttonSize = screenWidth * 0.1625; // ✅ ~65px pada 400px width
     final iconSize = screenWidth * 0.065; // ✅ ~26px pada 400px width
-    final bottomOffset = screenHeight * 0.05; // ✅ ~40px pada 800px height
+    final bottomOffset = screenHeight * 0.030; // ✅ ~40px pada 800px height
 
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 200),
