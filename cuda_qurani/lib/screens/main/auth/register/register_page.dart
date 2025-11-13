@@ -1,8 +1,10 @@
 // lib/screens/auth/register_page.dart
 
+import 'package:cuda_qurani/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:cuda_qurani/screens/main/stt/utils/constants.dart' as constants;
 import 'package:cuda_qurani/screens/main/home/surah_list_page.dart';
+import 'package:provider/provider.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -16,7 +18,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  
+
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
   bool _isLoading = false;
@@ -56,35 +58,79 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 2));
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Registrasi berhasil! Selamat datang'),
-            backgroundColor: constants.correctColor,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12 * s),
-            ),
-            margin: EdgeInsets.all(16 * s),
-          ),
+    if (!_formKey.currentState!.validate()) return;
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+    print(
+      '📝 RegisterPage: Starting registration for ${_emailController.text.trim()}',
+    );
+
+    // ✅ FIXED: Use real AuthProvider instead of simulation
+    final success = await authProvider.signUp(
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+      fullName: _nameController.text.trim(),
+    );
+
+    print('📝 RegisterPage: Registration result = $success');
+    print(
+      '📝 RegisterPage: isAuthenticated after signup = ${authProvider.isAuthenticated}',
+    );
+
+    if (!mounted) return;
+
+    if (success) {
+      print(
+        '✅ RegisterPage: Registration SUCCESS! Waiting for AuthWrapper to navigate...',
+      );
+
+      // Give time for auth state to propagate
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      if (authProvider.isAuthenticated) {
+        print(
+          '✅ RegisterPage: User is authenticated, auth state should trigger navigation',
         );
-        // Navigate to home page
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => const SurahListPage(),
-          ),
+      } else {
+        print(
+          '⚠️ RegisterPage: User NOT authenticated after signup success - checking why...',
         );
+        print('   - Error message: ${authProvider.errorMessage}');
       }
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Registrasi berhasil! Selamat datang'),
+          backgroundColor: constants.correctColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12 * s),
+          ),
+
+          margin: EdgeInsets.all(16 * s),
+        ),
+      );
+
+      // AuthWrapper will automatically navigate to Home
+      // No manual navigation needed!
+    } else {
+      print(
+        '❌ RegisterPage: Registration FAILED - ${authProvider.errorMessage}',
+      );
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authProvider.errorMessage ?? 'Registrasi gagal'),
+          backgroundColor: constants.errorColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12 * s),
+          ),
+          margin: EdgeInsets.all(16 * s),
+        ),
+      );
     }
   }
 
@@ -128,7 +174,7 @@ class _RegisterPageState extends State<RegisterPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 SizedBox(height: 0),
-                
+
                 // Logo Section
                 Center(
                   child: Column(
@@ -138,7 +184,12 @@ class _RegisterPageState extends State<RegisterPage> {
                         width: 137 * s,
                         height: 137 * s,
                         decoration: BoxDecoration(
-                          color: const Color.fromARGB(255, 255, 255, 255).withOpacity(0.08),
+                          color: const Color.fromARGB(
+                            255,
+                            255,
+                            255,
+                            255,
+                          ).withOpacity(0.08),
                           borderRadius: BorderRadius.circular(24 * s),
                           boxShadow: [
                             BoxShadow(
@@ -179,9 +230,9 @@ class _RegisterPageState extends State<RegisterPage> {
                     ],
                   ),
                 ),
-                
+
                 SizedBox(height: 40 * s),
-                
+
                 // Welcome Text
                 Text(
                   'Buat Akun Baru',
@@ -202,9 +253,9 @@ class _RegisterPageState extends State<RegisterPage> {
                     height: 1.5, // Line height (faktor) biasanya tetap
                   ),
                 ),
-                
+
                 SizedBox(height: 32 * s),
-                
+
                 // Form Section
                 Form(
                   key: _formKey,
@@ -280,9 +331,9 @@ class _RegisterPageState extends State<RegisterPage> {
                           return null;
                         },
                       ),
-                      
+
                       SizedBox(height: 16 * s),
-                      
+
                       // Email Field
                       TextFormField(
                         controller: _emailController,
@@ -346,16 +397,17 @@ class _RegisterPageState extends State<RegisterPage> {
                           if (value == null || value.isEmpty) {
                             return 'Email tidak boleh kosong';
                           }
-                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                              .hasMatch(value)) {
+                          if (!RegExp(
+                            r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                          ).hasMatch(value)) {
                             return 'Format email tidak valid';
                           }
                           return null;
                         },
                       ),
-                      
+
                       SizedBox(height: 16 * s),
-                      
+
                       // Password Field
                       TextFormField(
                         controller: _passwordController,
@@ -439,9 +491,9 @@ class _RegisterPageState extends State<RegisterPage> {
                           return null;
                         },
                       ),
-                      
+
                       SizedBox(height: 16 * s),
-                      
+
                       // Confirm Password Field
                       TextFormField(
                         controller: _confirmPasswordController,
@@ -526,9 +578,9 @@ class _RegisterPageState extends State<RegisterPage> {
                           return null;
                         },
                       ),
-                      
+
                       SizedBox(height: 20 * s),
-                      
+
                       // Terms & Conditions
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -574,8 +626,10 @@ class _RegisterPageState extends State<RegisterPage> {
                                             fontSize: 13 * s,
                                             color: constants.primaryColor,
                                             fontWeight: FontWeight.w700,
-                                            decoration: TextDecoration.underline,
-                                            decorationColor: constants.primaryColor,
+                                            decoration:
+                                                TextDecoration.underline,
+                                            decorationColor:
+                                                constants.primaryColor,
                                           ),
                                         ),
                                       ),
@@ -592,8 +646,10 @@ class _RegisterPageState extends State<RegisterPage> {
                                             fontSize: 13 * s,
                                             color: constants.primaryColor,
                                             fontWeight: FontWeight.w700,
-                                            decoration: TextDecoration.underline,
-                                            decorationColor: constants.primaryColor,
+                                            decoration:
+                                                TextDecoration.underline,
+                                            decorationColor:
+                                                constants.primaryColor,
                                           ),
                                         ),
                                       ),
@@ -605,9 +661,9 @@ class _RegisterPageState extends State<RegisterPage> {
                           ),
                         ],
                       ),
-                      
+
                       SizedBox(height: 28 * s),
-                      
+
                       // Register Button
                       Container(
                         height: 56 * s,
@@ -621,42 +677,49 @@ class _RegisterPageState extends State<RegisterPage> {
                             ),
                           ],
                         ),
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _handleRegister,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: constants.primaryColor,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14 * s),
-                            ),
-                            disabledBackgroundColor:
-                                constants.primaryColor.withOpacity(0.6),
-                          ),
-                          child: _isLoading
-                              ? SizedBox(
-                                  height: 22 * s,
-                                  width: 22 * s,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.5 * s,
-                                    valueColor: const AlwaysStoppedAnimation<Color>(
-                                      Colors.white,
-                                    ),
-                                  ),
-                                )
-                              : Text(
-                                  'Daftar',
-                                  style: TextStyle(
-                                    fontSize: 16 * s,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.5 * s,
-                                  ),
+                        child: Consumer<AuthProvider>(
+                          builder: (context, auth, _) {
+                            return ElevatedButton(
+                              onPressed: auth.isLoading
+                                  ? null
+                                  : _handleRegister,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: constants.primaryColor,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
                                 ),
+                                disabledBackgroundColor: constants.primaryColor
+                                    .withOpacity(0.6),
+                              ),
+                              child: auth.isLoading
+                                  ? const SizedBox(
+                                      height: 22,
+                                      width: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.5,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Colors.white,
+                                            ),
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Daftar',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                            );
+                          },
                         ),
                       ),
-                      
+
                       SizedBox(height: 26 * s),
-                      
+
                       // Divider
                       Row(
                         children: [
@@ -685,9 +748,9 @@ class _RegisterPageState extends State<RegisterPage> {
                           ),
                         ],
                       ),
-                      
+
                       SizedBox(height: 26 * s),
-                      
+
                       // Google Sign Up Button
                       SizedBox(
                         height: 56 * s,
@@ -696,7 +759,10 @@ class _RegisterPageState extends State<RegisterPage> {
                             // Handle Google sign up
                           },
                           style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: Colors.grey[300]!, width: 1.5 * s),
+                            side: BorderSide(
+                              color: Colors.grey[300]!,
+                              width: 1.5 * s,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14 * s),
                             ),
@@ -728,9 +794,9 @@ class _RegisterPageState extends State<RegisterPage> {
                     ],
                   ),
                 ),
-                
+
                 SizedBox(height: 28 * s),
-                
+
                 // Login Link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -748,7 +814,10 @@ class _RegisterPageState extends State<RegisterPage> {
                         Navigator.of(context).pop();
                       },
                       style: TextButton.styleFrom(
-                        padding: EdgeInsets.symmetric(horizontal: 4 * s, vertical: 8 * s),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 4 * s,
+                          vertical: 8 * s,
+                        ),
                         minimumSize: const Size(0, 0),
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
@@ -763,7 +832,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                   ],
                 ),
-                
+
                 SizedBox(height: 40 * s),
               ],
             ),

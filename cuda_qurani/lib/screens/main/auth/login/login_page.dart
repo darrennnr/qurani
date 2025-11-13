@@ -4,6 +4,8 @@ import 'package:cuda_qurani/screens/main/auth/register/register_page.dart';
 import 'package:flutter/material.dart';
 import 'package:cuda_qurani/screens/main/stt/utils/constants.dart' as constants;
 import 'package:cuda_qurani/screens/main/home/surah_list_page.dart';
+import 'package:provider/provider.dart';
+import '../../../../providers/auth_provider.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -15,7 +17,7 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  
+
   bool _isPasswordVisible = false;
   bool _isLoading = false;
   bool _rememberMe = false;
@@ -28,23 +30,65 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _handleLogin() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 2));
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-        // Navigate to home page
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => const SurahListPage(),
-          ),
+    if (!_formKey.currentState!.validate()) return;
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    print('🔑 LoginPage: Starting login for ${_emailController.text.trim()}');
+
+    final success = await authProvider.signIn(
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+      rememberMe: _rememberMe,
+    );
+
+    print('🔑 LoginPage: Login result = $success');
+    print(
+      '🔑 LoginPage: isAuthenticated after login = ${authProvider.isAuthenticated}',
+    );
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (success && mounted) {
+      print(
+        '✅ LoginPage: Login SUCCESS! Waiting for AuthWrapper to navigate...',
+      );
+
+      // Give time for auth state to propagate
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      // Check if still on login page after delay
+      if (authProvider.isAuthenticated) {
+        print(
+          '✅ LoginPage: User is authenticated, auth state should trigger navigation',
+        );
+      } else {
+        print(
+          '⚠️ LoginPage: User NOT authenticated after login success - this is a bug!',
         );
       }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Login berhasil!'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 1),
+        ),
+      );
+    } else if (!success && mounted) {
+      print('❌ LoginPage: Login FAILED - ${authProvider.errorMessage}');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authProvider.errorMessage ?? 'Login gagal'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -65,7 +109,7 @@ class _LoginPageState extends State<LoginPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 SizedBox(height: 50 * s),
-                
+
                 // Logo Section
                 Center(
                   child: Column(
@@ -75,7 +119,12 @@ class _LoginPageState extends State<LoginPage> {
                         width: 137 * s,
                         height: 137 * s,
                         decoration: BoxDecoration(
-                          color: const Color.fromARGB(255, 255, 255, 255).withOpacity(0.08),
+                          color: const Color.fromARGB(
+                            255,
+                            255,
+                            255,
+                            255,
+                          ).withOpacity(0.08),
                           borderRadius: BorderRadius.circular(24 * s),
                           boxShadow: [
                             BoxShadow(
@@ -116,9 +165,9 @@ class _LoginPageState extends State<LoginPage> {
                     ],
                   ),
                 ),
-                
+
                 SizedBox(height: 40 * s),
-                
+
                 // Welcome Text
                 Text(
                   'Selamat Datang',
@@ -139,9 +188,9 @@ class _LoginPageState extends State<LoginPage> {
                     height: 1.5, // Tetap
                   ),
                 ),
-                
+
                 SizedBox(height: 40 * s),
-                
+
                 // Form Section
                 Form(
                   key: _formKey,
@@ -211,16 +260,17 @@ class _LoginPageState extends State<LoginPage> {
                           if (value == null || value.isEmpty) {
                             return 'Email tidak boleh kosong';
                           }
-                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                              .hasMatch(value)) {
+                          if (!RegExp(
+                            r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                          ).hasMatch(value)) {
                             return 'Format email tidak valid';
                           }
                           return null;
                         },
                       ),
-                      
+
                       SizedBox(height: 18 * s),
-                      
+
                       // Password Field
                       TextFormField(
                         controller: _passwordController,
@@ -304,9 +354,9 @@ class _LoginPageState extends State<LoginPage> {
                           return null;
                         },
                       ),
-                      
+
                       SizedBox(height: 18 * s),
-                      
+
                       // Remember Me & Forgot Password
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -345,7 +395,10 @@ class _LoginPageState extends State<LoginPage> {
                               // Handle forgot password
                             },
                             style: TextButton.styleFrom(
-                              padding: EdgeInsets.symmetric(horizontal: 4 * s, vertical: 8 * s),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 4 * s,
+                                vertical: 8 * s,
+                              ),
                               minimumSize: const Size(0, 0),
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
@@ -360,9 +413,9 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ],
                       ),
-                      
+
                       SizedBox(height: 32 * s),
-                      
+
                       // Login Button
                       Container(
                         height: 56 * s,
@@ -385,8 +438,8 @@ class _LoginPageState extends State<LoginPage> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14 * s),
                             ),
-                            disabledBackgroundColor:
-                                constants.primaryColor.withOpacity(0.6),
+                            disabledBackgroundColor: constants.primaryColor
+                                .withOpacity(0.6),
                           ),
                           child: _isLoading
                               ? SizedBox(
@@ -394,9 +447,10 @@ class _LoginPageState extends State<LoginPage> {
                                   width: 22 * s,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2.5 * s,
-                                    valueColor: const AlwaysStoppedAnimation<Color>(
-                                      Colors.white,
-                                    ),
+                                    valueColor:
+                                        const AlwaysStoppedAnimation<Color>(
+                                          Colors.white,
+                                        ),
                                   ),
                                 )
                               : Text(
@@ -409,9 +463,9 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                         ),
                       ),
-                      
+
                       SizedBox(height: 28 * s),
-                      
+
                       // Divider
                       Row(
                         children: [
@@ -440,9 +494,9 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ],
                       ),
-                      
+
                       SizedBox(height: 28 * s),
-                      
+
                       // Google Sign In Button
                       SizedBox(
                         height: 56 * s,
@@ -451,7 +505,10 @@ class _LoginPageState extends State<LoginPage> {
                             // Handle Google sign in
                           },
                           style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: Colors.grey[300]!, width: 1.5 * s),
+                            side: BorderSide(
+                              color: Colors.grey[300]!,
+                              width: 1.5 * s,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14 * s),
                             ),
@@ -483,9 +540,9 @@ class _LoginPageState extends State<LoginPage> {
                     ],
                   ),
                 ),
-                
+
                 SizedBox(height: 32 * s),
-                
+
                 // Register Link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -507,7 +564,10 @@ class _LoginPageState extends State<LoginPage> {
                         );
                       },
                       style: TextButton.styleFrom(
-                        padding: EdgeInsets.symmetric(horizontal: 4 * s, vertical: 8 * s),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 4 * s,
+                          vertical: 8 * s,
+                        ),
                         minimumSize: const Size(0, 0),
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
@@ -522,7 +582,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ],
                 ),
-                
+
                 SizedBox(height: 40 * s),
               ],
             ),
