@@ -3,7 +3,6 @@
 import 'package:cuda_qurani/screens/main/auth/register/register_page.dart';
 import 'package:flutter/material.dart';
 import 'package:cuda_qurani/screens/main/stt/utils/constants.dart' as constants;
-import 'package:cuda_qurani/screens/main/home/surah_list_page.dart';
 import 'package:provider/provider.dart';
 import '../../../../providers/auth_provider.dart';
 

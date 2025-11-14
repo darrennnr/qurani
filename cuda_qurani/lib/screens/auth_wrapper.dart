@@ -1,9 +1,8 @@
-import 'package:cuda_qurani/screens/main/home/home_page.dart';
+import 'package:cuda_qurani/screens/main/home/screens/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import './main/auth/login/login_page.dart';
-import './main/home/surah_list_page.dart';
 
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
