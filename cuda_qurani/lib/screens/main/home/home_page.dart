@@ -1,8 +1,10 @@
 // lib/screens/main/home/home_page.dart
 import 'package:cuda_qurani/screens/main/home/profile/profile_page.dart';
 import 'package:cuda_qurani/screens/main/stt/utils/constants.dart' as constants;
+import 'package:cuda_qurani/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -104,6 +106,24 @@ class _HomePageState extends State<HomePage> {
 
   // ==================== MINIMALIST HEADER ====================
   Widget _buildMinimalHeader(double width) {
+    final authProvider = context.watch<AuthProvider>();
+    final user = authProvider.currentUser;
+    
+    // Get display name
+    String displayName = 'User';
+    if (user != null) {
+      if (user.fullName != null && user.fullName!.isNotEmpty) {
+        displayName = user.fullName!;
+      } else {
+        // Use first part of email as name
+        displayName = user.email.split('@')[0];
+        // Capitalize first letter
+        if (displayName.isNotEmpty) {
+          displayName = displayName[0].toUpperCase() + displayName.substring(1);
+        }
+      }
+    }
+    
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -111,18 +131,20 @@ class _HomePageState extends State<HomePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'dummy',
-              style: TextStyle(
+              displayName,
+              style: const TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.w700,
                 color: Colors.black87,
                 letterSpacing: -0.5,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 4),
             Text(
               _getGreeting(),
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 14,
                 color: Colors.black45,
                 fontWeight: FontWeight.w400,

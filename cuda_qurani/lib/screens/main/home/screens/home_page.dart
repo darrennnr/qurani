@@ -1,7 +1,9 @@
 // lib/screens/main/home/screens/home_page.dart
 import 'package:cuda_qurani/screens/main/stt/utils/constants.dart' as constants;
 import 'package:cuda_qurani/screens/main/home/widgets/bottom_nav_bar.dart';
+import 'package:cuda_qurani/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -71,20 +73,40 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildMinimalHeader(double width) {
+    final authProvider = context.watch<AuthProvider>();
+    final user = authProvider.currentUser;
+    
+    // Get display name
+    String displayName = 'User';
+    if (user != null) {
+      if (user.fullName != null && user.fullName!.isNotEmpty) {
+        displayName = user.fullName!;
+      } else {
+        // Use first part of email as name
+        displayName = user.email.split('@')[0];
+        // Capitalize first letter
+        if (displayName.isNotEmpty) {
+          displayName = displayName[0].toUpperCase() + displayName.substring(1);
+        }
+      }
+    }
+    
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'dummy',
-              style: TextStyle(
+            Text(
+              displayName,
+              style: const TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.w700,
                 color: Colors.black87,
                 letterSpacing: -0.5,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 4),
             Text(

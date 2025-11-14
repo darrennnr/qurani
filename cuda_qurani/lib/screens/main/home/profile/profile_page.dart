@@ -1,8 +1,10 @@
 // lib/screens/main/home/profile/profile_page.dart
 import 'package:cuda_qurani/screens/main/home/home_page.dart';
 import 'package:cuda_qurani/screens/main/stt/utils/constants.dart' as constants;
+import 'package:cuda_qurani/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
@@ -102,6 +104,29 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildProfileHeader(double width, double height) {
+    final authProvider = context.watch<AuthProvider>();
+    final user = authProvider.currentUser;
+    
+    // Get first letter of name or email for avatar
+    String avatarLetter = 'U';
+    String displayName = 'User';
+    String displayEmail = 'user@email.com';
+    
+    if (user != null) {
+      displayEmail = user.email;
+      if (user.fullName != null && user.fullName!.isNotEmpty) {
+        displayName = user.fullName!;
+        avatarLetter = user.fullName![0].toUpperCase();
+      } else {
+        displayName = user.email.split('@')[0];
+        // Capitalize first letter
+        if (displayName.isNotEmpty) {
+          displayName = displayName[0].toUpperCase() + displayName.substring(1);
+        }
+        avatarLetter = displayName[0].toUpperCase();
+      }
+    }
+    
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -115,16 +140,23 @@ class _ProfilePageState extends State<ProfilePage> {
             width: 64,
             height: 64,
             decoration: BoxDecoration(
-              color: const Color(0xFFF5F5F5),
+              gradient: LinearGradient(
+                colors: [
+                  constants.primaryColor.withOpacity(0.2),
+                  constants.primaryColor.withOpacity(0.1),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               shape: BoxShape.circle,
             ),
             child: Center(
               child: Text(
-                'd',
-                style: TextStyle(
+                avatarLetter,
+                style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+                  color: constants.primaryColor,
                 ),
               ),
             ),
@@ -135,22 +167,26 @@ class _ProfilePageState extends State<ProfilePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'dummy',
-                  style: TextStyle(
+                  displayName,
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                     color: Colors.black87,
                     letterSpacing: -0.3,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'dummy@gmail.com',
-                  style: TextStyle(
+                  displayEmail,
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
                     color: Colors.black45,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
