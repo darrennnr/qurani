@@ -1,9 +1,11 @@
 // lib/screens/main/home/screens/home_page.dart
 
+import 'package:cuda_qurani/screens/main/home/screens/all_session_page.dart';
 import 'package:cuda_qurani/screens/main/stt/utils/constants.dart' as constants;
 import 'package:cuda_qurani/screens/main/home/widgets/navigation_bar.dart';
 import 'package:cuda_qurani/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
@@ -132,29 +134,67 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // --------------------- HEADER (LATEST SESSION + HISTORY + SEE ALL) ---------------------
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                  width: 6 * s,
-                  height: 6 * s,
-                  decoration: const BoxDecoration(
-                    color: constants.primaryColor,
-                    shape: BoxShape.circle,
-                  ),
+                Row(
+                  children: [
+                    Container(
+                      width: 6 * s,
+                      height: 6 * s,
+                      decoration: const BoxDecoration(
+                        color: constants.primaryColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    SizedBox(width: 8 * s),
+                    Text(
+                      'LATEST SESSION',
+                      style: TextStyle(
+                        fontSize: 11 * s,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black45,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ],
                 ),
-                SizedBox(width: 8 * s),
-                Text(
-                  'LATEST SESSION',
-                  style: TextStyle(
-                    fontSize: 11 * s,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black45,
-                    letterSpacing: 1.2,
+
+                // ---------------- HISTORY ICON + SEE ALL ----------------
+                InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AllSessionPage()),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(6 * s),
+                  child: Row(
+                    children: [
+                      Text(
+                        'See All',
+                        style: TextStyle(
+                          fontSize: 12 * s,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black38,
+                        ),
+                      ),
+                      SizedBox(width: 4 * s),
+                      Icon(
+                        Icons.history,
+                        size: 16 * s,
+                        color: Colors.black38, // abu-abu soft
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
+
             SizedBox(height: 20 * s),
+
+            // --------------------- SURAH TITLE ---------------------
             Text(
               'Surah Ya-sin',
               style: TextStyle(
@@ -165,6 +205,7 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             SizedBox(height: 6 * s),
+
             Text(
               '1-45 · 9 min ago',
               style: TextStyle(
@@ -173,38 +214,39 @@ class _HomePageState extends State<HomePage> {
                 fontWeight: FontWeight.w400,
               ),
             ),
-            SizedBox(height: 20 * s),
-            Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    height: 3 * s,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF5F5F5),
-                      borderRadius: BorderRadius.circular(2 * s),
-                    ),
-                    child: FractionallySizedBox(
-                      alignment: Alignment.centerLeft,
-                      widthFactor: 0.65,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: constants.primaryColor,
-                          borderRadius: BorderRadius.circular(2 * s),
+
+            SizedBox(height: 25 * s),
+
+            // --------------------- BUTTON: CONTINUE READING ---------------------
+            SizedBox(
+              height: 42 * s,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border.all(color: Colors.black87, width: 1.5 * s),
+                  borderRadius: BorderRadius.circular(24 * s),
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                    },
+                    borderRadius: BorderRadius.circular(24 * s),
+                    child: Center(
+                      child: Text(
+                        'Continue reading',
+                        style: TextStyle(
+                          fontSize: 13 * s,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ),
                   ),
                 ),
-                SizedBox(width: 12 * s),
-                Text(
-                  '65%',
-                  style: TextStyle(
-                    fontSize: 12 * s,
-                    fontWeight: FontWeight.w600,
-                    color: constants.primaryColor,
-                  ),
-                ),
-              ],
+              ),
             ),
           ],
         ),

@@ -1,5 +1,6 @@
 // lib/screens/main/home/widgets/app_bar.dart
 
+import 'package:cuda_qurani/screens/main/home/screens/activity_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cuda_qurani/screens/main/stt/utils/constants.dart' as constants;
@@ -41,7 +42,7 @@ class _MenuAppBarState extends State<MenuAppBar> {
     {'label': 'Home', 'index': 0},
     {'label': 'Quran', 'index': 1},
     {'label': 'Goal', 'index': 2},
-    {'label': 'Bookmark', 'index': 4},
+    {'label': 'Activity', 'index': 4},
     {'label': 'History', 'index': 5},
     {'label': 'Settings', 'index': 6},
   ];
@@ -291,8 +292,8 @@ class _MenuAppBarState extends State<MenuAppBar> {
         targetPage = const ProfilePage();
         break;
       case 4:
-        // Bookmark page - implement later
-        targetPage = const HomePage(); // Temporary
+        // Activity page - implement later
+        targetPage = const ActivityPage(); // Temporary
         break;
       case 5:
         // History page - implement later

@@ -439,7 +439,7 @@ class _SurahListPageState extends State<SurahListPage>
                     Text(
                       latin,
                       style: TextStyle(
-                        fontSize: 16 * s,
+                        fontSize: 18 * s,
                         fontWeight: FontWeight.w600,
                         color: const Color(0xFF2C2C2C),
                         letterSpacing: 0.1,
@@ -462,7 +462,7 @@ class _SurahListPageState extends State<SurahListPage>
                 'surah${id.toString().padLeft(3, '0')}',
                 style: TextStyle(
                   fontFamily: 'surah-name-v1',
-                  fontSize: 26 * s,
+                  fontSize: 30 * s,
                   color: constants.primaryColor.withOpacity(0.8),
                 ),
               ),
