@@ -272,7 +272,17 @@ class QuranBottomBar extends StatelessWidget {
                       child: InkWell(
                         borderRadius: BorderRadius.circular(buttonSize / 2),
                         onTap: () async {
-                          // ... (logic tetap sama) ...
+                          print('🎤 BUTTON: Record button pressed (isRecording: ${controller.isRecording})');
+                          
+                          if (controller.isRecording) {
+                            print('🛑 BUTTON: Stopping recording...');
+                            await controller.stopRecording();
+                            print('✅ BUTTON: Recording stopped');
+                          } else {
+                            print('▶️ BUTTON: Starting recording...');
+                            await controller.startRecording();
+                            print('✅ BUTTON: Recording started');
+                          }
                         },
                         child: Center(
                           child: AnimatedSwitcher(

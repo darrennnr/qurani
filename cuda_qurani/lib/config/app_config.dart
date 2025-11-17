@@ -2,7 +2,7 @@
 /// Contains API endpoints and credentials
 class AppConfig {
   // Backend WebSocket URL
-  static const String websocketUrl = 'ws://192.168.18.60:8000/ws/recite';
+  static const String websocketUrl = 'ws://192.168.0.190:8000/ws/recite';
   // static const String websocketUrl = 'wss://backend.mangkidals.my.id/ws/recite';
   
   // For network/real device, use your computer's IP:

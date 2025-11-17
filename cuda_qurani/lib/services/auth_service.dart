@@ -2,6 +2,7 @@ import 'package:supabase/supabase.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
+import './websocket_service.dart'; // ✅ Import WebSocketService
 
 class AuthService {
   // Singleton
@@ -115,6 +116,21 @@ class AuthService {
   Future<void> signOut() async {
     try {
       print('👋 Signing out...');
+
+      // ✅ CRITICAL: Disconnect and reset WebSocket before logout
+      try {
+        print('🔌 Disconnecting WebSocket before logout...');
+        final ws = WebSocketService();
+        if (ws.isConnected) {
+          ws.disconnect();
+        }
+        // ✅ Reset singleton so next user gets fresh connection
+        WebSocketService.resetInstance();
+        print('✅ WebSocket disconnected and reset');
+      } catch (e) {
+        print('⚠️ Failed to disconnect WebSocket: $e');
+        // Continue with logout anyway
+      }
 
       await _supabase.auth.signOut();
       _currentUser = null;

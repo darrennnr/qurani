@@ -1,6 +1,7 @@
 // lib/screens/auth/login_page.dart
 
 import 'package:cuda_qurani/screens/main/auth/register/register_page.dart';
+import 'package:cuda_qurani/screens/main/home/screens/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:cuda_qurani/screens/main/stt/utils/constants.dart' as constants;
 import 'package:provider/provider.dart';
@@ -46,32 +47,13 @@ class _LoginPageState extends State<LoginPage> {
     );
 
     print('🔑 LoginPage: Login result = $success');
-    print(
-      '🔑 LoginPage: isAuthenticated after login = ${authProvider.isAuthenticated}',
-    );
 
     setState(() {
       _isLoading = false;
     });
 
     if (success && mounted) {
-      print(
-        '✅ LoginPage: Login SUCCESS! Waiting for AuthWrapper to navigate...',
-      );
-
-      // Give time for auth state to propagate
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      // Check if still on login page after delay
-      if (authProvider.isAuthenticated) {
-        print(
-          '✅ LoginPage: User is authenticated, auth state should trigger navigation',
-        );
-      } else {
-        print(
-          '⚠️ LoginPage: User NOT authenticated after login success - this is a bug!',
-        );
-      }
+      print('✅ LoginPage: Login SUCCESS! Navigating to HomePage...');
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -79,6 +61,15 @@ class _LoginPageState extends State<LoginPage> {
           backgroundColor: Colors.green,
           duration: Duration(seconds: 1),
         ),
+      );
+
+      // ✅ FIX: Manual navigation instead of relying on AuthWrapper Consumer
+      // Navigate and remove all previous routes
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (context) => const HomePage(),
+        ),
+        (route) => false,
       );
     } else if (!success && mounted) {
       print('❌ LoginPage: Login FAILED - ${authProvider.errorMessage}');

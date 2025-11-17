@@ -1,6 +1,7 @@
 // lib/screens/auth/register_page.dart
 
 import 'package:cuda_qurani/providers/auth_provider.dart';
+import 'package:cuda_qurani/screens/main/home/screens/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:cuda_qurani/screens/main/stt/utils/constants.dart' as constants;
 import 'package:provider/provider.dart';
@@ -80,40 +81,52 @@ class _RegisterPageState extends State<RegisterPage> {
     if (!mounted) return;
 
     if (success) {
-      print(
-        '✅ RegisterPage: Registration SUCCESS! Waiting for AuthWrapper to navigate...',
-      );
+      print('✅ RegisterPage: Registration SUCCESS!');
 
-      // Give time for auth state to propagate
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      if (authProvider.isAuthenticated) {
-        print(
-          '✅ RegisterPage: User is authenticated, auth state should trigger navigation',
-        );
-      } else {
-        print(
-          '⚠️ RegisterPage: User NOT authenticated after signup success - checking why...',
-        );
-        print('   - Error message: ${authProvider.errorMessage}');
-      }
-
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Registrasi berhasil! Selamat datang'),
-          backgroundColor: constants.correctColor,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12 * s),
+      // Check if email confirmation is required
+      if (authProvider.errorMessage?.contains('email') == true) {
+        // Email confirmation required
+        print('📧 RegisterPage: Email confirmation required');
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Registrasi berhasil! Silakan cek email untuk verifikasi'),
+            backgroundColor: constants.correctColor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12 * s),
+            ),
+            margin: EdgeInsets.all(16 * s),
+            duration: const Duration(seconds: 3),
           ),
+        );
+        
+        // Navigate back to login page
+        Navigator.of(context).pop();
+      } else {
+        // No email confirmation needed, user is logged in
+        print('✅ RegisterPage: Navigating to HomePage...');
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Registrasi berhasil! Selamat datang'),
+            backgroundColor: constants.correctColor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12 * s),
+            ),
+            margin: EdgeInsets.all(16 * s),
+          ),
+        );
 
-          margin: EdgeInsets.all(16 * s),
-        ),
-      );
-
-      // AuthWrapper will automatically navigate to Home
-      // No manual navigation needed!
+        // ✅ FIX: Manual navigation instead of relying on AuthWrapper Consumer
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (context) => const HomePage(),
+          ),
+          (route) => false,
+        );
+      }
     } else {
       print(
         '❌ RegisterPage: Registration FAILED - ${authProvider.errorMessage}',

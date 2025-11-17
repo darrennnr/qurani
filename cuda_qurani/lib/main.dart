@@ -66,10 +66,11 @@ class MainApp extends StatelessWidget {
       providers: [
         // ✅ NEW: Auth Provider
         ChangeNotifierProvider(create: (_) => AuthProvider(), lazy: false),
-        // Existing
+        // ✅ FIX: Make RecitationProvider lazy (only created when needed)
+        // This prevents holding old WebSocket reference after logout
         ChangeNotifierProvider(
           create: (_) => RecitationProvider(),
-          lazy: false,
+          lazy: true, // ← CHANGED from false to true
         ),
       ],
       child: MaterialApp(

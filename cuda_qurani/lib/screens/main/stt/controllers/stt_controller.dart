@@ -25,7 +25,14 @@ class SttController with ChangeNotifier {
       '🗃️ SttController: CONSTRUCTOR - surah:$suratId page:$pageId juz:$juzId',
     );
     _webSocketService = WebSocketService(serverUrl: AppConfig.websocketUrl);
-    _initializeWebSocket();
+    print('🔧 SttController: WebSocketService initialized, calling _initializeWebSocket()...');
+    try {
+      _initializeWebSocket();
+      print('✅ SttController: _initializeWebSocket() completed');
+    } catch (e, stack) {
+      print('❌ SttController: _initializeWebSocket() FAILED: $e');
+      print('Stack trace: $stack');
+    }
   }
 
   // Services

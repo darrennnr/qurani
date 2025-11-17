@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import '../services/auth_service.dart';
 
 class WebSocketService {
   // ✅ SINGLETON PATTERN - Fix memory leak on hot restart
@@ -22,7 +23,11 @@ class WebSocketService {
   }
   
   // Private constructor
-  WebSocketService._internal({required this.serverUrl});
+  WebSocketService._internal({required this.serverUrl}) {
+    _authService = AuthService(); // ✅ Initialize AuthService
+  }
+  
+  late final AuthService _authService; // ✅ Add AuthService reference
   
   // Reset singleton (for testing only)
   static void resetInstance() {
@@ -74,6 +79,7 @@ class WebSocketService {
     }
 
     print('🔌 WebSocket: Attempting to connect to $serverUrl');
+    print('   Auth status: ${_authService.isAuthenticated}');
     
     // ✅ FIX: Recreate controllers if closed
     if (_messageController.isClosed) {
@@ -86,7 +92,25 @@ class WebSocketService {
     }
     
     try {
-      _channel = WebSocketChannel.connect(Uri.parse(serverUrl));
+      // ✅ Get access token from AuthService
+      final accessToken = _authService.accessToken;
+      
+      // ✅ Build URL with token as query parameter
+      String wsUrl = serverUrl;
+      if (accessToken != null && accessToken.isNotEmpty) {
+        final uri = Uri.parse(serverUrl);
+        final queryParams = Map<String, String>.from(uri.queryParameters);
+        queryParams['token'] = accessToken;
+        
+        wsUrl = uri.replace(queryParameters: queryParams).toString();
+        print('🔐 WebSocket: Connecting with authentication token');
+        print('   User: ${_authService.currentUser?.email ?? "unknown"}');
+        print('   Token: ${accessToken.substring(0, 20)}...');
+      } else {
+        print('⚠️ WebSocket: No access token found - connecting as anonymous');
+      }
+      
+      _channel = WebSocketChannel.connect(Uri.parse(wsUrl));
       _isConnected = true;
       _isReconnecting = false;
       _reconnectAttempts = 0;
@@ -206,10 +230,25 @@ class WebSocketService {
   void sendStartRecording(int surahNumber) {
     if (_isConnected && _channel != null) {
       _audioChunksSent = 0; // Reset counter
-      final message = jsonEncode({
+      
+      // ✅ Build message with user info if authenticated
+      final messageData = {
         'type': 'start',
         'surah': surahNumber,
-      });
+      };
+      
+      // ✅ Add user info if authenticated
+      if (_authService.isAuthenticated) {
+        messageData['user_uuid'] = _authService.userId ?? '';
+        messageData['user_email'] = _authService.currentUser?.email ?? '';
+        print('🔐 WebSocket: Including user info in START message');
+        print('   UUID: ${_authService.userId}');
+        print('   Email: ${_authService.currentUser?.email}');
+      } else {
+        print('⚠️ WebSocket: Anonymous session (no user info)');
+      }
+      
+      final message = jsonEncode(messageData);
       _channel!.sink.add(message);
       print('🚀 WebSocket: Sent START command for Surah $surahNumber');
     } else {

@@ -28,14 +28,14 @@
        // Check auth state
        await _authService.initialize();
        
-       // ✅ CRITICAL: Listen to auth state changes
+       // ✅ Listen to auth state changes
        _authStateSubscription = _authService.authStateChanges.listen((AuthState state) {
          print('🔔 AuthProvider: Auth state changed');
          print('   - Event: ${state.event}');
          print('   - User: ${state.session?.user.email ?? "null"}');
          print('   - isAuthenticated: ${_authService.isAuthenticated}');
          
-         // Notify listeners whenever auth state changes
+         // Notify listeners for logout or session changes
          notifyListeners();
        });
        
@@ -116,9 +116,7 @@
          
          final success = response.user != null;
          print('🔑 AuthProvider: Sign in ${success ? "SUCCESS" : "FAILED"}');
-         print('🔑 AuthProvider: isAuthenticated=${_authService.isAuthenticated}');
          
-         // Auth state listener will handle notifyListeners()
          return success;
        } catch (e) {
          print('❌ AuthProvider: Sign in error: $e');
