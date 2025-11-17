@@ -1,6 +1,5 @@
 // lib/screens/main/home/screens/profile_page.dart
-import 'package:cuda_qurani/screens/main/home/widgets/app_bar.dart';
-import 'package:cuda_qurani/screens/main/home/widgets/bottom_nav_bar.dart';
+import 'package:cuda_qurani/screens/main/home/widgets/navigation_bar.dart';
 import 'package:cuda_qurani/screens/main/auth/login/login_page.dart';
 import 'package:cuda_qurani/providers/auth_provider.dart';
 import 'package:cuda_qurani/screens/main/stt/utils/constants.dart' as constants;
@@ -25,7 +24,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFFAFAFA),
-      appBar: const ProfileAppBar(),
+      appBar: const ProfileAppBar(title: 'Account'),
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
@@ -59,7 +58,6 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ),
       ),
-      bottomNavigationBar: const CustomBottomNavBar(selectedIndex: 3),
     );
   }
 

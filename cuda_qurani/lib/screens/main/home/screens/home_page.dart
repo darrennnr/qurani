@@ -1,6 +1,7 @@
 // lib/screens/main/home/screens/home_page.dart
+
 import 'package:cuda_qurani/screens/main/stt/utils/constants.dart' as constants;
-import 'package:cuda_qurani/screens/main/home/widgets/bottom_nav_bar.dart';
+import 'package:cuda_qurani/screens/main/home/widgets/navigation_bar.dart';
 import 'package:cuda_qurani/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -23,114 +24,87 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final width = size.width;
-    final height = size.height;
+    final s = size.width / 406.0; // Scale factor
 
     return Scaffold(
       backgroundColor: const Color(0xFFFAFAFA),
+      appBar: const MenuAppBar(selectedIndex: 0),
       body: SafeArea(
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-                child: _buildMinimalHeader(width),
-              ),
-            ),
             SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: EdgeInsets.fromLTRB(24 * s, 20 * s, 24 * s, 0),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  _buildLastRead(width, height),
-                  const SizedBox(height: 20),
-                  const Text(
+                  _buildGreetingHeader(s),
+                  SizedBox(height: 24 * s),
+                  _buildLastRead(s),
+                  SizedBox(height: 20 * s),
+                  Text(
                     'Streak',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 18 * s,
                       fontWeight: FontWeight.w700,
                       color: Colors.black87,
                       letterSpacing: -0.3,
                     ),
                   ),
-                  const SizedBox(height: 15),
-                  _buildStreakSection(width, height),
-                  const SizedBox(height: 20),
-                  _buildProgressGrid(width, height),
-                  const SizedBox(height: 20),
-                  _buildTodayGoal(width, height),
-                  const SizedBox(height: 20),
-                  _buildAchievements(width, height),
-                  const SizedBox(height: 100),
+                  SizedBox(height: 15 * s),
+                  _buildStreakSection(s),
+                  SizedBox(height: 20 * s),
+                  _buildProgressGrid(s),
+                  SizedBox(height: 20 * s),
+                  _buildTodayGoal(s),
+                  SizedBox(height: 20 * s),
+                  _buildAchievements(s),
+                  SizedBox(height: 32 * s),
                 ]),
               ),
             ),
           ],
         ),
       ),
-      bottomNavigationBar: const CustomBottomNavBar(selectedIndex: 0),
     );
   }
 
-  Widget _buildMinimalHeader(double width) {
+  Widget _buildGreetingHeader(double s) {
     final authProvider = context.watch<AuthProvider>();
     final user = authProvider.currentUser;
-    
-    // Get display name
+
     String displayName = 'User';
     if (user != null) {
       if (user.fullName != null && user.fullName!.isNotEmpty) {
         displayName = user.fullName!;
       } else {
-        // Use first part of email as name
         displayName = user.email.split('@')[0];
-        // Capitalize first letter
         if (displayName.isNotEmpty) {
           displayName = displayName[0].toUpperCase() + displayName.substring(1);
         }
       }
     }
-    
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              displayName,
-              style: const TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w700,
-                color: Colors.black87,
-                letterSpacing: -0.5,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _getGreeting(),
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.black45,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-          ],
-        ),
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFF0F0F0), width: 1),
-          ),
-          child: const Icon(
-            Icons.notifications_none_rounded,
+        Text(
+          displayName,
+          style: TextStyle(
+            fontSize: 28 * s,
+            fontWeight: FontWeight.w700,
             color: Colors.black87,
-            size: 22,
+            letterSpacing: -0.5,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        SizedBox(height: 4 * s),
+        Text(
+          _getGreeting(),
+          style: TextStyle(
+            fontSize: 14 * s,
+            color: Colors.black45,
+            fontWeight: FontWeight.w400,
           ),
         ),
       ],
@@ -144,16 +118,16 @@ class _HomePageState extends State<HomePage> {
     return 'Good Evening';
   }
 
-  Widget _buildLastRead(double width, double height) {
+  Widget _buildLastRead(double s) {
     return InkWell(
       onTap: () {},
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(16 * s),
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24 * s),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFF0F0F0), width: 1),
+          borderRadius: BorderRadius.circular(16 * s),
+          border: Border.all(color: const Color(0xFFF0F0F0), width: 1 * s),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -161,18 +135,18 @@ class _HomePageState extends State<HomePage> {
             Row(
               children: [
                 Container(
-                  width: 6,
-                  height: 6,
+                  width: 6 * s,
+                  height: 6 * s,
                   decoration: const BoxDecoration(
                     color: constants.primaryColor,
                     shape: BoxShape.circle,
                   ),
                 ),
-                const SizedBox(width: 8),
-                const Text(
+                SizedBox(width: 8 * s),
+                Text(
                   'LATEST SESSION',
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: 11 * s,
                     fontWeight: FontWeight.w700,
                     color: Colors.black45,
                     letterSpacing: 1.2,
@@ -180,34 +154,34 @@ class _HomePageState extends State<HomePage> {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
-            const Text(
+            SizedBox(height: 20 * s),
+            Text(
               'Surah Ya-sin',
               style: TextStyle(
-                fontSize: 24,
+                fontSize: 24 * s,
                 fontWeight: FontWeight.w700,
                 color: Colors.black87,
                 letterSpacing: -0.5,
               ),
             ),
-            const SizedBox(height: 6),
-            const Text(
+            SizedBox(height: 6 * s),
+            Text(
               '1-45 · 9 min ago',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 14 * s,
                 color: Colors.black45,
                 fontWeight: FontWeight.w400,
               ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20 * s),
             Row(
               children: [
                 Expanded(
                   child: Container(
-                    height: 3,
+                    height: 3 * s,
                     decoration: BoxDecoration(
                       color: const Color(0xFFF5F5F5),
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: BorderRadius.circular(2 * s),
                     ),
                     child: FractionallySizedBox(
                       alignment: Alignment.centerLeft,
@@ -215,17 +189,17 @@ class _HomePageState extends State<HomePage> {
                       child: Container(
                         decoration: BoxDecoration(
                           color: constants.primaryColor,
-                          borderRadius: BorderRadius.circular(2),
+                          borderRadius: BorderRadius.circular(2 * s),
                         ),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
-                const Text(
+                SizedBox(width: 12 * s),
+                Text(
                   '65%',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 12 * s,
                     fontWeight: FontWeight.w600,
                     color: constants.primaryColor,
                   ),
@@ -238,47 +212,47 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildStreakSection(double width, double height) {
+  Widget _buildStreakSection(double s) {
     return Row(
       children: [
         Expanded(
           child: Container(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(20 * s),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFF0F0F0), width: 1),
+              borderRadius: BorderRadius.circular(16 * s),
+              border: Border.all(color: const Color(0xFFF0F0F0), width: 1 * s),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Current Streak 🔥',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 12 * s,
                     color: Colors.black45,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8 * s),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
                   children: [
                     Text(
                       '$_currentStreak',
-                      style: const TextStyle(
-                        fontSize: 32,
+                      style: TextStyle(
+                        fontSize: 32 * s,
                         fontWeight: FontWeight.w700,
                         color: Colors.black87,
                         height: 1,
                       ),
                     ),
-                    const SizedBox(width: 6),
-                    const Text(
+                    SizedBox(width: 6 * s),
+                    Text(
                       'day',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 14 * s,
                         color: Colors.black45,
                         fontWeight: FontWeight.w500,
                       ),
@@ -289,45 +263,45 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
         ),
-        const SizedBox(width: 16),
+        SizedBox(width: 16 * s),
         Expanded(
           child: Container(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(20 * s),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFF0F0F0), width: 1),
+              borderRadius: BorderRadius.circular(16 * s),
+              border: Border.all(color: const Color(0xFFF0F0F0), width: 1 * s),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Longest Streak🔥',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 12 * s,
                     color: Colors.black45,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8 * s),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
                   children: [
                     Text(
                       '$_longestStreak',
-                      style: const TextStyle(
-                        fontSize: 32,
+                      style: TextStyle(
+                        fontSize: 32 * s,
                         fontWeight: FontWeight.w700,
                         color: Colors.black87,
                         height: 1,
                       ),
                     ),
-                    const SizedBox(width: 6),
-                    const Text(
+                    SizedBox(width: 6 * s),
+                    Text(
                       'days',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 14 * s,
                         color: Colors.black45,
                         fontWeight: FontWeight.w500,
                       ),
@@ -342,20 +316,20 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildProgressGrid(double width, double height) {
+  Widget _buildProgressGrid(double s) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Progress',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 18 * s,
             fontWeight: FontWeight.w700,
             color: Colors.black87,
             letterSpacing: -0.3,
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16 * s),
         Row(
           children: [
             Expanded(
@@ -363,19 +337,21 @@ class _HomePageState extends State<HomePage> {
                 'Completion',
                 '$_completionPercentage%',
                 constants.primaryColor,
+                s,
               ),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: 16 * s),
             Expanded(
               child: _buildProgressCard(
                 'Memorized',
                 '$_memorizedPercentage%',
                 constants.accentColor,
+                s,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16 * s),
         Row(
           children: [
             Expanded(
@@ -383,14 +359,16 @@ class _HomePageState extends State<HomePage> {
                 'Time',
                 _engagementTime,
                 constants.listeningColor,
+                s,
               ),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: 16 * s),
             Expanded(
               child: _buildProgressCard(
                 'Verses',
                 '$_versesRecited',
                 constants.correctColor,
+                s,
               ),
             ),
           ],
@@ -399,36 +377,36 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildProgressCard(String label, String value, Color color) {
+  Widget _buildProgressCard(String label, String value, Color color, double s) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20 * s),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFF0F0F0), width: 1),
+        borderRadius: BorderRadius.circular(16 * s),
+        border: Border.all(color: const Color(0xFFF0F0F0), width: 1 * s),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 4,
-            height: 4,
+            width: 4 * s,
+            height: 4 * s,
             decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12 * s),
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 12,
+            style: TextStyle(
+              fontSize: 12 * s,
               color: Colors.black45,
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4 * s),
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 24,
+            style: TextStyle(
+              fontSize: 24 * s,
               fontWeight: FontWeight.w700,
               color: Colors.black87,
               height: 1.1,
@@ -439,63 +417,63 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildTodayGoal(double width, double height) {
+  Widget _buildTodayGoal(double s) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           "Today's Goal",
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 18 * s,
             fontWeight: FontWeight.w700,
             color: Colors.black87,
             letterSpacing: -0.3,
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16 * s),
         InkWell(
           onTap: () {},
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(16 * s),
           child: Container(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(20 * s),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFF0F0F0), width: 1),
+              borderRadius: BorderRadius.circular(16 * s),
+              border: Border.all(color: const Color(0xFFF0F0F0), width: 1 * s),
             ),
             child: Row(
               children: [
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: 48 * s,
+                  height: 48 * s,
                   decoration: BoxDecoration(
                     color: constants.primaryColor,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12 * s),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.wb_sunny_rounded,
                     color: Colors.white,
-                    size: 24,
+                    size: 24 * s,
                   ),
                 ),
-                const SizedBox(width: 16),
-                const Expanded(
+                SizedBox(width: 16 * s),
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Ayah a Day',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 16 * s,
                           fontWeight: FontWeight.w600,
                           color: Colors.black87,
                         ),
                       ),
-                      SizedBox(height: 2),
+                      SizedBox(height: 2 * s),
                       Text(
                         "Al-Waqi'ah 12",
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 13 * s,
                           color: Colors.black45,
                           fontWeight: FontWeight.w400,
                         ),
@@ -503,9 +481,9 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                 ),
-                const Icon(
+                Icon(
                   Icons.arrow_forward_ios_rounded,
-                  size: 16,
+                  size: 16 * s,
                   color: Colors.black26,
                 ),
               ],
@@ -516,30 +494,30 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildAchievements(double width, double height) {
+  Widget _buildAchievements(double s) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Achievements',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 18 * s,
             fontWeight: FontWeight.w700,
             color: Colors.black87,
             letterSpacing: -0.3,
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16 * s),
         SizedBox(
-          height: 100,
+          height: 100 * s,
           child: ListView(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
             children: [
-              _buildAchievementBadge('🔍', 'Explorer', '10'),
-              _buildAchievementBadge('📱', 'Social', null),
-              _buildAchievementBadge('🎯', 'Reminder', '1'),
-              _buildAchievementBadge('🧠', 'Memory', null),
+              _buildAchievementBadge('🔍', 'Explorer', '10', s),
+              _buildAchievementBadge('📱', 'Social', null, s),
+              _buildAchievementBadge('🎯', 'Reminder', '1', s),
+              _buildAchievementBadge('🧠', 'Memory', null, s),
             ],
           ),
         ),
@@ -547,15 +525,20 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildAchievementBadge(String emoji, String label, String? count) {
+  Widget _buildAchievementBadge(
+    String emoji,
+    String label,
+    String? count,
+    double s,
+  ) {
     return Container(
-      width: 80,
-      margin: const EdgeInsets.only(right: 12),
-      padding: const EdgeInsets.all(16),
+      width: 80 * s,
+      margin: EdgeInsets.only(right: 12 * s),
+      padding: EdgeInsets.all(16 * s),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFF0F0F0), width: 1),
+        borderRadius: BorderRadius.circular(16 * s),
+        border: Border.all(color: const Color(0xFFF0F0F0), width: 1 * s),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -563,26 +546,26 @@ class _HomePageState extends State<HomePage> {
           Stack(
             clipBehavior: Clip.none,
             children: [
-              Text(emoji, style: const TextStyle(fontSize: 32)),
+              Text(emoji, style: TextStyle(fontSize: 32 * s)),
               if (count != null)
                 Positioned(
-                  top: -4,
-                  right: -4,
+                  top: -4 * s,
+                  right: -4 * s,
                   child: Container(
-                    padding: const EdgeInsets.all(4),
+                    padding: EdgeInsets.all(4 * s),
                     decoration: const BoxDecoration(
                       color: constants.warningColor,
                       shape: BoxShape.circle,
                     ),
-                    constraints: const BoxConstraints(
-                      minWidth: 18,
-                      minHeight: 18,
+                    constraints: BoxConstraints(
+                      minWidth: 18 * s,
+                      minHeight: 18 * s,
                     ),
                     child: Center(
                       child: Text(
                         count,
-                        style: const TextStyle(
-                          fontSize: 10,
+                        style: TextStyle(
+                          fontSize: 10 * s,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                           height: 1,
@@ -593,11 +576,11 @@ class _HomePageState extends State<HomePage> {
                 ),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8 * s),
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 10,
+            style: TextStyle(
+              fontSize: 10 * s,
               color: Colors.black87,
               fontWeight: FontWeight.w500,
             ),
