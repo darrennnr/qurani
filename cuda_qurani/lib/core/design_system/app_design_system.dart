@@ -1244,6 +1244,23 @@ class AppPadding {
     return EdgeInsets.all(value * s);
   }
 
+  /// Only specific sides
+  static EdgeInsets only(
+    BuildContext context, {
+    double? left,
+    double? top,
+    double? right,
+    double? bottom,
+  }) {
+    final s = AppDesignSystem.getScaleFactor(context);
+    return EdgeInsets.only(
+      left: (left ?? 0) * s,
+      top: (top ?? 0) * s,
+      right: (right ?? 0) * s,
+      bottom: (bottom ?? 0) * s,
+    );
+  }
+
   /// Custom padding
   static EdgeInsets custom(
     BuildContext context, {

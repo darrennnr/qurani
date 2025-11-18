@@ -1,10 +1,10 @@
 // lib/screens/main/home/screens/profile_page.dart
+import 'package:cuda_qurani/core/design_system/app_design_system.dart';
+import 'package:cuda_qurani/core/widgets/app_components.dart';
 import 'package:cuda_qurani/screens/main/home/widgets/navigation_bar.dart';
 import 'package:cuda_qurani/screens/main/auth/login/login_page.dart';
 import 'package:cuda_qurani/providers/auth_provider.dart';
-import 'package:cuda_qurani/screens/main/stt/utils/constants.dart' as constants;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -16,43 +16,30 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   bool _isLoggingOut = false;
+
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final width = size.width;
-    final height = size.height;
-
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
+      backgroundColor: AppColors.backgroundLight,
       appBar: const ProfileAppBar(title: 'Account'),
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: AppPadding.horizontal(context, AppDesignSystem.space24),
             child: Column(
               children: [
-                const SizedBox(height: 20),
-                _buildProfileHeader(width, height),
-                const SizedBox(height: 24),
-                _buildInfoRow('Joined', '08/05/2025', width),
-                const Divider(height: 1, color: Color(0xFFF0F0F0)),
-                _buildInfoRow('Subscription Status', 'Free Plan', width),
-                const SizedBox(height: 20),
-                _buildActionButton('SWITCH ACCOUNT', width, false, _showSwitchAccountDialog),
-                const SizedBox(height: 12),
-                _buildActionButton('LOG OUT', width, true, _showLogoutDialog),
-                const SizedBox(height: 28),
-                _buildMenuItem('About Qurani', Icons.info_outline, width),
-                _buildMenuItem('Request a Feature', Icons.chat_bubble_outline, width),
-                _buildMenuItem('Help Center', Icons.help_outline, width),
-                _buildMenuItem('Share Application', Icons.share_outlined, width),
-                _buildMenuItem('Rate Application', Icons.star_outline, width),
-                _buildMenuItem('Terms of Service', Icons.arrow_forward_ios, width),
-                _buildMenuItem('Privacy Policy', Icons.arrow_forward_ios, width),
-                const SizedBox(height: 16),
-                _buildDeleteAccount(width),
-                const SizedBox(height: 100),
+                AppMargin.gap(context),
+                _buildProfileHeader(),
+                AppMargin.gap(context),
+                _buildInfoSection(),
+                AppMargin.gap(context),
+                _buildActionButtons(),
+                AppMargin.gapLarge(context),
+                _buildMenuSection(),
+                AppMargin.gap(context),
+                _buildDeleteAccount(),
+                AppMargin.customGap(context, 100),
               ],
             ),
           ),
@@ -61,15 +48,15 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildProfileHeader(double width, double height) {
+  Widget _buildProfileHeader() {
     final authProvider = context.watch<AuthProvider>();
     final user = authProvider.currentUser;
-    
+
     // Get first letter of name or email for avatar
     String avatarLetter = 'U';
     String displayName = 'User';
     String displayEmail = 'user@email.com';
-    
+
     if (user != null) {
       displayEmail = user.email;
       if (user.fullName != null && user.fullName!.isNotEmpty) {
@@ -80,24 +67,20 @@ class _ProfilePageState extends State<ProfilePage> {
         avatarLetter = displayName[0].toUpperCase();
       }
     }
-    
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFF0F0F0), width: 1),
-      ),
+
+    return AppCard(
+      padding: AppPadding.all(context, AppDesignSystem.space20),
       child: Row(
         children: [
+          // Avatar with gradient background
           Container(
-            width: 64,
-            height: 64,
+            width: AppDesignSystem.scale(context, 64),
+            height: AppDesignSystem.scale(context, 64),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  constants.primaryColor.withOpacity(0.2),
-                  constants.primaryColor.withOpacity(0.1),
+                  AppColors.primary.withOpacity(0.2),
+                  AppColors.primary.withOpacity(0.1),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -107,37 +90,32 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Center(
               child: Text(
                 avatarLetter,
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w600,
-                  color: constants.primaryColor,
+                style: AppTypography.h2(
+                  context,
+                  color: AppColors.primary,
+                  weight: AppTypography.semiBold,
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 16),
+          AppMargin.gapH(context),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   displayName,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                    letterSpacing: -0.3,
-                  ),
+                  style: AppTypography.titleLarge(context),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
+                AppMargin.gapSmall(context),
                 Text(
                   displayEmail,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    color: Colors.black45,
+                  style: AppTypography.body(
+                    context,
+                    color: AppColors.textTertiary,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -150,34 +128,46 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildInfoRow(String label, String value, double width) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          bottom: label == 'Joined'
-              ? BorderSide.none
-              : const BorderSide(color: Color(0xFFF0F0F0), width: 0),
-        ),
+  Widget _buildInfoSection() {
+    final authProvider = context.watch<AuthProvider>();
+    final user = authProvider.currentUser;
+
+    // Format date
+    String joinedDate = '08/05/2025';
+    if (user != null) {
+      final date = user.createdAt;
+      joinedDate = '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+    }
+
+    return AppCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          _buildInfoRow('Joined', joinedDate, showDivider: true),
+          _buildInfoRow('Subscription Status', 'Free Plan', showDivider: false),
+        ],
       ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value, {required bool showDivider}) {
+    return Container(
+      padding: AppPadding.all(context, AppDesignSystem.space16),
+      decoration: showDivider
+          ? AppComponentStyles.divider(color: AppColors.borderLight)
+          : null,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              color: Colors.black87,
-            ),
+            style: AppTypography.body(context),
           ),
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              color: Colors.black45,
+            style: AppTypography.body(
+              context,
+              color: AppColors.textTertiary,
             ),
           ),
         ],
@@ -185,52 +175,78 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildActionButton(
-    String text,
-    double width,
-    bool isLogout,
-    VoidCallback onPressed,
-  ) {
-    final bool isDisabled = _isLoggingOut;
-    
-    return Container(
-      height: 48,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(
-          color: isDisabled ? Colors.grey.shade300 : Colors.black87,
-          width: 1.5,
+  Widget _buildActionButtons() {
+    return Column(
+      children: [
+        _buildActionButton(
+          text: 'SWITCH ACCOUNT',
+          onPressed: _showSwitchAccountBottomSheet,
+          isLogout: false,
         ),
-        borderRadius: BorderRadius.circular(24),
+        AppMargin.gapSmall(context),
+        _buildActionButton(
+          text: 'LOG OUT',
+          onPressed: _showLogoutDialog,
+          isLogout: true,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionButton({
+    required String text,
+    required VoidCallback onPressed,
+    required bool isLogout,
+  }) {
+    final bool isDisabled = _isLoggingOut;
+
+    return Container(
+      height: AppDesignSystem.scale(context, 48),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border.all(
+          color: isDisabled 
+              ? AppColors.borderLight 
+              : AppColors.textPrimary.withOpacity(0.75), // Softer black border
+          width: AppDesignSystem.scale(context, 1.5),
+        ),
+        borderRadius: BorderRadius.circular(
+          AppDesignSystem.scale(context, AppDesignSystem.radiusXXLarge),
+        ),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: isDisabled
-              ? null
-              : () {
-                  HapticFeedback.lightImpact();
-                  onPressed();
-                },
-          borderRadius: BorderRadius.circular(24),
+          onTap: isDisabled ? null : () {
+            AppHaptics.light();
+            onPressed();
+          },
+          borderRadius: BorderRadius.circular(
+            AppDesignSystem.scale(context, AppDesignSystem.radiusXXLarge),
+          ),
+          splashColor: AppComponentStyles.rippleColor,
+          highlightColor: AppComponentStyles.hoverColor,
           child: Center(
             child: _isLoggingOut && isLogout
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
+                ? SizedBox(
+                    width: AppDesignSystem.scale(context, 20),
+                    height: AppDesignSystem.scale(context, 20),
+                    child: const CircularProgressIndicator(
                       strokeWidth: 2,
                       valueColor: AlwaysStoppedAnimation<Color>(
-                        constants.primaryColor,
+                        AppColors.primary,
                       ),
                     ),
                   )
                 : Text(
                     text,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: isDisabled ? Colors.grey.shade400 : Colors.black87,
+                    style: AppTypography.label(
+                      context,
+                      color: isDisabled
+                          ? AppColors.textDisabled
+                          : AppColors.textPrimary,
+                      weight: AppTypography.semiBold,
+                    ).copyWith(
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -240,37 +256,92 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  void _showSwitchAccountDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: const Text(
-          'Switch Account',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        content: const Text(
-          'This feature is coming soon. You can logout and login with a different account.',
-          style: TextStyle(fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'OK',
-              style: TextStyle(
-                color: constants.primaryColor,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
+  Widget _buildMenuSection() {
+    return AppCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          _buildMenuItem('About Qurani', Icons.info_outline),
+          _buildMenuItem('Request a Feature', Icons.chat_bubble_outline),
+          _buildMenuItem('Help Center', Icons.help_outline),
+          _buildMenuItem('Share Application', Icons.share_outlined),
+          _buildMenuItem('Rate Application', Icons.star_outline),
+          _buildMenuItem('Terms of Service', Icons.arrow_forward_ios),
+          _buildMenuItem('Privacy Policy', Icons.arrow_forward_ios, showDivider: false),
         ],
       ),
+    );
+  }
+
+  Widget _buildMenuItem(String label, IconData icon, {bool showDivider = true}) {
+    return InkWell(
+      onTap: () {
+        AppHaptics.light();
+        // TODO: Implement navigation
+      },
+      splashColor: AppComponentStyles.rippleColor,
+      highlightColor: AppComponentStyles.hoverColor,
+      child: Container(
+        padding: AppPadding.all(context, AppDesignSystem.space16),
+        decoration: showDivider
+            ? AppComponentStyles.divider(color: AppColors.borderLight)
+            : null,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: AppTypography.body(context),
+            ),
+            Icon(
+              icon,
+              size: AppDesignSystem.scale(context, AppDesignSystem.iconSmall),
+              color: AppColors.textDisabled,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDeleteAccount() {
+    return AppCard(
+      child: InkWell(
+        onTap: () {
+          AppHaptics.light();
+          _showDeleteAccountDialog();
+        },
+        splashColor: AppColors.error.withOpacity(0.05),
+        highlightColor: AppColors.error.withOpacity(0.02),
+        borderRadius: BorderRadius.circular(
+          AppDesignSystem.scale(context, AppDesignSystem.radiusMedium),
+        ),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            'Delete Account',
+            style: AppTypography.body(
+              context,
+              color: AppColors.error,
+              weight: AppTypography.medium,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ==================== BOTTOM SHEET - SWITCH ACCOUNT ====================
+  void _showSwitchAccountBottomSheet() {
+    final screenHeight = AppDesignSystem.screenHeight(context);
+    final sheetHeight = screenHeight * 0.4; // 2/5 of screen
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: AppColors.overlay, // Dark overlay
+      builder: (context) => _SwitchAccountBottomSheet(height: sheetHeight),
     );
   }
 
@@ -278,28 +349,29 @@ class _ProfilePageState extends State<ProfilePage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: const Text(
-          'Logout',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
+          borderRadius: BorderRadius.circular(
+            AppDesignSystem.scale(context, AppDesignSystem.radiusLarge),
           ),
         ),
-        content: const Text(
+        title: Text(
+          'Logout',
+          style: AppTypography.titleLarge(context),
+        ),
+        content: Text(
           'Are you sure you want to logout?',
-          style: TextStyle(fontSize: 14),
+          style: AppTypography.body(context),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
               'Cancel',
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontWeight: FontWeight.w500,
+              style: AppTypography.label(
+                context,
+                color: AppColors.textTertiary,
+                weight: AppTypography.medium,
               ),
             ),
           ),
@@ -308,11 +380,69 @@ class _ProfilePageState extends State<ProfilePage> {
               Navigator.pop(context);
               _performLogout();
             },
-            child: const Text(
+            child: Text(
               'Logout',
-              style: TextStyle(
-                color: constants.errorColor,
-                fontWeight: FontWeight.w600,
+              style: AppTypography.label(
+                context,
+                color: AppColors.error,
+                weight: AppTypography.semiBold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteAccountDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(
+            AppDesignSystem.scale(context, AppDesignSystem.radiusLarge),
+          ),
+        ),
+        title: Text(
+          'Delete Account',
+          style: AppTypography.titleLarge(
+            context,
+            color: AppColors.error,
+          ),
+        ),
+        content: Text(
+          'This action cannot be undone. All your data will be permanently deleted.',
+          style: AppTypography.body(context),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: AppTypography.label(
+                context,
+                color: AppColors.textTertiary,
+                weight: AppTypography.medium,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Implement delete account
+              ScaffoldMessenger.of(context).showSnackBar(
+                AppComponentStyles.infoSnackBar(
+                  message: 'Delete account feature coming soon',
+                ),
+              );
+            },
+            child: Text(
+              'Delete',
+              style: AppTypography.label(
+                context,
+                color: AppColors.error,
+                weight: AppTypography.bold,
               ),
             ),
           ),
@@ -328,7 +458,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      
+
       print('🚪 ProfilePage: Performing logout...');
       await authProvider.signOut();
       print('✅ ProfilePage: Logout successful');
@@ -343,58 +473,340 @@ class _ProfilePageState extends State<ProfilePage> {
 
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Logged out successfully'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
+        AppComponentStyles.successSnackBar(
+          message: 'Logged out successfully',
         ),
       );
     } catch (e) {
       print('❌ ProfilePage: Logout failed - $e');
-      
+
       if (!mounted) return;
-      
+
       setState(() {
         _isLoggingOut = false;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Logout failed: ${e.toString()}'),
-          backgroundColor: constants.errorColor,
-          duration: const Duration(seconds: 3),
-          behavior: SnackBarBehavior.floating,
+        AppComponentStyles.errorSnackBar(
+          message: 'Logout failed: ${e.toString()}',
         ),
       );
     }
   }
+}
 
-  Widget _buildMenuItem(String label, IconData icon, double width) {
-    return InkWell(
-      onTap: () {
-        HapticFeedback.lightImpact();
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: const BoxDecoration(
-          color: Colors.white,
+// ==================== SWITCH ACCOUNT BOTTOM SHEET WIDGET ====================
+class _SwitchAccountBottomSheet extends StatelessWidget {
+  final double height;
+
+  const _SwitchAccountBottomSheet({required this.height});
+
+  @override
+  Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+    final currentUser = authProvider.currentUser;
+
+    return Container(
+      height: height,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(
+            AppDesignSystem.scale(context, AppDesignSystem.radiusXLarge),
+          ),
+          topRight: Radius.circular(
+            AppDesignSystem.scale(context, AppDesignSystem.radiusXLarge),
+          ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                color: Colors.black87,
+      ),
+      child: Column(
+        children: [
+          // Handle bar
+          Container(
+            margin: AppPadding.vertical(context, AppDesignSystem.space12),
+            width: AppDesignSystem.scale(context, 40),
+            height: AppDesignSystem.scale(context, 4),
+            decoration: BoxDecoration(
+              color: AppColors.borderMedium,
+              borderRadius: BorderRadius.circular(
+                AppDesignSystem.scale(context, AppDesignSystem.radiusRound),
               ),
             ),
-            Icon(
-              icon,
-              size: 16,
-              color: Colors.black26,
+          ),
+
+          // Header
+          Padding(
+            padding: AppPadding.horizontal(context, AppDesignSystem.space24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Switch Account',
+                  style: AppTypography.h3(context),
+                ),
+                AppIconButton(
+                  icon: Icons.close,
+                  onPressed: () => Navigator.pop(context),
+                  size: AppDesignSystem.iconLarge,
+                ),
+              ],
+            ),
+          ),
+
+          AppMargin.gap(context),
+          const AppDivider(),
+
+          // Account List (no Expanded to remove gap)
+          currentUser == null
+              ? Expanded(child: _buildEmptyState(context))
+              : _buildAccountList(context, currentUser),
+
+          // Add Account Button (Black theme like logout button)
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              AppDesignSystem.space20 * AppDesignSystem.getScaleFactor(context),
+              AppDesignSystem.space16 * AppDesignSystem.getScaleFactor(context),
+              AppDesignSystem.space20 * AppDesignSystem.getScaleFactor(context),
+              AppDesignSystem.space20 * AppDesignSystem.getScaleFactor(context),
+            ),
+            child: Container(
+              height: AppDesignSystem.scale(context, 48),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                border: Border.all(
+                  color: AppColors.textPrimary.withOpacity(0.50), // Softer black
+                  width: AppDesignSystem.scale(context, 1.5),
+                ),
+                borderRadius: BorderRadius.circular(
+                  AppDesignSystem.scale(context, AppDesignSystem.radiusXXLarge),
+                ),
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    AppHaptics.light();
+                    Navigator.pop(context);
+                    _showAddAccountDialog(context);
+                  },
+                  borderRadius: BorderRadius.circular(
+                    AppDesignSystem.scale(context, AppDesignSystem.radiusXXLarge),
+                  ),
+                  splashColor: AppComponentStyles.rippleColor,
+                  highlightColor: AppComponentStyles.hoverColor,
+                  child: Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.add,
+                          size: AppDesignSystem.scale(context, AppDesignSystem.iconMedium),
+                          color: AppColors.textPrimary.withOpacity(0.85), // Softer icon
+                        ),
+                        AppMargin.gapHSmall(context),
+                        Text(
+                          'ADD ACCOUNT',
+                          style: AppTypography.label(
+                            context,
+                            color: AppColors.textPrimary.withOpacity(0.85), // Softer text
+                            weight: AppTypography.semiBold,
+                          ).copyWith(
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAccountList(BuildContext context, currentUser) {
+    // Get avatar info
+    String avatarLetter = 'U';
+    String displayName = 'User';
+    String displayEmail = currentUser.email;
+
+    if (currentUser.fullName != null && currentUser.fullName!.isNotEmpty) {
+      displayName = currentUser.fullName!;
+      avatarLetter = currentUser.fullName![0].toUpperCase();
+    } else {
+      displayName = currentUser.email.split('@')[0];
+      avatarLetter = displayName[0].toUpperCase();
+    }
+
+    return Column(
+      children: [
+        // Current Account (Active)
+        Padding(
+          padding: AppPadding.only(
+            context,
+            top: AppDesignSystem.space16,
+            left: AppDesignSystem.space16,
+            right: AppDesignSystem.space16,
+          ),
+          child: _buildAccountItem(
+            context: context,
+            avatarLetter: avatarLetter,
+            name: displayName,
+            email: displayEmail,
+            isActive: true,
+            onTap: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                AppComponentStyles.infoSnackBar(
+                  message: 'Already using this account',
+                ),
+              );
+            },
+          ),
+        ),
+
+        // TODO: Add more accounts from local storage/database
+        // For now, show a hint that more accounts can be added
+      ],
+    );
+  }
+
+  Widget _buildAccountItem({
+    required BuildContext context,
+    required String avatarLetter,
+    required String name,
+    required String email,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        splashColor: AppComponentStyles.rippleColor,
+        highlightColor: AppComponentStyles.hoverColor,
+        borderRadius: BorderRadius.circular(
+          AppDesignSystem.scale(context, AppDesignSystem.radiusMedium),
+        ),
+        child: Container(
+          padding: AppPadding.all(context, AppDesignSystem.space16),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            border: Border.all(
+              color: isActive 
+                  ? AppColors.textPrimary.withOpacity(0.50)  // Softer black for active
+                  : AppColors.borderMedium,
+              width: AppDesignSystem.scale(context, isActive ? 1.5 : 1),
+            ),
+            borderRadius: BorderRadius.circular(
+              AppDesignSystem.scale(context, AppDesignSystem.radiusMedium),
+            ),
+          ),
+          child: Row(
+            children: [
+              // Avatar
+              Container(
+                width: AppDesignSystem.scale(context, 48),
+                height: AppDesignSystem.scale(context, 48),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.primary.withOpacity(0.2),
+                      AppColors.primary.withOpacity(0.1),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    avatarLetter,
+                    style: AppTypography.titleLarge(
+                      context,
+                      color: AppColors.primary,
+                      weight: AppTypography.semiBold,
+                    ),
+                  ),
+                ),
+              ),
+              AppMargin.gapH(context),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      name,
+                      style: AppTypography.title(
+                        context,
+                        weight: AppTypography.semiBold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    AppMargin.gapSmall(context),
+                    Text(
+                      email,
+                      style: AppTypography.caption(
+                        context,
+                        color: AppColors.textTertiary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              if (isActive) ...[
+                AppMargin.gapHSmall(context),
+                Icon(
+                  Icons.check_circle,
+                  color: AppColors.secondaryDark.withOpacity(0.80), // Softer checkmark
+                  size: AppDesignSystem.scale(context, AppDesignSystem.iconLarge),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: AppPadding.all(context, AppDesignSystem.space32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: AppDesignSystem.scale(context, 80),
+              height: AppDesignSystem.scale(context, 80),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceContainerLowest,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.person_outline,
+                size: AppDesignSystem.scale(context, 40),
+                color: AppColors.textDisabled,
+              ),
+            ),
+            AppMargin.gapLarge(context),
+            Text(
+              'No accounts yet',
+              style: AppTypography.titleLarge(context),
+            ),
+            AppMargin.gapSmall(context),
+            Text(
+              'Add an account to get started',
+              style: AppTypography.body(
+                context,
+                color: AppColors.textTertiary,
+              ),
             ),
           ],
         ),
@@ -402,27 +814,37 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildDeleteAccount(double width) {
-    return InkWell(
-      onTap: () {
-        HapticFeedback.lightImpact();
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-        ),
-        child: const Align(
-          alignment: Alignment.centerLeft,
-          child: Text(
-            'Delete Account',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              color: Color(0xFFE74C3C),
-            ),
+  void _showAddAccountDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(
+            AppDesignSystem.scale(context, AppDesignSystem.radiusLarge),
           ),
         ),
+        title: Text(
+          'Add Account',
+          style: AppTypography.titleLarge(context),
+        ),
+        content: Text(
+          'This feature is coming soon. You can logout and login with a different account.',
+          style: AppTypography.body(context),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'OK',
+              style: AppTypography.label(
+                context,
+                color: AppColors.primary,
+                weight: AppTypography.semiBold,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
