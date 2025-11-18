@@ -1110,7 +1110,7 @@ class SttController with ChangeNotifier {
           }
         },
       );
-
+      _hideUnreadAyat = true;
       _isRecording = true;
       appLogger.log('RECORDING', 'Started for surah $recordingSurahId');
       print('✅ startRecording(): Recording started successfully');

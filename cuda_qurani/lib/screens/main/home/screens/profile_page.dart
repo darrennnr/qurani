@@ -620,8 +620,7 @@ class _SwitchAccountBottomSheet extends StatelessWidget {
               ),
             ),
           ),
-SizedBox(height: AppDesignSystem.scale(context, 10)),
-
+          SizedBox(height: AppDesignSystem.scale(context, 10)),
         ],
       ),
     );

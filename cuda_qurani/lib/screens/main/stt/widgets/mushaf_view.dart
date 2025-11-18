@@ -429,11 +429,15 @@ class _JustifiedAyahLine extends StatelessWidget {
           }
         }
 
-if (controller.hideUnreadAyat && !isCurrentAyat) {
-  final isLastWordInAyah = segment.isEndOfAyah && 
-                           i == (segment.words.length - 1); // ✅ FIX: cek akhir ayat
-  wordOpacity = (hasArabicNumber || isLastWordInAyah) ? 1.0 : 0.0;
-}
+        if (controller.hideUnreadAyat && !isCurrentAyat) {
+          final isLastWordInAyah =
+              segment.isEndOfAyah &&
+              i == (segment.words.length - 1); // ✅ FIX: cek akhir ayat
+          wordOpacity = (hasArabicNumber || isLastWordInAyah) ? 1.0 : 0.0;
+        }
+        final isLastWordInAyah =
+            segment.isEndOfAyah && i == (segment.words.length - 1);
+
         final segments = controller.segmentText(word.text);
         for (final textSegment in segments) {
           spans.add(
@@ -445,9 +449,14 @@ if (controller.hideUnreadAyat && !isCurrentAyat) {
                 color: _getWordColor(isCurrentAyat).withOpacity(wordOpacity),
                 backgroundColor: wordBg,
                 fontWeight: FontWeight.w400,
+                // ✅ TASK 1: Underline tipis (kecuali kata terakhir ayat)
+                decoration: (controller.hideUnreadAyat && !isLastWordInAyah)
+                    ? TextDecoration.underline
+                    : null,
+                decorationColor: Colors.black.withOpacity(0.15),
+                decorationThickness: 0.3,
               ),
             ),
-            
           );
         }
       }

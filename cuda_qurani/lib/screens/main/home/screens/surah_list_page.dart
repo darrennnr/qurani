@@ -1,5 +1,5 @@
+
 // lib/screens/main/home/screens/surah_list_page.dart
-// ✅ ULTRA-OPTIMIZED: Instant Load + Global Slider + Smart Caching
 
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
 import 'package:cuda_qurani/core/widgets/app_components.dart';
@@ -11,6 +11,8 @@ import 'package:flutter/material.dart';
 import 'package:cuda_qurani/screens/main/home/widgets/navigation_bar.dart';
 import 'dart:async';
 
+enum TabType { surah, juz, page }
+
 class SurahListPage extends StatefulWidget {
   const SurahListPage({super.key});
 
@@ -18,9 +20,8 @@ class SurahListPage extends StatefulWidget {
   State<SurahListPage> createState() => _SurahListPageState();
 }
 
-class _SurahListPageState extends State<SurahListPage>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _SurahListPageState extends State<SurahListPage> {
+  TabType _currentTab = TabType.surah;
   final TextEditingController _searchController = TextEditingController();
   final MetadataCacheService _cache = MetadataCacheService();
 
@@ -37,7 +38,6 @@ class _SurahListPageState extends State<SurahListPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
     _searchController.addListener(_onSearchChanged);
     
     // ✅ Load dari cache (instant)
@@ -65,7 +65,6 @@ class _SurahListPageState extends State<SurahListPage>
 
   @override
   void dispose() {
-    _tabController.dispose();
     _searchController.dispose();
     _searchDebounce?.cancel();
     super.dispose();
@@ -300,48 +299,111 @@ class _SurahListPageState extends State<SurahListPage>
     );
   }
 
-  // ==================== TAB BAR ====================
+  // ==================== SEGMENTED BUTTON TAB BAR ====================
 
   Widget _buildTabBar() {
     final s = AppDesignSystem.getScaleFactor(context);
 
     return Container(
       color: AppColors.surface,
+      padding: EdgeInsets.symmetric(
+        horizontal: AppDesignSystem.space20 * s,
+        vertical: AppDesignSystem.space12 * s,
+      ),
       child: Column(
         children: [
-          Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: AppDesignSystem.space20 * s,
-              vertical: AppDesignSystem.space8 * s,
+          // Segmented Button
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.surfaceContainerLowest,
+              borderRadius: BorderRadius.circular(AppDesignSystem.radiusSmall * s),
             ),
-            child: TabBar(
-              controller: _tabController,
-              indicatorSize: TabBarIndicatorSize.tab,
-              indicator: UnderlineTabIndicator(
-                borderSide: BorderSide(
-                  width: 2.5 * s,
-                  color: AppColors.primary,
+            padding: EdgeInsets.all(AppDesignSystem.space4 * s),
+            child: Row(
+              children: [
+                _buildSegmentButton(
+                  context: context,
+                  label: 'Surah',
+                  isSelected: _currentTab == TabType.surah,
+                  onTap: () {
+                    AppHaptics.light();
+                    setState(() => _currentTab = TabType.surah);
+                  },
+                  s: s,
                 ),
-                insets: EdgeInsets.symmetric(
-                  horizontal: AppDesignSystem.space24 * s,
+                SizedBox(width: AppDesignSystem.space4 * s),
+                _buildSegmentButton(
+                  context: context,
+                  label: 'Juz',
+                  isSelected: _currentTab == TabType.juz,
+                  onTap: () {
+                    AppHaptics.light();
+                    setState(() => _currentTab = TabType.juz);
+                  },
+                  s: s,
                 ),
-              ),
-              labelColor: AppColors.primary,
-              unselectedLabelColor: AppColors.textDisabled,
-              labelStyle: AppTypography.label(
-                context,
-                weight: AppTypography.semiBold,
-              ),
-              unselectedLabelStyle: AppTypography.label(context),
-              tabs: const [
-                Tab(text: 'Surah'),
-                Tab(text: 'Juz'),
-                Tab(text: 'Page'),
+                SizedBox(width: AppDesignSystem.space4 * s),
+                _buildSegmentButton(
+                  context: context,
+                  label: 'Page',
+                  isSelected: _currentTab == TabType.page,
+                  onTap: () {
+                    AppHaptics.light();
+                    setState(() => _currentTab = TabType.page);
+                  },
+                  s: s,
+                ),
               ],
             ),
           ),
+          
+          // Bottom divider
+          SizedBox(height: AppDesignSystem.space12 * s),
           Container(height: 1 * s, color: AppColors.borderLight),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSegmentButton({
+    required BuildContext context,
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+    required double s,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: AppDesignSystem.durationFast,
+          curve: Curves.easeInOut,
+          padding: EdgeInsets.symmetric(
+            vertical: AppDesignSystem.space10 * s,
+          ),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.surface : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppDesignSystem.radiusSmall * s),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: AppColors.shadowLight,
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: AppTypography.label(
+              context,
+              color: isSelected ? AppColors.primary : AppColors.textTertiary,
+              weight: isSelected ? AppTypography.semiBold : AppTypography.medium,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -353,14 +415,14 @@ class _SurahListPageState extends State<SurahListPage>
       return _buildSearchResults();
     }
 
-    return TabBarView(
-      controller: _tabController,
-      children: [
-        _buildSurahList(),
-        _buildJuzList(),
-        _buildPageList(),
-      ],
-    );
+    switch (_currentTab) {
+      case TabType.surah:
+        return _buildSurahList();
+      case TabType.juz:
+        return _buildJuzList();
+      case TabType.page:
+        return _buildPageList();
+    }
   }
 
   // ==================== SURAH LIST ====================

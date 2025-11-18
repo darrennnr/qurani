@@ -1,5 +1,4 @@
 // lib/screens/main/home/screens/home_page.dart
-// ✅ FULLY OPTIMIZED WITH GLOBAL DESIGN SYSTEM
 
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
 import 'package:cuda_qurani/screens/main/home/screens/all_session_page.dart';

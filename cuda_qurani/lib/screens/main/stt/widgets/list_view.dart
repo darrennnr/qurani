@@ -512,21 +512,35 @@ class _CompleteAyahWidget extends StatelessWidget {
                 }
 
                 double opacity = 1.0;
-             if (controller.hideUnreadAyat && !isCurrentAyat) {
-  final hasNumber = RegExp(r'[٠-٩0-9]').hasMatch(word.text);
-  final isLastWord = wordIndex == (segment.words.length - 1); // ✅ Cek kata terakhir
-  opacity = (hasNumber || isLastWord) ? 1.0 : 0.0; // ✅ Tampilkan angka ATAU kata terakhir
-}
+                if (controller.hideUnreadAyat && !isCurrentAyat) {
+                  final hasNumber = RegExp(r'[٠-٩0-9]').hasMatch(word.text);
+                  final isLastWord =
+                      wordIndex ==
+                      (segment.words.length - 1); // ✅ Cek kata terakhir
+                  opacity = (hasNumber || isLastWord) ? 1.0 : 0.0;
+                }
+                final isLastWordInAyah =
+                    segment.isEndOfAyah &&
+                    wordIndex == (segment.words.length - 1);
 
                 return AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   padding: EdgeInsets.symmetric(
-                    horizontal: screenWidth * 0.005, // ✅ GANTI dari 2
-                    vertical: screenHeight * 0.00125, // ✅ GANTI dari 1
+                    horizontal: screenWidth * 0.005,
+                    vertical: screenHeight * 0.00125,
                   ),
                   decoration: BoxDecoration(
                     color: wordBg,
                     borderRadius: BorderRadius.circular(3),
+                    // ✅ TASK 1: Underline tipis (kecuali kata terakhir ayat)
+                    border: (controller.hideUnreadAyat && !isLastWordInAyah)
+                        ? Border(
+                            bottom: BorderSide(
+                              color: Colors.black.withOpacity(0.15),
+                              width: 0.3,
+                            ),
+                          )
+                        : null,
                   ),
                   child: AnimatedOpacity(
                     duration: const Duration(milliseconds: 200),

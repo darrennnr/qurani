@@ -1,5 +1,4 @@
 // lib/screens/main/home/screens/activity_page.dart
-// ✅ IMPROVED UI - Menggunakan Global Design System & UI Must Standards
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

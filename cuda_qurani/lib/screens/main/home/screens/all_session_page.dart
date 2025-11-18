@@ -1,8 +1,4 @@
 // lib/screens/main/home/screens/all_session_page.dart
-// ✅ FULLY OPTIMIZED with Global Design System
-// ✅ All 16 UI Principles Applied
-// ✅ Pixel-Perfect Responsive
-// ✅ Enhanced Interaction & Feedback
 
 import 'package:flutter/material.dart';
 import 'package:cuda_qurani/screens/main/home/widgets/navigation_bar.dart';
