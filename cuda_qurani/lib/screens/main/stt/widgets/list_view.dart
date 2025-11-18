@@ -512,10 +512,11 @@ class _CompleteAyahWidget extends StatelessWidget {
                 }
 
                 double opacity = 1.0;
-                if (controller.hideUnreadAyat && !isCurrentAyat) {
-                  final hasNumber = RegExp(r'[٠-٩0-9]').hasMatch(word.text);
-                  opacity = hasNumber ? 1.0 : 0.0;
-                }
+             if (controller.hideUnreadAyat && !isCurrentAyat) {
+  final hasNumber = RegExp(r'[٠-٩0-9]').hasMatch(word.text);
+  final isLastWord = wordIndex == (segment.words.length - 1); // ✅ Cek kata terakhir
+  opacity = (hasNumber || isLastWord) ? 1.0 : 0.0; // ✅ Tampilkan angka ATAU kata terakhir
+}
 
                 return AnimatedContainer(
                   duration: const Duration(milliseconds: 200),

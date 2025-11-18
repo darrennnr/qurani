@@ -1,10 +1,12 @@
 // lib/screens/main/home/screens/activity_page.dart
+// ✅ IMPROVED UI - Menggunakan Global Design System & UI Must Standards
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:cuda_qurani/screens/main/home/widgets/navigation_bar.dart';
-import 'package:cuda_qurani/screens/main/stt/utils/constants.dart' as constants;
+import 'package:cuda_qurani/core/design_system/app_design_system.dart';
+import 'package:cuda_qurani/core/widgets/app_components.dart';
 
 class ActivityPage extends StatefulWidget {
   const ActivityPage({Key? key}) : super(key: key);
@@ -206,7 +208,7 @@ class _ActivityPageState extends State<ActivityPage> {
   void _onGlobalFilterChanged(String? newValue) {
     if (newValue == null) return;
     
-    HapticFeedback.lightImpact();
+    AppHaptics.light();
     setState(() {
       _globalFilter = newValue;
       _pagesTimeframe = newValue;
@@ -225,6 +227,7 @@ class _ActivityPageState extends State<ActivityPage> {
       newIndex = (currentIndex - 1 + _timeframeOptions.length) % _timeframeOptions.length;
     }
 
+    AppHaptics.light();
     setState(() {
       if (isPages) {
         _pagesTimeframe = _timeframeOptions[newIndex];
@@ -241,27 +244,30 @@ class _ActivityPageState extends State<ActivityPage> {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final s = size.width / 406.0;
-
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
+      backgroundColor: AppColors.backgroundLight,
       appBar: const MenuAppBar(selectedIndex: 4),
       body: SafeArea(
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
             SliverPadding(
-              padding: EdgeInsets.fromLTRB(20 * s, 20 * s, 20 * s, 32 * s),
+              padding: AppPadding.only(
+                context,
+                left: AppDesignSystem.space20,
+                top: AppDesignSystem.space20,
+                right: AppDesignSystem.space20,
+                bottom: AppDesignSystem.space32,
+              ),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  _buildGlobalFilterDropdown(s),
-                  SizedBox(height: 24 * s),
-                  _buildPagesChart(s),
-                  SizedBox(height: 24 * s),
-                  _buildEngagementChart(s),
-                  SizedBox(height: 24 * s),
-                  _buildStatistics(s),
+                  _buildGlobalFilterDropdown(context),
+                  AppMargin.gapLarge(context),
+                  _buildPagesChart(context),
+                  AppMargin.gapLarge(context),
+                  _buildEngagementChart(context),
+                  AppMargin.gapLarge(context),
+                  _buildStatistics(context),
                 ]),
               ),
             ),
@@ -271,185 +277,193 @@ class _ActivityPageState extends State<ActivityPage> {
     );
   }
 
-Widget _buildGlobalFilterDropdown(double s) {
-  return Container(
-    padding: EdgeInsets.symmetric(horizontal: 10 * s, vertical: 6 * s),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(8 * s),
-      border: Border.all(color: const Color(0xFFE0E0E0), width: 1 * s),
-    ),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Icon(
-          Icons.filter_list_rounded,
-          color: Colors.black87,
-          size: 16 * s,
-        ),
-        SizedBox(width: 6 * s),
-        Text(
-          'Filter Period:',
-          style: TextStyle(
-            fontSize: 12.5 * s,
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
+  Widget _buildGlobalFilterDropdown(BuildContext context) {
+    final s = AppDesignSystem.getScaleFactor(context);
+    return AppCard(
+      padding: EdgeInsets.symmetric(
+        horizontal: 12 * s,
+        vertical: 8 * s,
+      ),
+      shadow: false,
+      borderColor: AppColors.borderLight,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.filter_list_rounded,
+            color: AppColors.textSecondary,
+            size: 15 * s,
           ),
-        ),
-        const Spacer(),
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: 10 * s, vertical: 1.5 * s),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(6 * s),
-          ),
-          child: DropdownButton<String>(
-            value: _globalFilter,
-            underline: const SizedBox(),
-            icon: Icon(
-              Icons.keyboard_arrow_down_rounded,
-              color: Colors.black87,
-              size: 18 * s,
-            ),
+          SizedBox(width: 6 * s),
+          Text(
+            'Filter Period:',
             style: TextStyle(
               fontSize: 12 * s,
-              fontWeight: FontWeight.w700,
-              color: Colors.black87,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
             ),
-            dropdownColor: Colors.white,
-            borderRadius: BorderRadius.circular(8 * s),
-            items: _globalFilterOptions.entries.map((entry) {
-              return DropdownMenuItem<String>(
-                value: entry.key,
-                child: Text(
-                  entry.value.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 12 * s,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black87,
+          ),
+          const Spacer(),
+          Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: 10 * s,
+              vertical: 2 * s,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceContainerLowest,
+              borderRadius: BorderRadius.circular(6 * s),
+            ),
+            child: DropdownButton<String>(
+              value: _globalFilter,
+              underline: const SizedBox(),
+              icon: Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: AppColors.textPrimary,
+                size: 16 * s,
+              ),
+              style: TextStyle(
+                fontSize: 11 * s,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+              dropdownColor: AppColors.surface,
+              borderRadius: BorderRadius.circular(6 * s),
+              items: _globalFilterOptions.entries.map((entry) {
+                return DropdownMenuItem<String>(
+                  value: entry.key,
+                  child: Text(
+                    entry.value.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 11 * s,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
+                );
+              }).toList(),
+              onChanged: _onGlobalFilterChanged,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPagesChart(BuildContext context) {
+    final s = AppDesignSystem.getScaleFactor(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.only(bottom: 12 * s),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Pages',
+                style: TextStyle(
+                  fontSize: 16 * s,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                  letterSpacing: -0.3,
                 ),
-              );
-            }).toList(),
-            onChanged: _onGlobalFilterChanged,
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-
-
-  Widget _buildPagesChart(double s) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Pages',
-              style: TextStyle(
-                fontSize: 18 * s,
-                fontWeight: FontWeight.w700,
-                color: Colors.black87,
-                letterSpacing: -0.3,
               ),
-            ),
-            _buildTimeframeSelector(_pagesTimeframe, true, s),
-          ],
-        ),
-        SizedBox(height: 16 * s),
-        Container(
-          padding: EdgeInsets.all(20 * s),
-          height: 200 * s,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16 * s),
-            border: Border.all(color: const Color(0xFFF0F0F0), width: 1 * s),
+              _buildTimeframeSelector(_pagesTimeframe, true, context),
+            ],
           ),
-          child: _buildLineChart(
-            _pagesData[_pagesTimeframe]!,
-            _pagesMaxY[_pagesTimeframe]!,
-            _pagesXLabels[_pagesTimeframe]!,
-            s,
+        ),
+        AppCard(
+          padding: EdgeInsets.all(16 * s),
+          shadow: false,
+          borderColor: AppColors.borderLight,
+          child: SizedBox(
+            height: 180 * s,
+            child: _buildLineChart(
+              _pagesData[_pagesTimeframe]!,
+              _pagesMaxY[_pagesTimeframe]!,
+              _pagesXLabels[_pagesTimeframe]!,
+              context,
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildEngagementChart(double s) {
+  Widget _buildEngagementChart(BuildContext context) {
+    final s = AppDesignSystem.getScaleFactor(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Engagement',
-              style: TextStyle(
-                fontSize: 18 * s,
-                fontWeight: FontWeight.w700,
-                color: Colors.black87,
-                letterSpacing: -0.3,
+        Padding(
+          padding: EdgeInsets.only(bottom: 12 * s),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Engagement',
+                style: TextStyle(
+                  fontSize: 16 * s,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                  letterSpacing: -0.3,
+                ),
               ),
-            ),
-            _buildTimeframeSelector(_engagementTimeframe, false, s),
-          ],
-        ),
-        SizedBox(height: 16 * s),
-        Container(
-          padding: EdgeInsets.all(20 * s),
-          height: 200 * s,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16 * s),
-            border: Border.all(color: const Color(0xFFF0F0F0), width: 1 * s),
+              _buildTimeframeSelector(_engagementTimeframe, false, context),
+            ],
           ),
-          child: _buildLineChart(
-            _engagementData[_engagementTimeframe]!,
-            _engagementMaxY[_engagementTimeframe]!,
-            _engagementXLabels[_engagementTimeframe]!,
-            s,
+        ),
+        AppCard(
+          padding: EdgeInsets.all(16 * s),
+          shadow: false,
+          borderColor: AppColors.borderLight,
+          child: SizedBox(
+            height: 180 * s,
+            child: _buildLineChart(
+              _engagementData[_engagementTimeframe]!,
+              _engagementMaxY[_engagementTimeframe]!,
+              _engagementXLabels[_engagementTimeframe]!,
+              context,
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildTimeframeSelector(String current, bool isPages, double s) {
+  Widget _buildTimeframeSelector(String current, bool isPages, BuildContext context) {
+    final s = AppDesignSystem.getScaleFactor(context);
     return Row(
       children: [
         _buildSelectorButton(
           Icons.chevron_left,
           () => _changeTimeframe(current, false, isPages),
-          s,
+          context,
         ),
-        SizedBox(width: 12 * s),
+        SizedBox(width: 10 * s),
         Text(
           current.toUpperCase(),
           style: TextStyle(
-            fontSize: 14 * s,
+            fontSize: 12 * s,
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: AppColors.textPrimary,
           ),
         ),
-        SizedBox(width: 12 * s),
+        SizedBox(width: 10 * s),
         _buildSelectorButton(
           Icons.chevron_right,
           () => _changeTimeframe(current, true, isPages),
-          s,
+          context,
         ),
       ],
     );
   }
 
-  Widget _buildSelectorButton(IconData icon, VoidCallback onTap, double s) {
+  Widget _buildSelectorButton(IconData icon, VoidCallback onTap, BuildContext context) {
+    final s = AppDesignSystem.getScaleFactor(context);
     return InkWell(
       onTap: () {
-        HapticFeedback.lightImpact();
+        AppHaptics.light();
         onTap();
       },
       borderRadius: BorderRadius.circular(6 * s),
@@ -457,15 +471,26 @@ Widget _buildGlobalFilterDropdown(double s) {
         width: 28 * s,
         height: 28 * s,
         decoration: BoxDecoration(
-          color: const Color(0xFFF5F5F5),
+          color: AppColors.surfaceContainerLowest,
           borderRadius: BorderRadius.circular(6 * s),
         ),
-        child: Icon(icon, size: 18 * s, color: Colors.black54),
+        child: Icon(
+          icon,
+          size: 16 * s,
+          color: AppColors.textSecondary,
+        ),
       ),
     );
   }
 
-  Widget _buildLineChart(List<FlSpot> spots, double maxY, List<String> xLabels, double s) {
+  Widget _buildLineChart(
+    List<FlSpot> spots,
+    double maxY,
+    List<String> xLabels,
+    BuildContext context,
+  ) {
+    final s = AppDesignSystem.getScaleFactor(context);
+    
     return LineChart(
       LineChartData(
         minY: 0,
@@ -474,21 +499,21 @@ Widget _buildGlobalFilterDropdown(double s) {
           LineChartBarData(
             spots: spots,
             isCurved: false,
-            color: constants.primaryColor,
+            color: AppColors.primary,
             barWidth: 2 * s,
             dotData: FlDotData(
               show: true,
               getDotPainter: (spot, percent, barData, index) {
                 return FlDotCirclePainter(
                   radius: 3 * s,
-                  color: constants.primaryColor,
+                  color: AppColors.primary,
                   strokeWidth: 0,
                 );
               },
             ),
             belowBarData: BarAreaData(
               show: true,
-              color: constants.primaryColor.withOpacity(0.1),
+              color: AppColors.primaryWithOpacity(0.08),
             ),
           ),
         ],
@@ -496,14 +521,14 @@ Widget _buildGlobalFilterDropdown(double s) {
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 32 * s,
+              reservedSize: 28 * s,
               interval: maxY / 3,
               getTitlesWidget: (value, meta) {
                 return Text(
                   value.toInt().toString(),
                   style: TextStyle(
-                    fontSize: 10 * s,
-                    color: Colors.black45,
+                    fontSize: 9 * s,
+                    color: AppColors.textTertiary,
                     fontWeight: FontWeight.w500,
                   ),
                 );
@@ -515,18 +540,18 @@ Widget _buildGlobalFilterDropdown(double s) {
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 28 * s,
+              reservedSize: 24 * s,
               interval: 1,
               getTitlesWidget: (value, meta) {
                 final index = value.toInt();
                 if (index >= 0 && index < xLabels.length) {
                   return Padding(
-                    padding: EdgeInsets.only(top: 8 * s),
+                    padding: EdgeInsets.only(top: 6 * s),
                     child: Text(
                       xLabels[index],
                       style: TextStyle(
-                        fontSize: 9 * s,
-                        color: constants.primaryColor.withOpacity(0.7),
+                        fontSize: 8.5 * s,
+                        color: AppColors.primary.withOpacity(0.7),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -543,7 +568,7 @@ Widget _buildGlobalFilterDropdown(double s) {
           horizontalInterval: maxY / 3,
           getDrawingHorizontalLine: (value) {
             return FlLine(
-              color: const Color(0xFFF0F0F0),
+              color: AppColors.borderLight,
               strokeWidth: 1 * s,
             );
           },
@@ -554,32 +579,32 @@ Widget _buildGlobalFilterDropdown(double s) {
     );
   }
 
-  Widget _buildStatistics(double s) {
+  Widget _buildStatistics(BuildContext context) {
+    final s = AppDesignSystem.getScaleFactor(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Statistics',
-          style: TextStyle(
-            fontSize: 18 * s,
-            fontWeight: FontWeight.w700,
-            color: Colors.black87,
-            letterSpacing: -0.3,
+        Padding(
+          padding: EdgeInsets.only(bottom: 12 * s),
+          child: Text(
+            'Statistics',
+            style: TextStyle(
+              fontSize: 16 * s,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+              letterSpacing: -0.3,
+            ),
           ),
         ),
-        SizedBox(height: 16 * s),
-        Container(
-          padding: EdgeInsets.all(20 * s),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16 * s),
-            border: Border.all(color: const Color(0xFFF0F0F0), width: 1 * s),
-          ),
+        AppCard(
+          padding: EdgeInsets.all(16 * s),
+          shadow: false,
+          borderColor: AppColors.borderLight,
           child: Column(
             children: [
-              _buildStatisticsTabs(s),
-              SizedBox(height: 24 * s),
-              _buildStatisticsGrid(s),
+              _buildStatisticsTabs(context),
+              SizedBox(height: 20 * s),
+              _buildStatisticsGrid(context),
             ],
           ),
         ),
@@ -587,7 +612,8 @@ Widget _buildGlobalFilterDropdown(double s) {
     );
   }
 
-  Widget _buildStatisticsTabs(double s) {
+  Widget _buildStatisticsTabs(BuildContext context) {
+    final s = AppDesignSystem.getScaleFactor(context);
     final tabs = ['THIS DAY', 'THIS WEEK', 'THIS MONTH', 'THIS YEAR', 'ALL TIME'];
     
     return SingleChildScrollView(
@@ -595,32 +621,38 @@ Widget _buildGlobalFilterDropdown(double s) {
       child: Row(
         children: tabs.map((tab) {
           final isSelected = tab == _statisticsTimeframe;
-          return GestureDetector(
-            onTap: () {
-              HapticFeedback.lightImpact();
-              setState(() => _statisticsTimeframe = tab);
-            },
-            child: Container(
-              margin: EdgeInsets.only(right: 8 * s),
-              padding: EdgeInsets.symmetric(
-                horizontal: 16 * s,
-                vertical: 8 * s,
-              ),
-              decoration: BoxDecoration(
-                color: isSelected ? constants.primaryColor : const Color(0xFFF5F5F5),
-                borderRadius: BorderRadius.circular(8 * s),
-                border: Border.all(
-                  color: isSelected ? constants.primaryColor : const Color(0xFFE0E0E0),
-                  width: 1 * s,
-                ),
-              ),
-              child: Text(
-                tab,
-                style: TextStyle(
-                  fontSize: 10 * s,
-                  fontWeight: FontWeight.w600,
-                  color: isSelected ? Colors.white : Colors.black54,
-                  letterSpacing: 0.5,
+          return Padding(
+            padding: EdgeInsets.only(right: 6 * s),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  AppHaptics.light();
+                  setState(() => _statisticsTimeframe = tab);
+                },
+                borderRadius: BorderRadius.circular(6 * s),
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 12 * s,
+                    vertical: 6 * s,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isSelected ? AppColors.primary : Colors.transparent,
+                    borderRadius: BorderRadius.circular(6 * s),
+                    border: Border.all(
+                      color: isSelected ? AppColors.primary : AppColors.borderMedium,
+                      width: 1 * s,
+                    ),
+                  ),
+                  child: Text(
+                    tab,
+                    style: TextStyle(
+                      fontSize: 9.5 * s,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected ? AppColors.textInverse : AppColors.textTertiary,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -630,7 +662,8 @@ Widget _buildGlobalFilterDropdown(double s) {
     );
   }
 
-  Widget _buildStatisticsGrid(double s) {
+  Widget _buildStatisticsGrid(BuildContext context) {
+    final s = AppDesignSystem.getScaleFactor(context);
     final mappedKey = _mapTabToKey(_statisticsTimeframe);
     final data = _statisticsData[mappedKey]!;
 
@@ -640,26 +673,26 @@ Widget _buildGlobalFilterDropdown(double s) {
           children: [
             Expanded(
               child: _buildStatCard(
-                _formatEngagementWithSuffix(data['engagement']), // MODIFIED: Add suffix
+                _formatEngagementWithSuffix(data['engagement']),
                 'Engagement',
                 Icons.access_time_rounded,
-                constants.primaryColor,
-                s,
+                AppColors.primary,
+                context,
               ),
             ),
-            SizedBox(width: 12 * s),
+            SizedBox(width: 10 * s),
             Expanded(
               child: _buildStatCard(
                 data['completion'],
                 'Completion',
                 Icons.check_circle_outline_rounded,
-                constants.correctColor,
-                s,
+                AppColors.success,
+                context,
               ),
             ),
           ],
         ),
-        SizedBox(height: 12 * s),
+        SizedBox(height: 10 * s),
         Row(
           children: [
             Expanded(
@@ -667,23 +700,23 @@ Widget _buildGlobalFilterDropdown(double s) {
                 data['verses'].toString(),
                 'Verses Recited',
                 Icons.menu_book_rounded,
-                constants.listeningColor,
-                s,
+                AppColors.info,
+                context,
               ),
             ),
-            SizedBox(width: 12 * s),
+            SizedBox(width: 10 * s),
             Expanded(
               child: _buildStatCard(
                 data['recitation'],
                 'Recitation Time',
                 Icons.timer_outlined,
-                constants.accentColor,
-                s,
+                AppColors.accent,
+                context,
               ),
             ),
           ],
         ),
-        SizedBox(height: 12 * s),
+        SizedBox(height: 10 * s),
         Row(
           children: [
             Expanded(
@@ -691,23 +724,23 @@ Widget _buildGlobalFilterDropdown(double s) {
                 data['badges'].toString(),
                 'Earned Badges',
                 Icons.emoji_events_outlined,
-                constants.warningColor,
-                s,
+                AppColors.warning,
+                context,
               ),
             ),
-            SizedBox(width: 12 * s),
+            SizedBox(width: 10 * s),
             Expanded(
               child: _buildStatCard(
                 data['deeds'],
                 'Deeds Estimated',
                 Icons.favorite_border_rounded,
-                const Color(0xFFE74C3C),
-                s,
+                AppColors.error,
+                context,
               ),
             ),
           ],
         ),
-        SizedBox(height: 12 * s),
+        SizedBox(height: 10 * s),
         Row(
           children: [
             Expanded(
@@ -715,18 +748,18 @@ Widget _buildGlobalFilterDropdown(double s) {
                 data['searches'].toString(),
                 'Search Queries',
                 Icons.search_rounded,
-                const Color(0xFF3498DB),
-                s,
+                AppColors.secondary,
+                context,
               ),
             ),
-            SizedBox(width: 12 * s),
+            SizedBox(width: 10 * s),
             Expanded(
               child: _buildStatCard(
                 data['shared'].toString(),
                 'Verses Shared',
                 Icons.share_outlined,
-                constants.primaryColor,
-                s,
+                AppColors.primary,
+                context,
               ),
             ),
           ],
@@ -740,49 +773,57 @@ Widget _buildGlobalFilterDropdown(double s) {
     String label,
     IconData icon,
     Color color,
-    double s,
+    BuildContext context,
   ) {
+    final s = AppDesignSystem.getScaleFactor(context);
     return Container(
-      padding: EdgeInsets.all(16 * s),
+      padding: EdgeInsets.all(12 * s),
       decoration: BoxDecoration(
-        color: const Color(0xFFFAFAFA),
-        borderRadius: BorderRadius.circular(12 * s),
-        border: Border.all(color: const Color(0xFFF0F0F0), width: 1 * s),
+        color: AppColors.surfaceVariant,
+        borderRadius: BorderRadius.circular(10 * s),
+        border: Border.all(
+          color: AppColors.borderLight,
+          width: 1 * s,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 32 * s,
-                height: 32 * s,
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8 * s),
-                ),
-                child: Icon(icon, color: color, size: 18 * s),
-              ),
-            ],
+          Container(
+            width: 28 * s,
+            height: 28 * s,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(6 * s),
+            ),
+            child: Icon(
+              icon,
+              color: color,
+              size: 16 * s,
+            ),
           ),
-          SizedBox(height: 12 * s),
+          SizedBox(height: 10 * s),
           Text(
             value,
             style: TextStyle(
-              fontSize: 22 * s,
+              fontSize: 18 * s,
               fontWeight: FontWeight.w700,
-              color: Colors.black87,
+              color: AppColors.textPrimary,
               height: 1.1,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          SizedBox(height: 4 * s),
+          SizedBox(height: 3 * s),
           Text(
             label,
             style: TextStyle(
-              fontSize: 11 * s,
-              color: Colors.black45,
+              fontSize: 10 * s,
+              color: AppColors.textTertiary,
               fontWeight: FontWeight.w500,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

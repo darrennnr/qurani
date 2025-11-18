@@ -142,19 +142,19 @@ class QuranAppBar extends StatelessWidget implements PreferredSizeWidget {
               splashRadius: iconSize * 1.1,
             ),
             // Visibility Toggle
-            IconButton(
-              icon: Icon(
-                controller.hideUnreadAyat
-                    ? Icons.visibility
-                    : Icons.visibility_off,
-                size: iconSize * 0.9,
-              ),
-              onPressed: controller.toggleHideUnread,
-              tooltip: controller.hideUnreadAyat
-                  ? 'Show All Text'
-                  : 'Hide Unread',
-              splashRadius: iconSize * 1.1,
-            ),
+            // IconButton(
+            //   icon: Icon(
+            //     controller.hideUnreadAyat
+            //         ? Icons.visibility
+            //         : Icons.visibility_off,
+            //     size: iconSize * 0.9,
+            //   ),
+            //   onPressed: controller.toggleHideUnread,
+            //   tooltip: controller.hideUnreadAyat
+            //       ? 'Show All Text'
+            //       : 'Hide Unread',
+            //   splashRadius: iconSize * 1.1,
+            // ),
             // More Options Menu
             PopupMenuButton<String>(
               onSelected: (action) =>
@@ -272,8 +272,10 @@ class QuranBottomBar extends StatelessWidget {
                       child: InkWell(
                         borderRadius: BorderRadius.circular(buttonSize / 2),
                         onTap: () async {
-                          print('🎤 BUTTON: Record button pressed (isRecording: ${controller.isRecording})');
-                          
+                          print(
+                            '🎤 BUTTON: Record button pressed (isRecording: ${controller.isRecording})',
+                          );
+
                           if (controller.isRecording) {
                             print('🛑 BUTTON: Stopping recording...');
                             await controller.stopRecording();
@@ -281,6 +283,7 @@ class QuranBottomBar extends StatelessWidget {
                           } else {
                             print('▶️ BUTTON: Starting recording...');
                             await controller.startRecording();
+                            controller.toggleHideUnread;
                             print('✅ BUTTON: Recording started');
                           }
                         },

@@ -1,7 +1,8 @@
 // lib/screens/main/home/screens/home_page.dart
+// ✅ FULLY OPTIMIZED WITH GLOBAL DESIGN SYSTEM
 
+import 'package:cuda_qurani/core/design_system/app_design_system.dart';
 import 'package:cuda_qurani/screens/main/home/screens/all_session_page.dart';
-import 'package:cuda_qurani/screens/main/stt/utils/constants.dart' as constants;
 import 'package:cuda_qurani/screens/main/home/widgets/navigation_bar.dart';
 import 'package:cuda_qurani/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +17,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  // Sample data - replace with actual data from provider/API
   int _currentStreak = 1;
   int _longestStreak = 2;
   int _versesRecited = 13;
@@ -25,42 +27,29 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final s = size.width / 406.0; // Scale factor
-
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
+      backgroundColor: AppColors.backgroundLight,
       appBar: const MenuAppBar(selectedIndex: 0),
       body: SafeArea(
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
             SliverPadding(
-              padding: EdgeInsets.fromLTRB(24 * s, 20 * s, 24 * s, 0),
+              padding: AppPadding.section(context),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  _buildGreetingHeader(s),
-                  SizedBox(height: 24 * s),
-                  _buildLastRead(s),
-                  SizedBox(height: 20 * s),
-                  Text(
-                    'Streak',
-                    style: TextStyle(
-                      fontSize: 18 * s,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black87,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                  SizedBox(height: 15 * s),
-                  _buildStreakSection(s),
-                  SizedBox(height: 20 * s),
-                  _buildProgressGrid(s),
-                  SizedBox(height: 20 * s),
-                  _buildTodayGoal(s),
-                  SizedBox(height: 20 * s),
-                  _buildAchievements(s),
-                  SizedBox(height: 32 * s),
+                  _buildGreetingHeader(context),
+                  AppMargin.gapLarge(context),
+                  _buildLatestSession(context),
+                  AppMargin.gapXLarge(context),
+                  _buildStreakSection(context),
+                  AppMargin.gapXLarge(context),
+                  _buildProgressSection(context),
+                  AppMargin.gapXLarge(context),
+                  _buildTodayGoal(context),
+                  AppMargin.gapXLarge(context),
+                  _buildAchievements(context),
+                  AppMargin.customGap(context, AppDesignSystem.space40),
                 ]),
               ),
             ),
@@ -70,7 +59,8 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildGreetingHeader(double s) {
+  // ==================== GREETING HEADER ====================
+  Widget _buildGreetingHeader(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
     final user = authProvider.currentUser;
 
@@ -91,23 +81,14 @@ class _HomePageState extends State<HomePage> {
       children: [
         Text(
           displayName,
-          style: TextStyle(
-            fontSize: 28 * s,
-            fontWeight: FontWeight.w700,
-            color: Colors.black87,
-            letterSpacing: -0.5,
-          ),
+          style: AppTypography.h1(context, weight: AppTypography.bold),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        SizedBox(height: 4 * s),
+        AppMargin.gapSmall(context),
         Text(
           _getGreeting(),
-          style: TextStyle(
-            fontSize: 14 * s,
-            color: Colors.black45,
-            fontWeight: FontWeight.w400,
-          ),
+          style: AppTypography.caption(context),
         ),
       ],
     );
@@ -120,297 +101,162 @@ class _HomePageState extends State<HomePage> {
     return 'Good Evening';
   }
 
-  Widget _buildLastRead(double s) {
-    return InkWell(
-      onTap: () {},
-      borderRadius: BorderRadius.circular(16 * s),
-      child: Container(
-        padding: EdgeInsets.all(24 * s),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16 * s),
-          border: Border.all(color: const Color(0xFFF0F0F0), width: 1 * s),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // --------------------- HEADER (LATEST SESSION + HISTORY + SEE ALL) ---------------------
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 6 * s,
-                      height: 6 * s,
-                      decoration: const BoxDecoration(
-                        color: constants.primaryColor,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    SizedBox(width: 8 * s),
-                    Text(
-                      'LATEST SESSION',
-                      style: TextStyle(
-                        fontSize: 11 * s,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black45,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                  ],
-                ),
-
-                // ---------------- HISTORY ICON + SEE ALL ----------------
-                InkWell(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const AllSessionPage()),
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(6 * s),
-                  child: Row(
+  // ==================== LATEST SESSION CARD ====================
+  Widget _buildLatestSession(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          AppHaptics.light();
+          // Navigate to continue reading
+        },
+        borderRadius: BorderRadius.circular(AppDesignSystem.radiusLarge),
+        splashColor: AppComponentStyles.rippleColor,
+        highlightColor: AppComponentStyles.hoverColor,
+        child: Container(
+          padding: AppPadding.card(context),
+          decoration: AppComponentStyles.card(
+            color: AppColors.surface,
+            borderRadius: AppDesignSystem.radiusLarge,
+            borderColor: AppColors.borderLight,
+            borderWidth: AppDesignSystem.borderNormal,
+            shadow: true,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
                     children: [
-                      Text(
-                        'See All',
-                        style: TextStyle(
-                          fontSize: 12 * s,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black38,
+                      Container(
+                        width: AppDesignSystem.space6,
+                        height: AppDesignSystem.space6,
+                        decoration: const BoxDecoration(
+                          color: AppColors.primary,
+                          shape: BoxShape.circle,
                         ),
                       ),
-                      SizedBox(width: 4 * s),
-                      Icon(
-                        Icons.history,
-                        size: 16 * s,
-                        color: Colors.black38, // abu-abu soft
+                      AppMargin.gapHSmall(context),
+                      Text(
+                        'LATEST SESSION',
+                        style: AppTypography.overline(context),
                       ),
                     ],
                   ),
-                ),
-              ],
-            ),
-
-            SizedBox(height: 20 * s),
-
-            // --------------------- SURAH TITLE ---------------------
-            Text(
-              'Surah Ya-sin',
-              style: TextStyle(
-                fontSize: 24 * s,
-                fontWeight: FontWeight.w700,
-                color: Colors.black87,
-                letterSpacing: -0.5,
-              ),
-            ),
-            SizedBox(height: 6 * s),
-
-            Text(
-              '1-45 · 9 min ago',
-              style: TextStyle(
-                fontSize: 14 * s,
-                color: Colors.black45,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-
-            SizedBox(height: 25 * s),
-
-            // --------------------- BUTTON: CONTINUE READING ---------------------
-            SizedBox(
-              height: 42 * s,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: Colors.black87, width: 1.5 * s),
-                  borderRadius: BorderRadius.circular(24 * s),
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                    },
-                    borderRadius: BorderRadius.circular(24 * s),
-                    child: Center(
-                      child: Text(
-                        'Continue reading',
-                        style: TextStyle(
-                          fontSize: 13 * s,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                          letterSpacing: 0.5,
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        AppHaptics.light();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AllSessionPage(),
+                          ),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(
+                        AppDesignSystem.radiusSmall,
+                      ),
+                      child: Padding(
+                        padding: AppPadding.all(context, AppDesignSystem.space4),
+                        child: Row(
+                          children: [
+                            Text(
+                              'See All',
+                              style: AppTypography.caption(
+                                context,
+                                weight: AppTypography.semiBold,
+                              ),
+                            ),
+                            AppMargin.customGapH(context, AppDesignSystem.space4),
+                            Icon(
+                              Icons.history_rounded,
+                              size: AppDesignSystem.iconSmall,
+                              color: AppColors.textTertiary,
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ),
+                ],
+              ),
+              AppMargin.gap(context),
+              // Surah Title
+              Text(
+                'Surah Ya-sin',
+                style: AppTypography.h2(context, weight: AppTypography.bold),
+              ),
+              AppMargin.gapSmall(context),
+              Text(
+                '1-45 · 9 min ago',
+                style: AppTypography.caption(context),
+              ),
+              AppMargin.gap(context),
+              // Continue Button
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () {
+                    AppHaptics.medium();
+                    // Continue reading action
+                  },
+                  style: AppComponentStyles.secondaryButton(context).copyWith(
+                    side: MaterialStateProperty.all(
+                      const BorderSide(
+                        color: AppColors.textPrimary,
+                        width: AppDesignSystem.borderThick,
+                      ),
+                    ),
+                  ),
+                  child: Text(
+                    'Continue reading',
+                    style: AppTypography.label(
+                      context,
+                      color: AppColors.textPrimary,
+                      weight: AppTypography.semiBold,
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildStreakSection(double s) {
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            padding: EdgeInsets.all(20 * s),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16 * s),
-              border: Border.all(color: const Color(0xFFF0F0F0), width: 1 * s),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Current Streak 🔥',
-                  style: TextStyle(
-                    fontSize: 12 * s,
-                    color: Colors.black45,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                SizedBox(height: 8 * s),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(
-                      '$_currentStreak',
-                      style: TextStyle(
-                        fontSize: 32 * s,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black87,
-                        height: 1,
-                      ),
-                    ),
-                    SizedBox(width: 6 * s),
-                    Text(
-                      'day',
-                      style: TextStyle(
-                        fontSize: 14 * s,
-                        color: Colors.black45,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-        SizedBox(width: 16 * s),
-        Expanded(
-          child: Container(
-            padding: EdgeInsets.all(20 * s),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16 * s),
-              border: Border.all(color: const Color(0xFFF0F0F0), width: 1 * s),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Longest Streak🔥',
-                  style: TextStyle(
-                    fontSize: 12 * s,
-                    color: Colors.black45,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                SizedBox(height: 8 * s),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(
-                      '$_longestStreak',
-                      style: TextStyle(
-                        fontSize: 32 * s,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black87,
-                        height: 1,
-                      ),
-                    ),
-                    SizedBox(width: 6 * s),
-                    Text(
-                      'days',
-                      style: TextStyle(
-                        fontSize: 14 * s,
-                        color: Colors.black45,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildProgressGrid(double s) {
+  // ==================== STREAK SECTION ====================
+  Widget _buildStreakSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Progress',
-          style: TextStyle(
-            fontSize: 18 * s,
-            fontWeight: FontWeight.w700,
-            color: Colors.black87,
-            letterSpacing: -0.3,
-          ),
+          'Streak',
+          style: AppTypography.titleLarge(context, weight: AppTypography.bold),
         ),
-        SizedBox(height: 16 * s),
+        AppMargin.gap(context),
         Row(
           children: [
             Expanded(
-              child: _buildProgressCard(
-                'Completion',
-                '$_completionPercentage%',
-                constants.primaryColor,
-                s,
+              child: _buildStreakCard(
+                context: context,
+                label: 'Current Streak 🔥',
+                value: _currentStreak,
+                unit: 'day',
               ),
             ),
-            SizedBox(width: 16 * s),
+            AppMargin.gapH(context),
             Expanded(
-              child: _buildProgressCard(
-                'Memorized',
-                '$_memorizedPercentage%',
-                constants.accentColor,
-                s,
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 16 * s),
-        Row(
-          children: [
-            Expanded(
-              child: _buildProgressCard(
-                'Time',
-                _engagementTime,
-                constants.listeningColor,
-                s,
-              ),
-            ),
-            SizedBox(width: 16 * s),
-            Expanded(
-              child: _buildProgressCard(
-                'Verses',
-                '$_versesRecited',
-                constants.correctColor,
-                s,
+              child: _buildStreakCard(
+                context: context,
+                label: 'Longest Streak 🔥',
+                value: _longestStreak,
+                unit: 'days',
               ),
             ),
           ],
@@ -419,116 +265,222 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildProgressCard(String label, String value, Color color, double s) {
+  Widget _buildStreakCard({
+    required BuildContext context,
+    required String label,
+    required int value,
+    required String unit,
+  }) {
     return Container(
-      padding: EdgeInsets.all(20 * s),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16 * s),
-        border: Border.all(color: const Color(0xFFF0F0F0), width: 1 * s),
+      padding: AppPadding.card(context),
+      decoration: AppComponentStyles.card(
+        color: AppColors.surface,
+        borderRadius: AppDesignSystem.radiusLarge,
+        borderColor: AppColors.borderLight,
+        borderWidth: AppDesignSystem.borderNormal,
+        shadow: false,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 4 * s,
-            height: 4 * s,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          SizedBox(height: 12 * s),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 12 * s,
-              color: Colors.black45,
-              fontWeight: FontWeight.w500,
-            ),
+            style: AppTypography.caption(context),
           ),
-          SizedBox(height: 4 * s),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 24 * s,
-              fontWeight: FontWeight.w700,
-              color: Colors.black87,
-              height: 1.1,
-            ),
+          AppMargin.gapSmall(context),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                '$value',
+                style: AppTypography.displaySmall(
+                  context,
+                  weight: AppTypography.bold,
+                ),
+              ),
+              AppMargin.gapHSmall(context),
+              Text(
+                unit,
+                style: AppTypography.caption(context),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTodayGoal(double s) {
+  // ==================== PROGRESS SECTION ====================
+  Widget _buildProgressSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Progress',
+          style: AppTypography.titleLarge(context, weight: AppTypography.bold),
+        ),
+        AppMargin.gap(context),
+        Row(
+          children: [
+            Expanded(
+              child: _buildProgressCard(
+                context: context,
+                label: 'Completion',
+                value: '$_completionPercentage%',
+                color: AppColors.primary,
+              ),
+            ),
+            AppMargin.gapH(context),
+            Expanded(
+              child: _buildProgressCard(
+                context: context,
+                label: 'Memorized',
+                value: '$_memorizedPercentage%',
+                color: AppColors.accent,
+              ),
+            ),
+          ],
+        ),
+        AppMargin.gap(context),
+        Row(
+          children: [
+            Expanded(
+              child: _buildProgressCard(
+                context: context,
+                label: 'Time',
+                value: _engagementTime,
+                color: AppColors.info,
+              ),
+            ),
+            AppMargin.gapH(context),
+            Expanded(
+              child: _buildProgressCard(
+                context: context,
+                label: 'Verses',
+                value: '$_versesRecited',
+                color: AppColors.success,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProgressCard({
+    required BuildContext context,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      padding: AppPadding.card(context),
+      decoration: AppComponentStyles.card(
+        color: AppColors.surface,
+        borderRadius: AppDesignSystem.radiusLarge,
+        borderColor: AppColors.borderLight,
+        borderWidth: AppDesignSystem.borderNormal,
+        shadow: false,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: AppDesignSystem.space6,
+            height: AppDesignSystem.space6,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+          ),
+          AppMargin.gap(context),
+          Text(
+            label,
+            style: AppTypography.caption(context),
+          ),
+          AppMargin.gapSmall(context),
+          Text(
+            value,
+            style: AppTypography.h2(context, weight: AppTypography.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==================== TODAY'S GOAL ====================
+  Widget _buildTodayGoal(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           "Today's Goal",
-          style: TextStyle(
-            fontSize: 18 * s,
-            fontWeight: FontWeight.w700,
-            color: Colors.black87,
-            letterSpacing: -0.3,
-          ),
+          style: AppTypography.titleLarge(context, weight: AppTypography.bold),
         ),
-        SizedBox(height: 16 * s),
-        InkWell(
-          onTap: () {},
-          borderRadius: BorderRadius.circular(16 * s),
-          child: Container(
-            padding: EdgeInsets.all(20 * s),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16 * s),
-              border: Border.all(color: const Color(0xFFF0F0F0), width: 1 * s),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 48 * s,
-                  height: 48 * s,
-                  decoration: BoxDecoration(
-                    color: constants.primaryColor,
-                    borderRadius: BorderRadius.circular(12 * s),
-                  ),
-                  child: Icon(
-                    Icons.wb_sunny_rounded,
-                    color: Colors.white,
-                    size: 24 * s,
-                  ),
-                ),
-                SizedBox(width: 16 * s),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Ayah a Day',
-                        style: TextStyle(
-                          fontSize: 16 * s,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
+        AppMargin.gap(context),
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              AppHaptics.light();
+              // Navigate to goal
+            },
+            borderRadius: BorderRadius.circular(AppDesignSystem.radiusLarge),
+            splashColor: AppComponentStyles.rippleColor,
+            child: Container(
+              padding: AppPadding.card(context),
+              decoration: AppComponentStyles.card(
+                color: AppColors.surface,
+                borderRadius: AppDesignSystem.radiusLarge,
+                borderColor: AppColors.borderLight,
+                borderWidth: AppDesignSystem.borderNormal,
+                shadow: false,
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: AppDesignSystem.iconHuge,
+                    height: AppDesignSystem.iconHuge,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(
+                        AppDesignSystem.radiusMedium,
                       ),
-                      SizedBox(height: 2 * s),
-                      Text(
-                        "Al-Waqi'ah 12",
-                        style: TextStyle(
-                          fontSize: 13 * s,
-                          color: Colors.black45,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ],
+                    ),
+                    child: Icon(
+                      Icons.wb_sunny_rounded,
+                      color: Colors.white,
+                      size: AppDesignSystem.iconLarge,
+                    ),
                   ),
-                ),
-                Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  size: 16 * s,
-                  color: Colors.black26,
-                ),
-              ],
+                  AppMargin.gapH(context),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Ayah a Day',
+                          style: AppTypography.title(
+                            context,
+                            weight: AppTypography.semiBold,
+                          ),
+                        ),
+                        AppMargin.gapSmall(context),
+                        Text(
+                          "Al-Waqi'ah 12",
+                          style: AppTypography.caption(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: AppDesignSystem.iconSmall,
+                    color: AppColors.textDisabled,
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -536,30 +488,46 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildAchievements(double s) {
+  // ==================== ACHIEVEMENTS ====================
+  Widget _buildAchievements(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Achievements',
-          style: TextStyle(
-            fontSize: 18 * s,
-            fontWeight: FontWeight.w700,
-            color: Colors.black87,
-            letterSpacing: -0.3,
-          ),
+          style: AppTypography.titleLarge(context, weight: AppTypography.bold),
         ),
-        SizedBox(height: 16 * s),
+        AppMargin.gap(context),
         SizedBox(
-          height: 100 * s,
+          height: AppDesignSystem.scale(context, 100),
           child: ListView(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
             children: [
-              _buildAchievementBadge('🔍', 'Explorer', '10', s),
-              _buildAchievementBadge('📱', 'Social', null, s),
-              _buildAchievementBadge('🎯', 'Reminder', '1', s),
-              _buildAchievementBadge('🧠', 'Memory', null, s),
+              _buildAchievementBadge(
+                context: context,
+                emoji: '🔍',
+                label: 'Explorer',
+                count: 10,
+              ),
+              _buildAchievementBadge(
+                context: context,
+                emoji: '📱',
+                label: 'Social',
+                count: null,
+              ),
+              _buildAchievementBadge(
+                context: context,
+                emoji: '🎯',
+                label: 'Reminder',
+                count: 1,
+              ),
+              _buildAchievementBadge(
+                context: context,
+                emoji: '🧠',
+                label: 'Memory',
+                count: null,
+              ),
             ],
           ),
         ),
@@ -567,20 +535,24 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildAchievementBadge(
-    String emoji,
-    String label,
-    String? count,
-    double s,
-  ) {
+  Widget _buildAchievementBadge({
+    required BuildContext context,
+    required String emoji,
+    required String label,
+    required int? count,
+  }) {
     return Container(
-      width: 80 * s,
-      margin: EdgeInsets.only(right: 12 * s),
-      padding: EdgeInsets.all(16 * s),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16 * s),
-        border: Border.all(color: const Color(0xFFF0F0F0), width: 1 * s),
+      width: AppDesignSystem.scale(context, 85),
+      margin: EdgeInsets.only(
+        right: AppDesignSystem.scale(context, AppDesignSystem.space12),
+      ),
+      padding: AppPadding.card(context),
+      decoration: AppComponentStyles.card(
+        color: AppColors.surface,
+        borderRadius: AppDesignSystem.radiusLarge,
+        borderColor: AppColors.borderLight,
+        borderWidth: AppDesignSystem.borderNormal,
+        shadow: false,
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -588,29 +560,33 @@ class _HomePageState extends State<HomePage> {
           Stack(
             clipBehavior: Clip.none,
             children: [
-              Text(emoji, style: TextStyle(fontSize: 32 * s)),
+              Text(
+                emoji,
+                style: TextStyle(
+                  fontSize: AppDesignSystem.scale(context, 30),
+                ),
+              ),
               if (count != null)
                 Positioned(
-                  top: -4 * s,
-                  right: -4 * s,
+                  top: AppDesignSystem.scale(context, -4),
+                  right: AppDesignSystem.scale(context, -4),
                   child: Container(
-                    padding: EdgeInsets.all(4 * s),
+                    padding: AppPadding.all(context, AppDesignSystem.space4),
                     decoration: const BoxDecoration(
-                      color: constants.warningColor,
+                      color: AppColors.warning,
                       shape: BoxShape.circle,
                     ),
                     constraints: BoxConstraints(
-                      minWidth: 18 * s,
-                      minHeight: 18 * s,
+                      minWidth: AppDesignSystem.scale(context, 18),
+                      minHeight: AppDesignSystem.scale(context, 18),
                     ),
                     child: Center(
                       child: Text(
-                        count,
-                        style: TextStyle(
-                          fontSize: 10 * s,
-                          fontWeight: FontWeight.w700,
+                        '$count',
+                        style: AppTypography.captionSmall(
+                          context,
                           color: Colors.white,
-                          height: 1,
+                          weight: AppTypography.bold,
                         ),
                       ),
                     ),
@@ -618,13 +594,12 @@ class _HomePageState extends State<HomePage> {
                 ),
             ],
           ),
-          SizedBox(height: 8 * s),
+          AppMargin.gapSmall(context),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 10 * s,
-              color: Colors.black87,
-              fontWeight: FontWeight.w500,
+            style: AppTypography.captionSmall(
+              context,
+              weight: AppTypography.medium,
             ),
           ),
         ],

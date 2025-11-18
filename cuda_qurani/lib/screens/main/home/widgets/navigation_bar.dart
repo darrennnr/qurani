@@ -10,12 +10,6 @@ import 'package:cuda_qurani/screens/main/home/screens/profile_page.dart';
 import 'package:cuda_qurani/screens/main/home/screens/settings_page.dart';
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
 import 'package:cuda_qurani/core/widgets/app_components.dart';
-// BAGIAN YANG PERLU DIUPDATE di MenuAppBar class
-// ==================== IMPROVED MENU APP BAR ====================
-// ✅ Full Design System Integration
-// ✅ All 16 UI Principles Applied
-// ✅ Pixel-Perfect Responsive
-// ✅ Enhanced Interaction Feedback
 
 class MenuAppBar extends StatefulWidget implements PreferredSizeWidget {
   final int selectedIndex;
@@ -122,121 +116,52 @@ class _MenuAppBarState extends State<MenuAppBar> with SingleTickerProviderStateM
 
   // ==================== TOP BAR ====================
   Widget _buildTopBar(BuildContext context) {
-    final s = AppDesignSystem.getScaleFactor(context);
+  final s = AppDesignSystem.getScaleFactor(context);
 
-    return Container(
-      height: 60 * s,
-      padding: EdgeInsets.symmetric(
-        horizontal: AppDesignSystem.space20 * s,
-      ),
-      child: Row(
-        children: [
-          // Logo with proper sizing
-          Image.asset(
-            'assets/images/qurani-white-text.png',
-            height: 28 * s,
-            color: AppColors.primary,
-            fit: BoxFit.contain,
-          ),
-          
-          SizedBox(width: AppDesignSystem.space16 * s),
-          
-          // Search field (if shown)
-          if (widget.showSearch)
-            Expanded(child: _buildSearchField(context))
-          else
-            const Spacer(),
-          
-          SizedBox(width: AppDesignSystem.space12 * s),
-          
-          // Profile button
+  return Container(
+    height: 60 * s,
+    padding: EdgeInsets.symmetric(
+      horizontal: AppDesignSystem.space20 * s,
+    ),
+    child: Row(
+      children: [
+        // Logo
+        Image.asset(
+          'assets/images/qurani-white-text.png',
+          height: 28 * s,
+          color: AppColors.primary,
+          fit: BoxFit.contain,
+        ),
+        
+        SizedBox(width: AppDesignSystem.space16 * s),
+        
+        const Spacer(), // ✅ GANTI search field dengan Spacer
+        
+        SizedBox(width: AppDesignSystem.space12 * s),
+        
+        // Profile button
+        _buildTopIconButton(
+          context,
+          icon: Icons.person_outline_rounded,
+          onTap: () => _navigateToPage(context, 3),
+          isSelected: widget.selectedIndex == 3,
+          tooltip: 'Profile',
+        ),
+        
+        SizedBox(width: AppDesignSystem.space8 * s),
+        
+        // Settings button
+        if (widget.selectedIndex != 6)
           _buildTopIconButton(
             context,
-            icon: Icons.person_outline_rounded,
-            onTap: () => _navigateToPage(context, 3),
-            isSelected: widget.selectedIndex == 3,
-            tooltip: 'Profile',
+            icon: Icons.settings_outlined,
+            onTap: () => _navigateToPage(context, 6),
+            tooltip: 'Settings',
           ),
-          
-          SizedBox(width: AppDesignSystem.space8 * s),
-          
-          // Settings button (hidden if already on settings page)
-          if (widget.selectedIndex != 6)
-            _buildTopIconButton(
-              context,
-              icon: Icons.settings_outlined,
-              onTap: () => _navigateToPage(context, 6),
-              tooltip: 'Settings',
-            ),
-        ],
-      ),
-    );
-  }
-
-  // ==================== SEARCH FIELD ====================
-  Widget _buildSearchField(BuildContext context) {
-    final s = AppDesignSystem.getScaleFactor(context);
-
-    return AnimatedContainer(
-      duration: AppDesignSystem.durationFast,
-      height: 40 * s,
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium * s),
-        border: Border.all(
-          color: _isSearchFocused
-              ? AppColors.borderFocus
-              : Colors.transparent,
-          width: AppDesignSystem.borderThick * s,
-        ),
-      ),
-      child: TextField(
-        controller: widget.searchController,
-        focusNode: _searchFocusNode,
-        onChanged: widget.onSearchChanged,
-        style: AppTypography.body(context, color: AppColors.textPrimary),
-        decoration: InputDecoration(
-          hintText: 'Search sura, juz, or page...',
-          hintStyle: AppTypography.body(
-            context,
-            color: AppColors.textHint,
-            weight: AppTypography.regular,
-          ),
-          prefixIcon: Padding(
-            padding: EdgeInsets.all(AppDesignSystem.space10 * s),
-            child: Icon(
-              Icons.search_rounded,
-              color: _isSearchFocused
-                  ? AppColors.primary
-                  : AppColors.textTertiary,
-              size: AppDesignSystem.iconMedium * s,
-            ),
-          ),
-          suffixIcon: widget.searchController?.text.isNotEmpty == true
-              ? IconButton(
-                  icon: Icon(
-                    Icons.close_rounded,
-                    color: AppColors.textTertiary,
-                    size: AppDesignSystem.iconSmall * s,
-                  ),
-                  onPressed: () {
-                    AppHaptics.light();
-                    widget.onSearchClear?.call();
-                  },
-                  padding: EdgeInsets.zero,
-                  splashRadius: 20 * s,
-                )
-              : null,
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(
-            vertical: AppDesignSystem.space10 * s,
-            horizontal: AppDesignSystem.space4 * s,
-          ),
-          isDense: true,
-        ),
-      ),
-    );
-  }
+      ],
+    ),
+  );
+}
 
   // ==================== TOP ICON BUTTON ====================
   Widget _buildTopIconButton(

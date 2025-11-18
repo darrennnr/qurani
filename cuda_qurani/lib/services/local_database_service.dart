@@ -9,7 +9,7 @@ import '../models/quran_models.dart';
 class LocalDatabaseService {
   static Database? _wordsDb;
   static Database? _chaptersDb;
-  
+
   /// ✅ Helper to ensure databases are open
   static Future<void> _ensureInitialized() async {
     if (_wordsDb == null || _chaptersDb == null) {
@@ -34,11 +34,11 @@ class LocalDatabaseService {
       print('[DB] Databases already initialized');
       return;
     }
-    
+
     try {
       final databasesPath = await getDatabasesPath();
       print('[DB] Database path: $databasesPath');
-      
+
       // Copy words database
       final wordsPath = join(databasesPath, 'uthmani.db');
       if (!await File(wordsPath).exists()) {
@@ -50,19 +50,24 @@ class LocalDatabaseService {
       }
       _wordsDb = await openDatabase(wordsPath, readOnly: true);
       print('[DB] uthmani.db opened');
-      
+
       // Copy chapters database
-      final chaptersPath = join(databasesPath, 'quran-metadata-surah-name.sqlite');
+      final chaptersPath = join(
+        databasesPath,
+        'quran-metadata-surah-name.sqlite',
+      );
       if (!await File(chaptersPath).exists()) {
         print('[DB] Copying quran-metadata-surah-name.sqlite from assets...');
-        final data = await rootBundle.load('assets/data/quran-metadata-surah-name.sqlite');
+        final data = await rootBundle.load(
+          'assets/data/quran-metadata-surah-name.sqlite',
+        );
         final bytes = data.buffer.asUint8List();
         await File(chaptersPath).writeAsBytes(bytes, flush: true);
         print('[DB] quran-metadata-surah-name.sqlite copied successfully');
       }
       _chaptersDb = await openDatabase(chaptersPath, readOnly: true);
       print('[DB] quran-metadata-surah-name.sqlite opened');
-      
+
       print('[DB] All databases initialized successfully');
     } catch (e, stackTrace) {
       print('[DB] Error initializing databases: $e');
@@ -70,45 +75,42 @@ class LocalDatabaseService {
       rethrow;
     }
   }
-  
+
   /// Get list of all surahs (chapters)
   static Future<List<Map<String, dynamic>>> getSurahs() async {
     await _ensureInitialized();
-    
-    final result = await _chaptersDb!.query(
-      'chapters',
-      orderBy: 'id ASC',
-    );
-    
+
+    final result = await _chaptersDb!.query('chapters', orderBy: 'id ASC');
+
     return result;
   }
-  
+
   /// Get surah metadata by ID
   static Future<Map<String, dynamic>?> getSurahMetadata(int surahId) async {
     await _ensureInitialized();
-    
+
     final result = await _chaptersDb!.query(
       'chapters',
       where: 'id = ?',
       whereArgs: [surahId],
       limit: 1,
     );
-    
+
     return result.isNotEmpty ? result.first : null;
   }
-  
+
   /// Get complete Surah with verses
   static Future<Surah> getSurah(int surahId) async {
     await _ensureInitialized();
-    
+
     print('[DB] Loading surah $surahId from local database...');
-    
+
     // Get metadata
     final metadata = await getSurahMetadata(surahId);
     if (metadata == null) {
       throw Exception('Surah $surahId not found in database');
     }
-    
+
     // Get all words for this surah
     final words = await _wordsDb!.query(
       'words',
@@ -116,41 +118,37 @@ class LocalDatabaseService {
       whereArgs: [surahId],
       orderBy: 'ayah ASC, word ASC',
     );
-    
+
     if (words.isEmpty) {
       throw Exception('No words found for surah $surahId');
     }
-    
+
     // Group words by ayah (keep ALL words including numbers for display)
     Map<int, List<String>> ayahWordsMap = {};
     for (var word in words) {
       int ayahNum = word['ayah'] as int;
       String wordText = word['text'] as String;
-      
+
       if (!ayahWordsMap.containsKey(ayahNum)) {
         ayahWordsMap[ayahNum] = [];
       }
       ayahWordsMap[ayahNum]!.add(wordText);
     }
-    
+
     // Convert to Verse objects
     List<Verse> verses = ayahWordsMap.entries.map((entry) {
       int ayahNum = entry.key;
       List<String> words = entry.value;
       String fullText = words.join(' ');
-      
-      return Verse(
-        number: ayahNum,
-        text: fullText,
-        words: words,
-      );
+
+      return Verse(number: ayahNum, text: fullText, words: words);
     }).toList();
-    
+
     // Sort verses by number
     verses.sort((a, b) => a.number.compareTo(b.number));
-    
+
     print('[DB] Surah $surahId loaded: ${verses.length} verses');
-    
+
     return Surah(
       number: surahId,
       name: metadata['name_simple'] ?? metadata['name'] ?? 'Unknown',
@@ -158,49 +156,52 @@ class LocalDatabaseService {
       verses: verses,
     );
   }
-  
+
   /// Search verses by Arabic text OR surah name (Latin/Arabic)
   static Future<List<Map<String, dynamic>>> searchVerses(String query) async {
     await _ensureInitialized();
-    
+
     if (query.trim().isEmpty) {
       return [];
     }
-    
+
     print('[DB] Searching for: "$query"');
-    
+
     List<Map<String, dynamic>> results = [];
-    
+
     // 1. Search by SURAH NAME (Latin or Arabic)
     // Use case-insensitive search with LOWER()
     String queryLower = query.toLowerCase();
-    
+
     // Try multiple variations for better matching
     // Remove spaces, hyphens, and normalize
     String queryNorm = queryLower.replaceAll(' ', '').replaceAll('-', '');
-    
-    final surahMatches = await _chaptersDb!.rawQuery('''
+
+    final surahMatches = await _chaptersDb!.rawQuery(
+      '''
       SELECT * FROM chapters 
       WHERE LOWER(name) LIKE ? 
          OR LOWER(name_simple) LIKE ? 
          OR LOWER(name_arabic) LIKE ?
          OR REPLACE(REPLACE(LOWER(name), ' ', ''), '-', '') LIKE ?
          OR REPLACE(REPLACE(LOWER(name_simple), ' ', ''), '-', '') LIKE ?
-    ''', [
-      '%$queryLower%',
-      '%$queryLower%', 
-      '%$queryLower%',
-      '%$queryNorm%',
-      '%$queryNorm%',
-    ]);
-    
+    ''',
+      [
+        '%$queryLower%',
+        '%$queryLower%',
+        '%$queryLower%',
+        '%$queryNorm%',
+        '%$queryNorm%',
+      ],
+    );
+
     if (surahMatches.isNotEmpty) {
       print('[DB] Found ${surahMatches.length} matching surahs by name');
-      
+
       // Return all verses from matching surahs (first 10 verses only)
       for (var surahMeta in surahMatches) {
         int surahNum = surahMeta['id'] as int;
-        
+
         // Get first 10 verses of this surah
         final versesInSurah = await _wordsDb!.query(
           'words',
@@ -209,22 +210,22 @@ class LocalDatabaseService {
           orderBy: 'ayah ASC, word ASC',
           limit: 100, // Get words for ~10 verses
         );
-        
+
         // Group by ayah
         Map<int, List<String>> ayahWordsMap = {};
         for (var word in versesInSurah) {
           int ayahNum = word['ayah'] as int;
           String wordText = word['text'] as String;
-          
+
           if (!ayahWordsMap.containsKey(ayahNum)) {
             ayahWordsMap[ayahNum] = [];
           }
           ayahWordsMap[ayahNum]!.add(wordText);
-          
+
           // Limit to 10 verses
           if (ayahWordsMap.length > 10) break;
         }
-        
+
         // Build results
         for (var entry in ayahWordsMap.entries) {
           results.add({
@@ -237,21 +238,21 @@ class LocalDatabaseService {
           });
         }
       }
-      
+
       // 🔒 IMPORTANT: If surah name matched, SKIP verse text search
       // This prevents "al baqarah" from returning random verses with "al" (which is very common)
       print('[DB] Surah name matched, skipping verse text search');
       print('[DB] Found ${results.length} total results (surah name only)');
       return results;
     }
-    
+
     // 2. Search by VERSE TEXT (Arabic) - ONLY if no surah name match
     // Skip if query is too short (common words like "al" would match too many)
     if (query.length < 3) {
       print('[DB] Query too short for verse text search (min 3 characters)');
       return results;
     }
-    
+
     final words = await _wordsDb!.query(
       'words',
       where: 'text LIKE ?',
@@ -259,34 +260,34 @@ class LocalDatabaseService {
       orderBy: 'surah ASC, ayah ASC, word ASC',
       limit: 100, // Limit results
     );
-    
+
     if (words.isNotEmpty) {
       print('[DB] Found ${words.length} matching words by text');
-      
+
       // Group by surah and ayah
       Map<String, List<String>> ayahWordsMap = {};
       for (var word in words) {
         int surahNum = word['surah'] as int;
         int ayahNum = word['ayah'] as int;
         String wordText = word['text'] as String;
-        
+
         String key = '$surahNum:$ayahNum';
         if (!ayahWordsMap.containsKey(key)) {
           ayahWordsMap[key] = [];
         }
         ayahWordsMap[key]!.add(wordText);
       }
-      
+
       // Build result list
       for (var entry in ayahWordsMap.entries) {
         final parts = entry.key.split(':');
         final surahNum = int.parse(parts[0]);
         final ayahNum = int.parse(parts[1]);
         final fullText = entry.value.join(' ');
-        
+
         // Get surah metadata
         final metadata = await getSurahMetadata(surahNum);
-        
+
         results.add({
           'surah_number': surahNum,
           'ayah_number': ayahNum,
@@ -297,19 +298,19 @@ class LocalDatabaseService {
         });
       }
     }
-    
+
     if (results.isEmpty) {
       print('[DB] No results found');
     } else {
       print('[DB] Found ${results.length} total results');
     }
-    
+
     return results;
   }
 
   static Future<int> getPageNumber(int surahId, int ayahNumber) async {
     await _ensureInitialized();
-    
+
     try {
       // Get first word of this ayah
       final wordResult = await _wordsDb!.query(
@@ -319,38 +320,41 @@ class LocalDatabaseService {
         orderBy: 'word ASC',
         limit: 1,
       );
-      
+
       if (wordResult.isEmpty) return 1;
-      
+
       final firstWordId = wordResult.first['id'] as int;
-      
+
       // Query pages database to find page containing this word
       final databasesPath = await getDatabasesPath();
       final pagesPath = join(databasesPath, 'qpc-v1-15-lines.db');
-      
+
       if (!await File(pagesPath).exists()) {
         print('[DB] Pages database not found, copying...');
         final data = await rootBundle.load('assets/data/qpc-v1-15-lines.db');
         final bytes = data.buffer.asUint8List();
         await File(pagesPath).writeAsBytes(bytes, flush: true);
       }
-      
+
       final pagesDb = await openDatabase(pagesPath, readOnly: true);
-      
-      final pageResult = await pagesDb.rawQuery('''
+
+      final pageResult = await pagesDb.rawQuery(
+        '''
         SELECT page_number FROM pages 
         WHERE line_type = 'ayah' 
         AND first_word_id <= ? 
         AND last_word_id >= ? 
         LIMIT 1
-      ''', [firstWordId, firstWordId]);
-      
+      ''',
+        [firstWordId, firstWordId],
+      );
+
       await pagesDb.close();
-      
+
       if (pageResult.isNotEmpty) {
         return pageResult.first['page_number'] as int;
       }
-      
+
       return 1;
     } catch (e) {
       print('[DB] Error getting page number: $e');
@@ -361,13 +365,13 @@ class LocalDatabaseService {
   /// Get first surah and ayah in a page
   static Future<Map<String, int>> getFirstAyahInPage(int pageNumber) async {
     await _ensureInitialized();
-    
+
     try {
       final databasesPath = await getDatabasesPath();
       final pagesPath = join(databasesPath, 'qpc-v1-15-lines.db');
-      
+
       final pagesDb = await openDatabase(pagesPath, readOnly: true);
-      
+
       final pageResult = await pagesDb.query(
         'pages',
         where: 'page_number = ? AND line_type = ?',
@@ -375,30 +379,30 @@ class LocalDatabaseService {
         orderBy: 'line_number ASC',
         limit: 1,
       );
-      
+
       if (pageResult.isEmpty) {
         await pagesDb.close();
         return {'surah': 1, 'ayah': 1};
       }
-      
+
       final firstWordId = pageResult.first['first_word_id'];
       await pagesDb.close();
-      
+
       if (firstWordId == null || firstWordId == '') {
         return {'surah': 1, 'ayah': 1};
       }
-      
+
       final wordResult = await _wordsDb!.query(
         'words',
         where: 'id = ?',
         whereArgs: [int.parse(firstWordId.toString())],
         limit: 1,
       );
-      
+
       if (wordResult.isEmpty) {
         return {'surah': 1, 'ayah': 1};
       }
-      
+
       return {
         'surah': wordResult.first['surah'] as int,
         'ayah': wordResult.first['ayah'] as int,
@@ -415,17 +419,66 @@ class LocalDatabaseService {
       print('[LocalDB] Already initialized');
       return;
     }
-    
+
     print('[LocalDB] Pre-initializing databases for app lifecycle...');
     await initializeDatabases();
     print('[LocalDB] Pre-initialization complete');
   }
-  
+
   /// Close all databases
   static Future<void> close() async {
     await _wordsDb?.close();
     await _chaptersDb?.close();
     _wordsDb = null;
     _chaptersDb = null;
+  }
+
+  static Future<Map<int, List<int>>> buildPageSurahMapping() async {
+    await _ensureInitialized();
+
+    try {
+      // Query to get all page-surah relationships
+      final result = await _wordsDb!.rawQuery('''
+        SELECT DISTINCT w.surah, 
+               (SELECT page_number 
+                FROM (SELECT page_number, first_word_id, last_word_id 
+                      FROM pages 
+                      WHERE line_type = 'ayah' 
+                      AND first_word_id IS NOT NULL) p
+                WHERE w.id BETWEEN p.first_word_id AND p.last_word_id
+                LIMIT 1) as page_number
+        FROM words w
+        WHERE w.id IN (
+          SELECT DISTINCT first_word_id FROM pages 
+          WHERE line_type = 'ayah' AND first_word_id IS NOT NULL
+        )
+        ORDER BY page_number, w.surah
+      ''');
+
+      final Map<int, List<int>> mapping = {};
+
+      for (final row in result) {
+        final page = row['page_number'];
+        final surah = row['surah'] as int;
+
+        if (page != null) {
+          final pageNum = page is int ? page : int.parse(page.toString());
+
+          if (!mapping.containsKey(pageNum)) {
+            mapping[pageNum] = [];
+          }
+
+          if (!mapping[pageNum]!.contains(surah)) {
+            mapping[pageNum]!.add(surah);
+          }
+        }
+      }
+
+      print('[LocalDB] Built page-surah mapping: ${mapping.length} pages');
+      return mapping;
+    } catch (e) {
+      print('[LocalDB] Error building page-surah mapping: $e');
+      return {};
+    }
   }
 }

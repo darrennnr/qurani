@@ -9,6 +9,8 @@ import 'package:cuda_qurani/providers/auth_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:cuda_qurani/config/app_config.dart';
 import 'package:cuda_qurani/screens/splash_screen.dart';
+import 'package:cuda_qurani/services/metadata_cache_service.dart';
+
 // Global flag to track DB initialization
 bool _isDatabaseInitialized = false;
 
@@ -36,24 +38,20 @@ Future<void> _initializeDatabases() async {
   try {
     print('🔄 [MAIN] Starting database pre-initialization...');
 
-    // ✅ CRITICAL: Initialize BOTH database services in parallel
+    // ✅ STEP 1: Initialize databases
     await Future.wait([
-      // DBHelper - untuk QuranService (qpc-v1 databases)
       DBHelper.preInitializeAll(),
-
-      // LocalDatabaseService - untuk search & metadata
       LocalDatabaseService.preInitialize(),
     ]);
 
+    // ✅ STEP 2: Pre-cache metadata (CRITICAL for performance)
+    await MetadataCacheService().initialize();
+
     _isDatabaseInitialized = true;
-    print('✅ [MAIN] All databases pre-initialized successfully');
-    print('   - DBHelper: qpc-v1 databases ready');
-    print('   - LocalDatabaseService: uthmani.db & chapters ready');
+    print('✅ [MAIN] All databases + metadata pre-initialized successfully');
   } catch (e, stackTrace) {
     print('❌ [MAIN] Database initialization FAILED: $e');
     print('🔍 Stack trace: $stackTrace');
-    // ⚠️ CRITICAL: Jangan throw error, biarkan app tetap jalan
-    // Database akan di-reinitialize on-demand jika pre-init gagal
   }
 }
 
@@ -106,13 +104,14 @@ class _InitialSplashScreenState extends State<InitialSplashScreen> {
   Future<void> _navigateToAuth() async {
     // Show splash for minimum 2 seconds (for branding)
     await Future.delayed(const Duration(seconds: 2));
-    
+
     if (!mounted) return;
-    
+
     // Navigate to AuthWrapper (no animation for smooth transition)
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => const AuthWrapper(),
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const AuthWrapper(),
         transitionDuration: Duration.zero, // No animation
         reverseTransitionDuration: Duration.zero,
       ),

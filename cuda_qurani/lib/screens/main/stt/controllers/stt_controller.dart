@@ -12,6 +12,7 @@ import '../utils/logger.dart';
 import 'package:cuda_qurani/services/audio_service.dart';
 import 'package:cuda_qurani/services/websocket_service.dart';
 import 'package:cuda_qurani/config/app_config.dart';
+import 'package:cuda_qurani/services/metadata_cache_service.dart';
 
 class SttController with ChangeNotifier {
   final int? suratId;
@@ -25,7 +26,9 @@ class SttController with ChangeNotifier {
       '🗃️ SttController: CONSTRUCTOR - surah:$suratId page:$pageId juz:$juzId',
     );
     _webSocketService = WebSocketService(serverUrl: AppConfig.websocketUrl);
-    print('🔧 SttController: WebSocketService initialized, calling _initializeWebSocket()...');
+    print(
+      '🔧 SttController: WebSocketService initialized, calling _initializeWebSocket()...',
+    );
     try {
       _initializeWebSocket();
       print('✅ SttController: _initializeWebSocket() completed');
@@ -87,6 +90,7 @@ class SttController with ChangeNotifier {
 
   // Page Pre-loading Cache
   final Map<int, List<MushafPageLine>> pageCache = {};
+  final MetadataCacheService _metadataCache = MetadataCacheService();
 
   bool _isPreloadingPages = false;
 
@@ -485,152 +489,187 @@ class SttController with ChangeNotifier {
     }
   }
 
-void navigateToPage(int newPage) {
-  if (newPage < 1 || newPage > 604 || newPage == _currentPage) {
-    appLogger.log('NAV', 'Invalid navigation to page $newPage');
-    return;
-  }
-
-  appLogger.log('NAV', '📄 Navigating from page $_currentPage to $newPage');
-
-  _currentPage = newPage;
-
-  // ✅ Check if target page is already cached
-  if (pageCache.containsKey(newPage)) {
-    appLogger.log('NAV', '⚡ INSTANT: Page $newPage already in cache');
-
-    // Update surah name immediately from cache
-    _updateSurahNameForPage(newPage);
-
-    // Update current page ayats immediately (no loading)
-    _loadCurrentPageAyats();
-
-    // Update ayat index
-    if (_currentPageAyats.isNotEmpty) {
-      final firstAyatOnPage = _currentPageAyats.first;
-      final newIndex = _ayatList.indexWhere(
-        (a) =>
-            a.surah_id == firstAyatOnPage.surah_id &&
-            a.ayah == firstAyatOnPage.ayah,
-      );
-      if (newIndex >= 0) {
-        _currentAyatIndex = newIndex;
-        appLogger.log('NAV', 'Updated ayat index to $_currentAyatIndex');
-      }
+  void navigateToPage(int newPage) {
+    if (newPage < 1 || newPage > 604 || newPage == _currentPage) {
+      appLogger.log('NAV', 'Invalid navigation to page $newPage');
+      return;
     }
 
-    notifyListeners();
+    appLogger.log('NAV', '📄 Navigating from page $_currentPage to $newPage');
 
-    // Preload more pages in background
-    Future.microtask(() => _preloadAdjacentPagesAggressively());
-  } else {
-    // ✅ Page not cached - load it + adjacent pages immediately
-    appLogger.log('NAV', '🔥 Loading page $newPage + adjacent pages...');
+    _currentPage = newPage;
 
-    // Load with parallel fetch (will cache adjacent pages too)
-    _loadSinglePageData(newPage)
-        .then((_) {
-          // Update surah name after page loaded
-          _updateSurahNameForPage(newPage);
-          
-          _loadCurrentPageAyats();
+    // ✅ Check if target page is already cached
+    if (pageCache.containsKey(newPage)) {
+      appLogger.log('NAV', '⚡ INSTANT: Page $newPage already in cache');
 
-          if (_currentPageAyats.isNotEmpty) {
-            final firstAyatOnPage = _currentPageAyats.first;
-            final newIndex = _ayatList.indexWhere(
-              (a) =>
-                  a.surah_id == firstAyatOnPage.surah_id &&
-                  a.ayah == firstAyatOnPage.ayah,
-            );
-            if (newIndex >= 0) {
-              _currentAyatIndex = newIndex;
+      // Update surah name immediately from cache
+      _updateSurahNameForPage(newPage);
+
+      // Update current page ayats immediately (no loading)
+      _loadCurrentPageAyats();
+
+      // Update ayat index
+      if (_currentPageAyats.isNotEmpty) {
+        final firstAyatOnPage = _currentPageAyats.first;
+        final newIndex = _ayatList.indexWhere(
+          (a) =>
+              a.surah_id == firstAyatOnPage.surah_id &&
+              a.ayah == firstAyatOnPage.ayah,
+        );
+        if (newIndex >= 0) {
+          _currentAyatIndex = newIndex;
+          appLogger.log('NAV', 'Updated ayat index to $_currentAyatIndex');
+        }
+      }
+
+      notifyListeners();
+
+      // Preload more pages in background
+      Future.microtask(() => _preloadAdjacentPagesAggressively());
+    } else {
+      // ✅ Page not cached - load it + adjacent pages immediately
+      appLogger.log('NAV', '🔥 Loading page $newPage + adjacent pages...');
+
+      // Load with parallel fetch (will cache adjacent pages too)
+      _loadSinglePageData(newPage)
+          .then((_) {
+            // Update surah name after page loaded
+            _updateSurahNameForPage(newPage);
+
+            _loadCurrentPageAyats();
+
+            if (_currentPageAyats.isNotEmpty) {
+              final firstAyatOnPage = _currentPageAyats.first;
+              final newIndex = _ayatList.indexWhere(
+                (a) =>
+                    a.surah_id == firstAyatOnPage.surah_id &&
+                    a.ayah == firstAyatOnPage.ayah,
+              );
+              if (newIndex >= 0) {
+                _currentAyatIndex = newIndex;
+              }
             }
-          }
 
-          notifyListeners();
+            notifyListeners();
 
-          // Continue preloading in background
-          Future.microtask(() => _preloadAdjacentPagesAggressively());
-        })
-        .catchError((e) {
-          appLogger.log(
-            'NAV_ERROR',
-            'Failed to navigate to page $newPage: $e',
-          );
-        });
+            // Continue preloading in background
+            Future.microtask(() => _preloadAdjacentPagesAggressively());
+          })
+          .catchError((e) {
+            appLogger.log(
+              'NAV_ERROR',
+              'Failed to navigate to page $newPage: $e',
+            );
+          });
+    }
   }
-}
 
   // ===== NEW METHOD: Update surah name for current page =====
-Future<void> _updateSurahNameForPage(int pageNumber) async {
-  try {
-    // Priority 1: Use cached page data (fastest)
-    if (pageCache.containsKey(pageNumber)) {
-      final pageLines = pageCache[pageNumber]!;
-      
-      // Find first ayah segment in page
+  Future<void> _updateSurahNameForPage(int pageNumber) async {
+    try {
+      // ✅ Priority 1: Use metadata cache (FASTEST - no database query)
+      final surahName = _metadataCache.getPrimarySurahForPage(pageNumber);
+
+      if (surahName.isNotEmpty && surahName != 'Page $pageNumber') {
+        // Extract surah ID from cache
+        final surahIds = _metadataCache.getSurahIdsForPage(pageNumber);
+        if (surahIds != null && surahIds.isNotEmpty) {
+          final surahId = surahIds.first;
+
+          if (_determinedSurahId != surahId) {
+            _determinedSurahId = surahId;
+
+            // Get full metadata from cache
+            final surahMeta = _metadataCache.getSurah(surahId);
+            if (surahMeta != null) {
+              _suratNameSimple = surahMeta['name_simple'] as String;
+              _suratVersesCount = surahMeta['verses_count'].toString();
+
+              appLogger.log(
+                'SURAH_UPDATE',
+                'Updated to: $_suratNameSimple (Page $pageNumber) - FROM CACHE',
+              );
+              notifyListeners();
+              return;
+            }
+          }
+        }
+      }
+
+      // Priority 2: Use cached page data (fallback)
+      if (pageCache.containsKey(pageNumber)) {
+        final pageLines = pageCache[pageNumber]!;
+
+        for (final line in pageLines) {
+          if (line.ayahSegments != null && line.ayahSegments!.isNotEmpty) {
+            final firstSegment = line.ayahSegments!.first;
+            final surahId = firstSegment.surahId;
+
+            if (_determinedSurahId != surahId) {
+              _determinedSurahId = surahId;
+
+              final chapter = await _sqliteService.getChapterInfo(surahId);
+              _suratNameSimple = chapter.nameSimple;
+              _suratVersesCount = chapter.versesCount.toString();
+
+              appLogger.log(
+                'SURAH_UPDATE',
+                'Updated to: $_suratNameSimple (Page $pageNumber) - FROM PAGE CACHE',
+              );
+              notifyListeners();
+            }
+            return;
+          }
+        }
+      }
+
+      // Priority 3: Use _currentPageAyats if available
+      if (_currentPageAyats.isNotEmpty) {
+        final firstAyat = _currentPageAyats.first;
+        final surahId = firstAyat.surah_id;
+
+        if (_determinedSurahId != surahId) {
+          _determinedSurahId = surahId;
+
+          final chapter = await _sqliteService.getChapterInfo(surahId);
+          _suratNameSimple = chapter.nameSimple;
+          _suratVersesCount = chapter.versesCount.toString();
+
+          appLogger.log(
+            'SURAH_UPDATE',
+            'Updated to: $_suratNameSimple (from ayats)',
+          );
+          notifyListeners();
+        }
+        return;
+      }
+
+      // Priority 4: Load from database (slowest fallback)
+      final pageLines = await _sqliteService.getMushafPageLines(pageNumber);
       for (final line in pageLines) {
         if (line.ayahSegments != null && line.ayahSegments!.isNotEmpty) {
           final firstSegment = line.ayahSegments!.first;
           final surahId = firstSegment.surahId;
-          
-          // Only update if surah changed
-          if (_determinedSurahId != surahId) {
-            _determinedSurahId = surahId;
-            
-            // Get surah metadata
-            final chapter = await _sqliteService.getChapterInfo(surahId);
-            _suratNameSimple = chapter.nameSimple;
-            _suratVersesCount = chapter.versesCount.toString();
-            
-            appLogger.log('SURAH_UPDATE', 'Updated to: $_suratNameSimple (Page $pageNumber)');
-            notifyListeners();
-          }
+
+          _determinedSurahId = surahId;
+
+          final chapter = await _sqliteService.getChapterInfo(surahId);
+          _suratNameSimple = chapter.nameSimple;
+          _suratVersesCount = chapter.versesCount.toString();
+
+          appLogger.log(
+            'SURAH_UPDATE',
+            'Updated to: $_suratNameSimple (loaded from DB)',
+          );
+          notifyListeners();
           return;
         }
       }
+    } catch (e) {
+      appLogger.log('SURAH_UPDATE_ERROR', 'Failed to update surah name: $e');
     }
-    
-    // Priority 2: Use _currentPageAyats if available
-    if (_currentPageAyats.isNotEmpty) {
-      final firstAyat = _currentPageAyats.first;
-      final surahId = firstAyat.surah_id;
-      
-      if (_determinedSurahId != surahId) {
-        _determinedSurahId = surahId;
-        
-        final chapter = await _sqliteService.getChapterInfo(surahId);
-        _suratNameSimple = chapter.nameSimple;
-        _suratVersesCount = chapter.versesCount.toString();
-        
-        appLogger.log('SURAH_UPDATE', 'Updated to: $_suratNameSimple (from ayats)');
-        notifyListeners();
-      }
-      return;
-    }
-    
-    // Priority 3: Load from database (fallback)
-    final pageLines = await _sqliteService.getMushafPageLines(pageNumber);
-    for (final line in pageLines) {
-      if (line.ayahSegments != null && line.ayahSegments!.isNotEmpty) {
-        final firstSegment = line.ayahSegments!.first;
-        final surahId = firstSegment.surahId;
-        
-        _determinedSurahId = surahId;
-        
-        final chapter = await _sqliteService.getChapterInfo(surahId);
-        _suratNameSimple = chapter.nameSimple;
-        _suratVersesCount = chapter.versesCount.toString();
-        
-        appLogger.log('SURAH_UPDATE', 'Updated to: $_suratNameSimple (loaded from DB)');
-        notifyListeners();
-        return;
-      }
-    }
-  } catch (e) {
-    appLogger.log('SURAH_UPDATE_ERROR', 'Failed to update surah name: $e');
   }
-}
 
   void updatePageCache(int page, List<MushafPageLine> lines) {
     pageCache[page] = lines;
@@ -1125,21 +1164,21 @@ Future<void> _updateSurahNameForPage(int pageNumber) async {
   }
 
   // REPLACE method updateVisiblePage dengan:
-void updateVisiblePage(int pageNumber) {
-  if (_currentPage != pageNumber) {
-    _currentPage = pageNumber;
+  void updateVisiblePage(int pageNumber) {
+    if (_currentPage != pageNumber) {
+      _currentPage = pageNumber;
 
-    // Update surah name for new visible page
-    _updateSurahNameForPage(pageNumber);
+      // Update surah name for new visible page
+      _updateSurahNameForPage(pageNumber);
 
-    // Trigger pre-loading for both modes
-    if (!_isQuranMode) {
-      Future.microtask(() => _preloadAdjacentPagesAggressively());
+      // Trigger pre-loading for both modes
+      if (!_isQuranMode) {
+        Future.microtask(() => _preloadAdjacentPagesAggressively());
+      }
+
+      notifyListeners();
     }
-
-    notifyListeners();
   }
-}
 
   // ===== DISPOSAL =====
   @override
