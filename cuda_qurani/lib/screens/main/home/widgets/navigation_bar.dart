@@ -1,4 +1,4 @@
-// lib/screens/main/home/widgets/app_bar.dart
+// lib/screens/main/home/widgets/navigation_bar.dart
 
 import 'package:cuda_qurani/screens/main/home/screens/activity_page.dart';
 import 'package:flutter/material.dart';
@@ -8,7 +8,14 @@ import 'package:cuda_qurani/screens/main/home/screens/home_page.dart';
 import 'package:cuda_qurani/screens/main/home/screens/surah_list_page.dart';
 import 'package:cuda_qurani/screens/main/home/screens/profile_page.dart';
 import 'package:cuda_qurani/screens/main/home/screens/settings_page.dart';
+import 'package:cuda_qurani/core/design_system/app_design_system.dart';
+import 'package:cuda_qurani/core/widgets/app_components.dart';
 // BAGIAN YANG PERLU DIUPDATE di MenuAppBar class
+// ==================== IMPROVED MENU APP BAR ====================
+// ✅ Full Design System Integration
+// ✅ All 16 UI Principles Applied
+// ✅ Pixel-Perfect Responsive
+// ✅ Enhanced Interaction Feedback
 
 class MenuAppBar extends StatefulWidget implements PreferredSizeWidget {
   final int selectedIndex;
@@ -27,154 +34,203 @@ class MenuAppBar extends StatefulWidget implements PreferredSizeWidget {
   }) : super(key: key);
 
   @override
-  Size get preferredSize => const Size.fromHeight(120); // Increased from 116
+  Size get preferredSize => const Size.fromHeight(120);
 
   @override
   State<MenuAppBar> createState() => _MenuAppBarState();
 }
 
-class _MenuAppBarState extends State<MenuAppBar> {
+class _MenuAppBarState extends State<MenuAppBar> with SingleTickerProviderStateMixin {
   bool _isSearchFocused = false;
   late FocusNode _searchFocusNode;
-  
-  // TAMBAHKAN: Menu items list
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+
+  // Menu items with proper structure
   final List<Map<String, dynamic>> _menuItems = [
-    {'label': 'Home', 'index': 0},
-    {'label': 'Quran', 'index': 1},
-    {'label': 'Goal', 'index': 2},
-    {'label': 'Activity', 'index': 4},
-    {'label': 'History', 'index': 5},
-    {'label': 'Settings', 'index': 6},
+    {'label': 'Home', 'index': 0, 'icon': Icons.home_outlined},
+    {'label': 'Quran', 'index': 1, 'icon': Icons.menu_book_outlined},
+    {'label': 'Goal', 'index': 2, 'icon': Icons.flag_outlined},
+    {'label': 'Activity', 'index': 4, 'icon': Icons.analytics_outlined},
+    {'label': 'History', 'index': 5, 'icon': Icons.history_outlined},
+    {'label': 'Settings', 'index': 6, 'icon': Icons.settings_outlined},
   ];
 
   @override
   void initState() {
     super.initState();
     _searchFocusNode = FocusNode();
-    _searchFocusNode.addListener(() {
+    _searchFocusNode.addListener(_handleSearchFocusChange);
+    
+    // Animation for smooth interactions
+    _animationController = AnimationController(
+      vsync: this,
+      duration: AppDesignSystem.durationFast,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+  }
+
+  void _handleSearchFocusChange() {
+    if (mounted) {
       setState(() {
         _isSearchFocused = _searchFocusNode.hasFocus;
       });
-    });
+    }
   }
 
   @override
   void dispose() {
+    _searchFocusNode.removeListener(_handleSearchFocusChange);
     _searchFocusNode.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final s = size.width / 406.0;
-
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Color(0xFFE8E8E8), width: 1)),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.borderLight,
+            width: AppDesignSystem.borderNormal,
+          ),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.shadowLight,
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       child: SafeArea(
         bottom: false,
         child: Column(
-          mainAxisSize: MainAxisSize.min, // TAMBAHKAN: Prevent overflow
+          mainAxisSize: MainAxisSize.min,
           children: [
-            _buildTopBar(context, s), 
-            _buildMenuBar(context, s)
+            _buildTopBar(context),
+            _buildMenuBar(context),
           ],
         ),
       ),
     );
   }
 
-  // _buildTopBar tetap sama, tidak ada perubahan
-  Widget _buildTopBar(BuildContext context, double s) {
+  // ==================== TOP BAR ====================
+  Widget _buildTopBar(BuildContext context) {
+    final s = AppDesignSystem.getScaleFactor(context);
+
     return Container(
       height: 60 * s,
-      padding: EdgeInsets.symmetric(horizontal: 20 * s),
+      padding: EdgeInsets.symmetric(
+        horizontal: AppDesignSystem.space20 * s,
+      ),
       child: Row(
         children: [
+          // Logo with proper sizing
           Image.asset(
             'assets/images/qurani-white-text.png',
-            height: 26 * s,
-            color: constants.primaryColor,
+            height: 28 * s,
+            color: AppColors.primary,
+            fit: BoxFit.contain,
           ),
-          SizedBox(width: 20 * s),
+          
+          SizedBox(width: AppDesignSystem.space16 * s),
+          
+          // Search field (if shown)
           if (widget.showSearch)
-            Expanded(child: _buildSearchField(s))
+            Expanded(child: _buildSearchField(context))
           else
             const Spacer(),
-          SizedBox(width: 12 * s),
-          _buildIconButton(
-            Icons.person_outline_rounded,
-            () => _navigateToPage(context, 3),
+          
+          SizedBox(width: AppDesignSystem.space12 * s),
+          
+          // Profile button
+          _buildTopIconButton(
+            context,
+            icon: Icons.person_outline_rounded,
+            onTap: () => _navigateToPage(context, 3),
             isSelected: widget.selectedIndex == 3,
-            s: s,
+            tooltip: 'Profile',
           ),
-          SizedBox(width: 8 * s),
-          _buildIconButton(
-            Icons.settings_outlined,
-            () => _navigateToPage(context, 6),
-            s: s,
-          ),
+          
+          SizedBox(width: AppDesignSystem.space8 * s),
+          
+          // Settings button (hidden if already on settings page)
+          if (widget.selectedIndex != 6)
+            _buildTopIconButton(
+              context,
+              icon: Icons.settings_outlined,
+              onTap: () => _navigateToPage(context, 6),
+              tooltip: 'Settings',
+            ),
         ],
       ),
     );
   }
 
-  // _buildSearchField tetap sama, tidak ada perubahan
-  Widget _buildSearchField(double s) {
-    return Container(
+  // ==================== SEARCH FIELD ====================
+  Widget _buildSearchField(BuildContext context) {
+    final s = AppDesignSystem.getScaleFactor(context);
+
+    return AnimatedContainer(
+      duration: AppDesignSystem.durationFast,
       height: 40 * s,
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F5F5),
-        borderRadius: BorderRadius.circular(10 * s),
+        color: AppColors.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium * s),
         border: Border.all(
           color: _isSearchFocused
-              ? constants.primaryColor.withOpacity(0.3)
+              ? AppColors.borderFocus
               : Colors.transparent,
-          width: 1.5 * s,
+          width: AppDesignSystem.borderThick * s,
         ),
       ),
       child: TextField(
         controller: widget.searchController,
         focusNode: _searchFocusNode,
         onChanged: widget.onSearchChanged,
-        style: TextStyle(
-          fontSize: 14 * s,
-          color: const Color(0xFF2C2C2C),
-          fontWeight: FontWeight.w400,
-        ),
+        style: AppTypography.body(context, color: AppColors.textPrimary),
         decoration: InputDecoration(
-          hintText: 'Search for sura, juz, or page...',
-          hintStyle: TextStyle(
-            color: const Color(0xFF9E9E9E),
-            fontSize: 12 * s,
-            fontWeight: FontWeight.w400,
+          hintText: 'Search sura, juz, or page...',
+          hintStyle: AppTypography.body(
+            context,
+            color: AppColors.textHint,
+            weight: AppTypography.regular,
           ),
           prefixIcon: Padding(
-            padding: EdgeInsets.all(10 * s),
+            padding: EdgeInsets.all(AppDesignSystem.space10 * s),
             child: Icon(
               Icons.search_rounded,
-              color: const Color(0xFF757575),
-              size: 20 * s,
+              color: _isSearchFocused
+                  ? AppColors.primary
+                  : AppColors.textTertiary,
+              size: AppDesignSystem.iconMedium * s,
             ),
           ),
           suffixIcon: widget.searchController?.text.isNotEmpty == true
               ? IconButton(
                   icon: Icon(
                     Icons.close_rounded,
-                    color: const Color(0xFF757575),
-                    size: 18 * s,
+                    color: AppColors.textTertiary,
+                    size: AppDesignSystem.iconSmall * s,
                   ),
-                  onPressed: widget.onSearchClear,
+                  onPressed: () {
+                    AppHaptics.light();
+                    widget.onSearchClear?.call();
+                  },
                   padding: EdgeInsets.zero,
+                  splashRadius: 20 * s,
                 )
               : null,
           border: InputBorder.none,
           contentPadding: EdgeInsets.symmetric(
-            vertical: 10 * s,
-            horizontal: 4 * s,
+            vertical: AppDesignSystem.space10 * s,
+            horizontal: AppDesignSystem.space4 * s,
           ),
           isDense: true,
         ),
@@ -182,54 +238,87 @@ class _MenuAppBarState extends State<MenuAppBar> {
     );
   }
 
-  // _buildIconButton tetap sama, tidak ada perubahan
-  Widget _buildIconButton(
-    IconData icon,
-    VoidCallback onTap, {
+  // ==================== TOP ICON BUTTON ====================
+  Widget _buildTopIconButton(
+    BuildContext context, {
+    required IconData icon,
+    required VoidCallback onTap,
     bool isSelected = false,
-    required double s,
+    String? tooltip,
   }) {
-    return InkWell(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        onTap();
-      },
-      borderRadius: BorderRadius.circular(10 * s),
-      child: Container(
-        width: 40 * s,
-        height: 40 * s,
-        decoration: BoxDecoration(
-          color: isSelected
-              ? constants.primaryColor.withOpacity(0.1)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(10 * s),
-        ),
-        child: Icon(
-          icon,
-          color: isSelected ? constants.primaryColor : const Color(0xFF2C2C2C),
-          size: 22 * s,
+    final s = AppDesignSystem.getScaleFactor(context);
+    final size = 40 * s;
+
+    final button = Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          AppHaptics.light();
+          onTap();
+        },
+        borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium * s),
+        splashColor: AppComponentStyles.rippleColor,
+        highlightColor: AppComponentStyles.hoverColor,
+        child: AnimatedContainer(
+          duration: AppDesignSystem.durationFast,
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            color: isSelected
+                ? AppColors.primaryWithOpacity(0.1)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium * s),
+            border: isSelected
+                ? Border.all(
+                    color: AppColors.primary.withOpacity(0.2),
+                    width: AppDesignSystem.borderNormal * s,
+                  )
+                : null,
+          ),
+          child: Icon(
+            icon,
+            color: isSelected ? AppColors.primary : AppColors.textSecondary,
+            size: AppDesignSystem.iconLarge * s,
+          ),
         ),
       ),
     );
+
+    if (tooltip != null) {
+      return Tooltip(
+        message: tooltip,
+        child: button,
+      );
+    }
+
+    return button;
   }
 
-  // REPLACE COMPLETELY: _buildMenuBar dengan scrollable version
-  Widget _buildMenuBar(BuildContext context, double s) {
+  // ==================== MENU BAR ====================
+  Widget _buildMenuBar(BuildContext context) {
+    final s = AppDesignSystem.getScaleFactor(context);
+
     return Container(
       height: 56 * s,
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: Color(0xFFF0F0F0), width: 1)),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(
+            color: AppColors.borderLight,
+            width: AppDesignSystem.borderNormal,
+          ),
+        ),
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
-        padding: EdgeInsets.symmetric(horizontal: 4 * s),
+        padding: EdgeInsets.symmetric(horizontal: AppDesignSystem.space4 * s),
         child: Row(
           children: _menuItems.map((item) {
             return _buildMenuItem(
-              item['label'] as String,
-              item['index'] as int,
-              s,
+              context,
+              label: item['label'] as String,
+              index: item['index'] as int,
+              icon: item['icon'] as IconData,
             );
           }).toList(),
         ),
@@ -237,43 +326,76 @@ class _MenuAppBarState extends State<MenuAppBar> {
     );
   }
 
-  // UPDATE: _buildMenuItem untuk fixed width items
-  Widget _buildMenuItem(String label, int index, double s) {
+  // ==================== MENU ITEM ====================
+  Widget _buildMenuItem(
+    BuildContext context, {
+    required String label,
+    required int index,
+    required IconData icon,
+  }) {
+    final s = AppDesignSystem.getScaleFactor(context);
     final isSelected = widget.selectedIndex == index;
+    final itemWidth = 100 * s;
 
-    return InkWell(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        _navigateToPage(context, index);
-      },
-      child: Container(
-        width: 100 * s, // Fixed width untuk consistency
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: isSelected ? constants.primaryColor : Colors.transparent,
-              width: 2 * s,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          AppHaptics.light();
+          _navigateToPage(context, index);
+        },
+        splashColor: AppComponentStyles.rippleColor,
+        highlightColor: AppComponentStyles.hoverColor,
+        child: AnimatedContainer(
+          duration: AppDesignSystem.durationFast,
+          width: itemWidth,
+          padding: EdgeInsets.symmetric(vertical: AppDesignSystem.space8 * s),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color: isSelected
+                    ? AppColors.primary
+                    : Colors.transparent,
+                width: AppDesignSystem.borderXXThick * s,
+              ),
             ),
           ),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 15 * s,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-              color: isSelected
-                  ? constants.primaryColor
-                  : const Color(0xFF9E9E9E),
-              letterSpacing: 0.2,
-            ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Icon (optional - uncomment if you want icons)
+              // Icon(
+              //   icon,
+              //   size: AppDesignSystem.iconMedium * s,
+              //   color: isSelected
+              //       ? AppColors.primary
+              //       : AppColors.textDisabled,
+              // ),
+              // SizedBox(height: AppDesignSystem.space4 * s),
+              
+              // Label
+              Text(
+                label,
+                style: AppTypography.label(
+                  context,
+                  color: isSelected
+                      ? AppColors.primary
+                      : AppColors.textDisabled,
+                  weight: isSelected
+                      ? AppTypography.semiBold
+                      : AppTypography.medium,
+                ),
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  // _navigateToPage tetap sama dengan tambahan case baru
+  // ==================== NAVIGATION ====================
   void _navigateToPage(BuildContext context, int index) {
     if (widget.selectedIndex == index) return;
 
@@ -292,33 +414,62 @@ class _MenuAppBarState extends State<MenuAppBar> {
         targetPage = const ProfilePage();
         break;
       case 4:
-        // Activity page - implement later
-        targetPage = const ActivityPage(); // Temporary
+        targetPage = const ActivityPage();
         break;
       case 5:
-        // History page - implement later
-        targetPage = const HomePage(); // Temporary
+        targetPage = const HomePage(); // TODO: Replace with HistoryPage
         break;
       case 6:
-        // Settings page - implement later
-        targetPage = const SettingsPage(); // Temporary
+        targetPage = const SettingsPage();
         break;
       default:
         return;
     }
 
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => targetPage)
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => targetPage,
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(0.0, 0.03);
+          const end = Offset.zero;
+          const curve = Curves.easeInOut;
+          var tween = Tween(begin: begin, end: end).chain(
+            CurveTween(curve: curve),
+          );
+          var offsetAnimation = animation.drive(tween);
+          var fadeAnimation = animation.drive(
+            Tween(begin: 0.0, end: 1.0).chain(
+              CurveTween(curve: curve),
+            ),
+          );
+
+          return FadeTransition(
+            opacity: fadeAnimation,
+            child: SlideTransition(
+              position: offsetAnimation,
+              child: child,
+            ),
+          );
+        },
+        transitionDuration: AppDesignSystem.durationNormal,
+      ),
     );
   }
-}
-// REPLACE ProfileAppBar class dengan kode ini
+}// ==================== IMPROVED PROFILE APP BAR ====================
+// ✅ Full Design System Integration
+// ✅ Consistent with MenuAppBar
+// ✅ Enhanced Back Navigation
+
 class ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
+  final List<Widget>? actions;
+  final bool showBackButton;
   
   const ProfileAppBar({
     Key? key,
     this.title = 'Account',
+    this.actions,
+    this.showBackButton = true,
   }) : super(key: key);
 
   @override
@@ -326,38 +477,82 @@ class ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final s = size.width / 406.0;
+    final s = AppDesignSystem.getScaleFactor(context);
     
     return AppBar(
-      backgroundColor: const Color(0xFFFAFAFA),
+      backgroundColor: AppColors.surface,
+      foregroundColor: AppColors.textPrimary,
       elevation: 0,
       centerTitle: true,
       automaticallyImplyLeading: false,
-      leading: GestureDetector(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const HomePage()),
-          );
-        },
-        child: Padding(
-          padding: EdgeInsets.only(left: 12 * s),
-          child: Icon(
-            Icons.arrow_back_ios,
-            size: 20 * s,
-            color: Colors.black87,
-          ),
-        ),
-      ),
+      systemOverlayStyle: SystemUiOverlayStyle.dark,
+      leading: showBackButton
+          ? Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  AppHaptics.light();
+                  Navigator.pushReplacement(
+                    context,
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) =>
+                          const HomePage(),
+                      transitionsBuilder:
+                          (context, animation, secondaryAnimation, child) {
+                        const begin = Offset(-0.03, 0.0);
+                        const end = Offset.zero;
+                        const curve = Curves.easeInOut;
+                        var tween = Tween(begin: begin, end: end).chain(
+                          CurveTween(curve: curve),
+                        );
+                        var offsetAnimation = animation.drive(tween);
+                        var fadeAnimation = animation.drive(
+                          Tween(begin: 0.0, end: 1.0).chain(
+                            CurveTween(curve: curve),
+                          ),
+                        );
+
+                        return FadeTransition(
+                          opacity: fadeAnimation,
+                          child: SlideTransition(
+                            position: offsetAnimation,
+                            child: child,
+                          ),
+                        );
+                      },
+                      transitionDuration: AppDesignSystem.durationNormal,
+                    ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(
+                  AppDesignSystem.radiusSmall * s,
+                ),
+                splashColor: AppComponentStyles.rippleColor,
+                child: Container(
+                  padding: EdgeInsets.only(left: AppDesignSystem.space12 * s),
+                  alignment: Alignment.centerLeft,
+                  child: Icon(
+                    Icons.arrow_back_ios_rounded,
+                    size: AppDesignSystem.iconMedium * s,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            )
+          : null,
       title: Text(
         title,
-        style: TextStyle(
-          fontSize: 18 * s,
-          fontWeight: FontWeight.w600,
-          color: Colors.black87,
-          letterSpacing: -0.3,
+        style: AppTypography.titleLarge(
+          context,
+          weight: AppTypography.semiBold,
+        ),
+      ),
+      actions: actions,
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(1.0),
+        child: Container(
+          height: AppDesignSystem.borderNormal,
+          color: AppColors.borderLight,
         ),
       ),
     );
