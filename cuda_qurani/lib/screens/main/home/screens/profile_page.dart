@@ -611,7 +611,7 @@ class _SwitchAccountBottomSheet extends StatelessWidget {
                               0.85,
                             ), // Softer text
                             weight: AppTypography.semiBold,
-                          ).copyWith(letterSpacing: 0.5),
+                          ).copyWith(letterSpacing: 1.5),
                         ),
                       ],
                     ),
@@ -620,6 +620,8 @@ class _SwitchAccountBottomSheet extends StatelessWidget {
               ),
             ),
           ),
+SizedBox(height: AppDesignSystem.scale(context, 10)),
+
         ],
       ),
     );
