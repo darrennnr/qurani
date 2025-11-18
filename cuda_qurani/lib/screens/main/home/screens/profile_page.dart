@@ -136,7 +136,8 @@ class _ProfilePageState extends State<ProfilePage> {
     String joinedDate = '08/05/2025';
     if (user != null) {
       final date = user.createdAt;
-      joinedDate = '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+      joinedDate =
+          '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
     }
 
     return AppCard(
@@ -150,7 +151,11 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildInfoRow(String label, String value, {required bool showDivider}) {
+  Widget _buildInfoRow(
+    String label,
+    String value, {
+    required bool showDivider,
+  }) {
     return Container(
       padding: AppPadding.all(context, AppDesignSystem.space16),
       decoration: showDivider
@@ -159,16 +164,10 @@ class _ProfilePageState extends State<ProfilePage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: AppTypography.body(context),
-          ),
+          Text(label, style: AppTypography.body(context)),
           Text(
             value,
-            style: AppTypography.body(
-              context,
-              color: AppColors.textTertiary,
-            ),
+            style: AppTypography.body(context, color: AppColors.textTertiary),
           ),
         ],
       ),
@@ -205,8 +204,8 @@ class _ProfilePageState extends State<ProfilePage> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         border: Border.all(
-          color: isDisabled 
-              ? AppColors.borderLight 
+          color: isDisabled
+              ? AppColors.borderLight
               : AppColors.textPrimary.withOpacity(0.75), // Softer black border
           width: AppDesignSystem.scale(context, 1.5),
         ),
@@ -217,10 +216,12 @@ class _ProfilePageState extends State<ProfilePage> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: isDisabled ? null : () {
-            AppHaptics.light();
-            onPressed();
-          },
+          onTap: isDisabled
+              ? null
+              : () {
+                  AppHaptics.light();
+                  onPressed();
+                },
           borderRadius: BorderRadius.circular(
             AppDesignSystem.scale(context, AppDesignSystem.radiusXXLarge),
           ),
@@ -246,9 +247,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           ? AppColors.textDisabled
                           : AppColors.textPrimary,
                       weight: AppTypography.semiBold,
-                    ).copyWith(
-                      letterSpacing: 0.5,
-                    ),
+                    ).copyWith(letterSpacing: 0.5),
                   ),
           ),
         ),
@@ -267,13 +266,21 @@ class _ProfilePageState extends State<ProfilePage> {
           _buildMenuItem('Share Application', Icons.share_outlined),
           _buildMenuItem('Rate Application', Icons.star_outline),
           _buildMenuItem('Terms of Service', Icons.arrow_forward_ios),
-          _buildMenuItem('Privacy Policy', Icons.arrow_forward_ios, showDivider: false),
+          _buildMenuItem(
+            'Privacy Policy',
+            Icons.arrow_forward_ios,
+            showDivider: false,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildMenuItem(String label, IconData icon, {bool showDivider = true}) {
+  Widget _buildMenuItem(
+    String label,
+    IconData icon, {
+    bool showDivider = true,
+  }) {
     return InkWell(
       onTap: () {
         AppHaptics.light();
@@ -289,10 +296,7 @@ class _ProfilePageState extends State<ProfilePage> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              label,
-              style: AppTypography.body(context),
-            ),
+            Text(label, style: AppTypography.body(context)),
             Icon(
               icon,
               size: AppDesignSystem.scale(context, AppDesignSystem.iconSmall),
@@ -340,8 +344,8 @@ class _ProfilePageState extends State<ProfilePage> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      barrierColor: AppColors.overlay, // Dark overlay
-      builder: (context) => _SwitchAccountBottomSheet(height: sheetHeight),
+      barrierColor: AppColors.overlay,
+      builder: (context) => _SwitchAccountBottomSheet(),
     );
   }
 
@@ -355,10 +359,7 @@ class _ProfilePageState extends State<ProfilePage> {
             AppDesignSystem.scale(context, AppDesignSystem.radiusLarge),
           ),
         ),
-        title: Text(
-          'Logout',
-          style: AppTypography.titleLarge(context),
-        ),
+        title: Text('Logout', style: AppTypography.titleLarge(context)),
         content: Text(
           'Are you sure you want to logout?',
           style: AppTypography.body(context),
@@ -406,10 +407,7 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         title: Text(
           'Delete Account',
-          style: AppTypography.titleLarge(
-            context,
-            color: AppColors.error,
-          ),
+          style: AppTypography.titleLarge(context, color: AppColors.error),
         ),
         content: Text(
           'This action cannot be undone. All your data will be permanently deleted.',
@@ -473,9 +471,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
-        AppComponentStyles.successSnackBar(
-          message: 'Logged out successfully',
-        ),
+        AppComponentStyles.successSnackBar(message: 'Logged out successfully'),
       );
     } catch (e) {
       print('❌ ProfilePage: Logout failed - $e');
@@ -497,17 +493,12 @@ class _ProfilePageState extends State<ProfilePage> {
 
 // ==================== SWITCH ACCOUNT BOTTOM SHEET WIDGET ====================
 class _SwitchAccountBottomSheet extends StatelessWidget {
-  final double height;
-
-  const _SwitchAccountBottomSheet({required this.height});
-
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
     final currentUser = authProvider.currentUser;
 
     return Container(
-      height: height,
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.only(
@@ -520,6 +511,7 @@ class _SwitchAccountBottomSheet extends StatelessWidget {
         ),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           // Handle bar
           Container(
@@ -540,10 +532,7 @@ class _SwitchAccountBottomSheet extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Switch Account',
-                  style: AppTypography.h3(context),
-                ),
+                Text('Switch Account', style: AppTypography.h3(context)),
                 AppIconButton(
                   icon: Icons.close,
                   onPressed: () => Navigator.pop(context),
@@ -574,7 +563,9 @@ class _SwitchAccountBottomSheet extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.surface,
                 border: Border.all(
-                  color: AppColors.textPrimary.withOpacity(0.50), // Softer black
+                  color: AppColors.textPrimary.withOpacity(
+                    0.50,
+                  ), // Softer black
                   width: AppDesignSystem.scale(context, 1.5),
                 ),
                 borderRadius: BorderRadius.circular(
@@ -590,7 +581,10 @@ class _SwitchAccountBottomSheet extends StatelessWidget {
                     _showAddAccountDialog(context);
                   },
                   borderRadius: BorderRadius.circular(
-                    AppDesignSystem.scale(context, AppDesignSystem.radiusXXLarge),
+                    AppDesignSystem.scale(
+                      context,
+                      AppDesignSystem.radiusXXLarge,
+                    ),
                   ),
                   splashColor: AppComponentStyles.rippleColor,
                   highlightColor: AppComponentStyles.hoverColor,
@@ -600,19 +594,24 @@ class _SwitchAccountBottomSheet extends StatelessWidget {
                       children: [
                         Icon(
                           Icons.add,
-                          size: AppDesignSystem.scale(context, AppDesignSystem.iconMedium),
-                          color: AppColors.textPrimary.withOpacity(0.85), // Softer icon
+                          size: AppDesignSystem.scale(
+                            context,
+                            AppDesignSystem.iconMedium,
+                          ),
+                          color: AppColors.textPrimary.withOpacity(
+                            0.85,
+                          ), // Softer icon
                         ),
                         AppMargin.gapHSmall(context),
                         Text(
                           'ADD ACCOUNT',
                           style: AppTypography.label(
                             context,
-                            color: AppColors.textPrimary.withOpacity(0.85), // Softer text
+                            color: AppColors.textPrimary.withOpacity(
+                              0.85,
+                            ), // Softer text
                             weight: AppTypography.semiBold,
-                          ).copyWith(
-                            letterSpacing: 0.5,
-                          ),
+                          ).copyWith(letterSpacing: 0.5),
                         ),
                       ],
                     ),
@@ -695,8 +694,10 @@ class _SwitchAccountBottomSheet extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.surface,
             border: Border.all(
-              color: isActive 
-                  ? AppColors.textPrimary.withOpacity(0.50)  // Softer black for active
+              color: isActive
+                  ? AppColors.textPrimary.withOpacity(
+                      0.50,
+                    ) // Softer black for active
                   : AppColors.borderMedium,
               width: AppDesignSystem.scale(context, isActive ? 1.5 : 1),
             ),
@@ -764,8 +765,13 @@ class _SwitchAccountBottomSheet extends StatelessWidget {
                 AppMargin.gapHSmall(context),
                 Icon(
                   Icons.check_circle,
-                  color: AppColors.secondaryDark.withOpacity(0.80), // Softer checkmark
-                  size: AppDesignSystem.scale(context, AppDesignSystem.iconLarge),
+                  color: AppColors.secondaryDark.withOpacity(
+                    0.80,
+                  ), // Softer checkmark
+                  size: AppDesignSystem.scale(
+                    context,
+                    AppDesignSystem.iconLarge,
+                  ),
                 ),
               ],
             ],
@@ -796,17 +802,11 @@ class _SwitchAccountBottomSheet extends StatelessWidget {
               ),
             ),
             AppMargin.gapLarge(context),
-            Text(
-              'No accounts yet',
-              style: AppTypography.titleLarge(context),
-            ),
+            Text('No accounts yet', style: AppTypography.titleLarge(context)),
             AppMargin.gapSmall(context),
             Text(
               'Add an account to get started',
-              style: AppTypography.body(
-                context,
-                color: AppColors.textTertiary,
-              ),
+              style: AppTypography.body(context, color: AppColors.textTertiary),
             ),
           ],
         ),
@@ -824,10 +824,7 @@ class _SwitchAccountBottomSheet extends StatelessWidget {
             AppDesignSystem.scale(context, AppDesignSystem.radiusLarge),
           ),
         ),
-        title: Text(
-          'Add Account',
-          style: AppTypography.titleLarge(context),
-        ),
+        title: Text('Add Account', style: AppTypography.titleLarge(context)),
         content: Text(
           'This feature is coming soon. You can logout and login with a different account.',
           style: AppTypography.body(context),
