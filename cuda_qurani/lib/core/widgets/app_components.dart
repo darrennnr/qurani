@@ -1,6 +1,4 @@
 // lib/core/widgets/app_components.dart
-// ✅ COMPLETE GLOBAL REUSABLE COMPONENTS - 100% Ready for All Pages
-
 import 'package:flutter/material.dart';
 import '../design_system/app_design_system.dart';
 

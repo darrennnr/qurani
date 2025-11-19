@@ -1,6 +1,4 @@
 // lib/core/design_system/app_design_system.dart
-// ✅ COMPLETE GLOBAL DESIGN SYSTEM - 100% Ready for All Pages
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 

@@ -11,6 +11,9 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # Google Login/Register
+  google_sign_in: ^7.2.0
+
   # Time, Dates, Year
   intl: ^0.20.2
 

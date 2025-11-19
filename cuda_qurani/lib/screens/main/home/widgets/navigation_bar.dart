@@ -1,6 +1,7 @@
 // lib/screens/main/home/widgets/navigation_bar.dart
 
 import 'package:cuda_qurani/screens/main/home/screens/activity_page.dart';
+import 'package:cuda_qurani/screens/main/home/screens/completion_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cuda_qurani/screens/main/stt/utils/constants.dart' as constants;
@@ -44,7 +45,7 @@ class _MenuAppBarState extends State<MenuAppBar> with SingleTickerProviderStateM
   final List<Map<String, dynamic>> _menuItems = [
     {'label': 'Home', 'index': 0, 'icon': Icons.home_outlined},
     {'label': 'Quran', 'index': 1, 'icon': Icons.menu_book_outlined},
-    {'label': 'Goal', 'index': 2, 'icon': Icons.flag_outlined},
+    {'label': 'Completion', 'index': 2, 'icon': Icons.flag_outlined},
     {'label': 'Activity', 'index': 4, 'icon': Icons.analytics_outlined},
     {'label': 'History', 'index': 5, 'icon': Icons.history_outlined},
     {'label': 'Settings', 'index': 6, 'icon': Icons.settings_outlined},
@@ -332,9 +333,9 @@ class _MenuAppBarState extends State<MenuAppBar> with SingleTickerProviderStateM
       case 1:
         targetPage = const SurahListPage();
         break;
-      case 2:
-        Navigator.pushReplacementNamed(context, '/goal');
-        return;
+case 2:
+  targetPage = const CompletionPage();
+  break;
       case 3:
         targetPage = const ProfilePage();
         break;

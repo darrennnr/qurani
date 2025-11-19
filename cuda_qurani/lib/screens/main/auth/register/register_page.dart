@@ -284,7 +284,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           fontWeight: FontWeight.w500,
                         ),
                         decoration: InputDecoration(
-                          labelText: 'Nama Lengkap',
+                          labelText: 'Username',
                           labelStyle: TextStyle(
                             color: Colors.grey[600],
                             fontSize: 15 * s,
