@@ -128,19 +128,32 @@ class QuranAppBar extends StatelessWidget implements PreferredSizeWidget {
           titleSpacing: 0,
           actions: [
             // Mode Toggle
-            IconButton(
-              icon: Icon(
-                controller.isQuranMode
-                    ? Icons.vertical_split
-                    : Icons.auto_stories,
-                size: iconSize * 0.9,
-              ),
-              onPressed: controller.toggleQuranMode,
-              tooltip: controller.isQuranMode
-                  ? 'Switch to List Mode'
-                  : 'Switch to Mushaf Mode',
-              splashRadius: iconSize * 1.1,
-            ),
+// Mode Toggle
+IconButton(
+  icon: Icon(
+    controller.isQuranMode
+        ? Icons.vertical_split
+        : Icons.auto_stories,
+    size: iconSize * 0.9,
+  ),
+  onPressed: () async {
+    // ✅ FIX: Await toggle completion
+    await controller.toggleQuranMode();
+    
+    // ✅ FORCE: Trigger rebuild immediately
+    if (context.mounted) {
+      // Scroll to correct position after mode change
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Trigger any pending navigation
+        controller.notifyListeners();
+      });
+    }
+  },
+  tooltip: controller.isQuranMode
+      ? 'Switch to List Mode'
+      : 'Switch to Mushaf Mode',
+  splashRadius: iconSize * 1.1,
+),
             // Visibility Toggle
             IconButton(
               icon: Icon(

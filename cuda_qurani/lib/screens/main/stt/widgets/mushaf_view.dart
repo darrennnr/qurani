@@ -134,7 +134,7 @@ class MushafRenderer {
 }
 
 class MushafDisplay extends StatefulWidget {
-  const MushafDisplay({Key? key}) : super(key: key);
+  const MushafDisplay({Key? key}) : super(key: key); // ✅ Already OK
 
   @override
   State<MushafDisplay> createState() => _MushafDisplayState();
@@ -193,15 +193,15 @@ class _MushafDisplayState extends State<MushafDisplay> {
     final pageNumber = controller.currentPage;
     final cachedLines = controller.pageCache[pageNumber];
 
-    // âœ… FAST PATH: If page is cached, render immediately (NO LOADING)
+    // Ã¢Å“â€¦ FAST PATH: If page is cached, render immediately (NO LOADING)
     if (cachedLines != null && cachedLines.isNotEmpty) {
       return MushafPageContent(pageLines: cachedLines, pageNumber: pageNumber);
     }
 
-    // âš ï¸ FALLBACK: This should RARELY happen due to aggressive preloading
+    // Ã¢Å¡ Ã¯Â¸Â FALLBACK: This should RARELY happen due to aggressive preloading
     // If it does, show minimal loading and trigger emergency load
     print(
-      'âš ï¸ CACHE MISS: Page $pageNumber not cached, emergency loading...',
+      'Ã¢Å¡ Ã¯Â¸Â CACHE MISS: Page $pageNumber not cached, emergency loading...',
     );
 
     // Trigger emergency load in controller
@@ -212,7 +212,7 @@ class _MushafDisplayState extends State<MushafDisplay> {
         );
         controller.updatePageCache(pageNumber, lines);
       } catch (e) {
-        print('âŒ Emergency load failed: $e');
+        print('Ã¢ÂÅ’ Emergency load failed: $e');
       }
     });
 
@@ -249,7 +249,7 @@ class MushafPageContent extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.only(
         top: appBarHeight,
-      ), // ✅ Push content below AppBar
+      ), // âœ… Push content below AppBar
       child: Column(
         children: [
           const MushafPageHeader(), // Will be hidden behind AppBar
@@ -365,7 +365,7 @@ class _JustifiedAyahLine extends StatelessWidget {
     List<InlineSpan> spans = [];
 
     // Font family berdasarkan mode
-    final fontFamily = controller.isQuranMode ? 'p$pageNumber' : 'UthmanTN';
+    final fontFamily = 'p$pageNumber';
 
     for (final segment in line.ayahSegments!) {
       final ayatIndex = controller.ayatList.indexWhere(
@@ -377,21 +377,21 @@ class _JustifiedAyahLine extends StatelessWidget {
       for (int i = 0; i < segment.words.length; i++) {
         final word = segment.words[i];
 
-        // âœ… FIX: Use wordNumber - 1 as index (wordNumber is 1-indexed, backend uses 0-indexed)
+        // Ã¢Å“â€¦ FIX: Use wordNumber - 1 as index (wordNumber is 1-indexed, backend uses 0-indexed)
         final wordIndex = word.wordNumber - 1;
 
         // Get word status dari wordStatusMap
         final wordStatus =
             controller.wordStatusMap[segment.ayahNumber]?[wordIndex];
 
-        // ðŸ”¥ DEBUG: Print word status dan warna yang akan diapply
+        // Ã°Å¸â€Â¥ DEBUG: Print word status dan warna yang akan diapply
         if (controller.isRecording &&
             segment.ayahNumber == controller.currentAyatNumber) {
           print(
-            'ðŸŽ¨ UI RENDER: Ayah ${segment.ayahNumber}, Word[$wordIndex] (loop $i) = $wordStatus',
+            'Ã°Å¸Å½Â¨ UI RENDER: Ayah ${segment.ayahNumber}, Word[$wordIndex] (loop $i) = $wordStatus',
           );
           print(
-            '   ðŸ“Š Full wordStatusMap[${segment.ayahNumber}] = ${controller.wordStatusMap[segment.ayahNumber]}',
+            '   Ã°Å¸â€œÅ  Full wordStatusMap[${segment.ayahNumber}] = ${controller.wordStatusMap[segment.ayahNumber]}',
           );
         }
 
@@ -409,11 +409,11 @@ class _JustifiedAyahLine extends StatelessWidget {
         if (wordStatus != null) {
           switch (wordStatus) {
             case WordStatus.matched:
-              wordBg = correctColor.withOpacity(0.4); // 🟩 HIJAU - BENAR
+              wordBg = correctColor.withOpacity(0.4); // ðŸŸ© HIJAU - BENAR
               break;
             case WordStatus.mismatched:
             case WordStatus.skipped:
-              wordBg = errorColor.withOpacity(0.4); // 🟥 MERAH - SALAH
+              wordBg = errorColor.withOpacity(0.4); // ðŸŸ¥ MERAH - SALAH
               break;
             case WordStatus.processing:
             case WordStatus.pending:
@@ -427,7 +427,7 @@ class _JustifiedAyahLine extends StatelessWidget {
         if (controller.hideUnreadAyat) {
           // CASE 1: Kata yang SUDAH DIPROSES (ada wordStatus & bukan pending)
           if (wordStatus != null && wordStatus != WordStatus.pending) {
-            wordOpacity = 1.0; // ✅ SELALU VISIBLE (ada blok warna)
+            wordOpacity = 1.0; // âœ… SELALU VISIBLE (ada blok warna)
           }
           // CASE 2: Ayat SEDANG DIBACA - sembunyikan kata yang belum diproses
           else if (isCurrentAyat) {
@@ -452,7 +452,7 @@ class _JustifiedAyahLine extends StatelessWidget {
                 color: _getWordColor(isCurrentAyat).withOpacity(wordOpacity),
                 backgroundColor: wordBg,
                 fontWeight: FontWeight.w400,
-                // ✅ TASK 1: Underline tipis (kecuali kata terakhir ayat)
+                // âœ… TASK 1: Underline tipis (kecuali kata terakhir ayat)
                 decoration: (controller.hideUnreadAyat && !isLastWordInAyah)
                     ? TextDecoration.underline
                     : null,
@@ -500,7 +500,7 @@ class MushafPageHeader extends StatelessWidget {
 
     return Container(
       height: headerHeight,
-      color: Colors.white, // ✅ ADD: Background to blend when hidden
+      color: Colors.white, // âœ… ADD: Background to blend when hidden
       padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.02),
       alignment: Alignment.center,
       child: Row(

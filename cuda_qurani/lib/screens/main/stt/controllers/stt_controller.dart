@@ -23,17 +23,17 @@ class SttController with ChangeNotifier {
 
   SttController({this.suratId, this.pageId, this.juzId}) {
     print(
-      '🗃️ SttController: CONSTRUCTOR - surah:$suratId page:$pageId juz:$juzId',
+      'ðŸ—ƒï¸ SttController: CONSTRUCTOR - surah:$suratId page:$pageId juz:$juzId',
     );
     _webSocketService = WebSocketService(serverUrl: AppConfig.websocketUrl);
     print(
-      '🔧 SttController: WebSocketService initialized, calling _initializeWebSocket()...',
+      'ðŸ”§ SttController: WebSocketService initialized, calling _initializeWebSocket()...',
     );
     try {
       _initializeWebSocket();
-      print('✅ SttController: _initializeWebSocket() completed');
+      print('âœ… SttController: _initializeWebSocket() completed');
     } catch (e, stack) {
-      print('❌ SttController: _initializeWebSocket() FAILED: $e');
+      print('âŒ SttController: _initializeWebSocket() FAILED: $e');
       print('Stack trace: $stack');
     }
   }
@@ -58,7 +58,9 @@ class SttController with ChangeNotifier {
   bool _hideUnreadAyat = false;
   bool _showLogs = false;
   int _currentPage = 1;
-  List<AyatData> _currentPageAyats = [];
+  int _listViewCurrentPage = 1;
+bool _isDataLoaded = false; // Prevent unnecessary reloads
+List<AyatData> _currentPageAyats = [];
   final ScrollController _scrollController = ScrollController();
 
   // Backend Integration - Recording & WebSocket
@@ -71,7 +73,7 @@ class SttController with ChangeNotifier {
   final Map<int, TartibStatus> _tartibStatus = {};
   final Map<int, Map<int, WordStatus>> _wordStatusMap = {};
   List<WordFeedback> _currentWords =
-      []; // ✅ ADD: Store current words for realtime updates
+      []; // âœ… ADD: Store current words for realtime updates
   StreamSubscription? _wsSubscription;
   StreamSubscription? _connectionSubscription;
 
@@ -79,14 +81,14 @@ class SttController with ChangeNotifier {
   bool get isRecording => _isRecording;
   bool get isConnected => _isConnected;
 
-  // ✅ NEW: Direct access to service connection state (always fresh)
+  // âœ… NEW: Direct access to service connection state (always fresh)
   bool get isServiceConnected => _webSocketService.isConnected;
 
   int get expectedAyah => _expectedAyah;
   Map<int, TartibStatus> get tartibStatus => _tartibStatus;
   Map<int, Map<int, WordStatus>> get wordStatusMap => _wordStatusMap;
   List<WordFeedback> get currentWords =>
-      _currentWords; // ✅ ADD: Getter for currentWords
+      _currentWords; // âœ… ADD: Getter for currentWords
 
   // Page Pre-loading Cache
   final Map<int, List<MushafPageLine>> pageCache = {};
@@ -112,6 +114,7 @@ class SttController with ChangeNotifier {
   int get currentPage => _currentPage;
   List<AyatData> get currentPageAyats => _currentPageAyats;
   ScrollController get scrollController => _scrollController;
+  int get listViewCurrentPage => _listViewCurrentPage;
 
   // ===== INITIALIZATION =====
   Future<void> initializeApp() async {
@@ -123,16 +126,20 @@ class SttController with ChangeNotifier {
     try {
       await _sqliteService.initialize();
 
-      // 🚀 STEP 1: Determine target page FIRST
+      // ðŸš€ STEP 1: Determine target page FIRST
       int targetPage = await _determineTargetPage();
       _currentPage = targetPage;
+      _listViewCurrentPage = targetPage;
+_isDataLoaded = false;
 
       appLogger.log('APP_INIT', 'Target page determined: $targetPage');
 
-      // 🚀 STEP 2: Load ONLY that page (minimal data)
+      // ðŸš€ STEP 2: Load ONLY that page (minimal data)
       await _loadSinglePageData(targetPage);
 
       _sessionStartTime = DateTime.now();
+
+      _isDataLoaded = true;
 
       // Mark as ready INSTANTLY
       _isLoading = false;
@@ -143,7 +150,7 @@ class SttController with ChangeNotifier {
         'App ready - Page $targetPage loaded instantly',
       );
 
-      // 🚀 STEP 3: Background tasks
+      // ðŸš€ STEP 3: Background tasks
       Future.microtask(() {
         if (_isQuranMode) {
           _preloadAdjacentPagesAggressively();
@@ -257,10 +264,10 @@ class SttController with ChangeNotifier {
 
   // REPLACE existing _loadSinglePageData method
   Future<void> _loadSinglePageData(int pageNumber) async {
-    appLogger.log('DATA', '🚀 INSTANT LOAD: Page $pageNumber + adjacent pages');
+    appLogger.log('DATA', 'ðŸš€ INSTANT LOAD: Page $pageNumber + adjacent pages');
 
     try {
-      // ✅ STEP 1: Determine pages to load (main + 2 before + 2 after = 5 pages)
+      // âœ… STEP 1: Determine pages to load (main + 2 before + 2 after = 5 pages)
       final pagesToLoad = <int>[];
 
       // Add main page first (priority)
@@ -272,16 +279,16 @@ class SttController with ChangeNotifier {
       if (pageNumber < 604) pagesToLoad.add(pageNumber + 1);
       if (pageNumber < 603) pagesToLoad.add(pageNumber + 2);
 
-      // ✅ STEP 2: Load all pages in PARALLEL
+      // âœ… STEP 2: Load all pages in PARALLEL
       await _loadMultiplePagesParallel(pagesToLoad);
 
-      // ✅ STEP 3: Extract main page data for UI
+      // âœ… STEP 3: Extract main page data for UI
       final pageLines = pageCache[pageNumber];
       if (pageLines == null || pageLines.isEmpty) {
         throw Exception('Main page $pageNumber failed to load');
       }
 
-      // ✅ STEP 4: Determine and STORE surah ID from first ayah
+      // âœ… STEP 4: Determine and STORE surah ID from first ayah
       for (final line in pageLines) {
         if (line.ayahSegments != null && line.ayahSegments!.isNotEmpty) {
           final firstSegment = line.ayahSegments!.first;
@@ -343,11 +350,11 @@ class SttController with ChangeNotifier {
 
           appLogger.log(
             'DATA',
-            '✅ Instant load complete: ${_ayatList.length} ayahs on page $pageNumber (Surah $_determinedSurahId)',
+            'âœ… Instant load complete: ${_ayatList.length} ayahs on page $pageNumber (Surah $_determinedSurahId)',
           );
           appLogger.log(
             'DATA',
-            '📦 Cache status: ${pageCache.length} pages cached (${pagesToLoad.length} just loaded)',
+            'ðŸ“¦ Cache status: ${pageCache.length} pages cached (${pagesToLoad.length} just loaded)',
           );
 
           notifyListeners();
@@ -393,6 +400,93 @@ class SttController with ChangeNotifier {
       throw Exception('Data loading failed: $e');
     }
   }
+
+  // ✅ NEW: Optimized data loading that preserves page position
+Future<void> _loadAyatDataOptimized(int targetPage) async {
+  appLogger.log('DATA_OPTIMIZED', 'Loading data with target page: $targetPage');
+  
+  try {
+    // ✅ FIX: Initialize with nullable type, then validate
+    int? surahIdForPage;
+    
+    // Determine surah ID from target page
+    if (suratId != null) {
+      surahIdForPage = suratId!;
+      appLogger.log('DATA_OPTIMIZED', 'Using direct suratId: $surahIdForPage');
+    } else if (_determinedSurahId != null) {
+      surahIdForPage = _determinedSurahId!;
+      appLogger.log('DATA_OPTIMIZED', 'Using determined surahId: $surahIdForPage');
+    } else {
+      // Get surah from cached page data or database
+      if (pageCache.containsKey(targetPage)) {
+        final pageLines = pageCache[targetPage]!;
+        for (final line in pageLines) {
+          if (line.ayahSegments != null && line.ayahSegments!.isNotEmpty) {
+            surahIdForPage = line.ayahSegments!.first.surahId;
+            appLogger.log('DATA_OPTIMIZED', 'Found surahId from cache: $surahIdForPage');
+            break;
+          }
+        }
+      }
+      
+      // ✅ FIX: Fallback if still null
+      if (surahIdForPage == null) {
+        appLogger.log('DATA_OPTIMIZED', 'Loading from database to find surahId...');
+        final pageLines = await _sqliteService.getMushafPageLines(targetPage);
+        
+        // Find first valid ayah segment
+        for (final line in pageLines) {
+          if (line.ayahSegments != null && line.ayahSegments!.isNotEmpty) {
+            surahIdForPage = line.ayahSegments!.first.surahId;
+            appLogger.log('DATA_OPTIMIZED', 'Found surahId from DB: $surahIdForPage');
+            break;
+          }
+        }
+      }
+    }
+
+    // ✅ VALIDATION: Throw error if still null
+    if (surahIdForPage == null) {
+      throw Exception('Cannot determine surah ID for page $targetPage');
+    }
+
+    // Load chapter info
+    final chapter = await _sqliteService.getChapterInfo(surahIdForPage);
+    _suratNameSimple = chapter.nameSimple;
+    _suratVersesCount = chapter.versesCount.toString();
+    _determinedSurahId = surahIdForPage;
+
+    // Load ayat list if not already loaded
+    if (_ayatList.isEmpty) {
+      _ayatList = await _sqliteService.getSurahAyatDataOptimized(
+        surahIdForPage,
+        isQuranMode: _isQuranMode,
+      );
+      appLogger.log('DATA_OPTIMIZED', 'Loaded ${_ayatList.length} ayats');
+    }
+
+    // ✅ CRITICAL: Set to target page, NOT first page
+    _currentPage = targetPage;
+    
+    // Update current ayat index based on target page
+    if (_ayatList.isNotEmpty) {
+      final targetAyat = _ayatList.firstWhere(
+        (a) => a.page == targetPage,
+        orElse: () => _ayatList.first,
+      );
+      _currentAyatIndex = _ayatList.indexOf(targetAyat);
+      appLogger.log('DATA_OPTIMIZED', 'Set current ayat index to: $_currentAyatIndex');
+    }
+
+    await _loadCurrentPageAyats();
+    _isDataLoaded = true;
+
+    appLogger.log('DATA_OPTIMIZED', 'Data loaded successfully, positioned at page $targetPage');
+  } catch (e) {
+    appLogger.log('DATA_OPTIMIZED_ERROR', 'Failed to load data: $e');
+    rethrow;
+  }
+}
 
   Future<void> _loadCurrentPageAyats() async {
     if (!_isQuranMode) {
@@ -495,13 +589,13 @@ class SttController with ChangeNotifier {
       return;
     }
 
-    appLogger.log('NAV', '📄 Navigating from page $_currentPage to $newPage');
+    appLogger.log('NAV', 'ðŸ“„ Navigating from page $_currentPage to $newPage');
 
     _currentPage = newPage;
 
-    // ✅ Check if target page is already cached
+    // âœ… Check if target page is already cached
     if (pageCache.containsKey(newPage)) {
-      appLogger.log('NAV', '⚡ INSTANT: Page $newPage already in cache');
+      appLogger.log('NAV', 'âš¡ INSTANT: Page $newPage already in cache');
 
       // Update surah name immediately from cache
       _updateSurahNameForPage(newPage);
@@ -528,8 +622,8 @@ class SttController with ChangeNotifier {
       // Preload more pages in background
       Future.microtask(() => _preloadAdjacentPagesAggressively());
     } else {
-      // ✅ Page not cached - load it + adjacent pages immediately
-      appLogger.log('NAV', '🔥 Loading page $newPage + adjacent pages...');
+      // âœ… Page not cached - load it + adjacent pages immediately
+      appLogger.log('NAV', 'ðŸ”¥ Loading page $newPage + adjacent pages...');
 
       // Load with parallel fetch (will cache adjacent pages too)
       _loadSinglePageData(newPage)
@@ -568,7 +662,7 @@ class SttController with ChangeNotifier {
   // ===== NEW METHOD: Update surah name for current page =====
   Future<void> _updateSurahNameForPage(int pageNumber) async {
     try {
-      // ✅ Priority 1: Use metadata cache (FASTEST - no database query)
+      // âœ… Priority 1: Use metadata cache (FASTEST - no database query)
       final surahName = _metadataCache.getPrimarySurahForPage(pageNumber);
 
       if (surahName.isNotEmpty && surahName != 'Page $pageNumber') {
@@ -681,12 +775,53 @@ class SttController with ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleQuranMode() async {
-    _isQuranMode = !_isQuranMode;
-    await _loadAyatData();
-    await _loadCurrentPageAyats();
-    notifyListeners();
+Future<void> toggleQuranMode() async {
+  appLogger.log('MODE_TOGGLE', 'Switching from ${_isQuranMode ? "Mushaf" : "List"} to ${!_isQuranMode ? "Mushaf" : "List"}');
+  
+  // ✅ STEP 1: Preserve current position
+  final targetPage = _isQuranMode ? _currentPage : _listViewCurrentPage;
+  appLogger.log('MODE_TOGGLE', 'Target page after toggle: $targetPage');
+
+  // ✅ STEP 2: Toggle mode flag FIRST
+  _isQuranMode = !_isQuranMode;
+  
+  // ✅ IMMEDIATE: Notify UI of mode change (quick feedback)
+  notifyListeners();
+
+  // ✅ STEP 3: Smart data loading (skip if already loaded)
+  if (!_isDataLoaded || _ayatList.isEmpty) {
+    appLogger.log('MODE_TOGGLE', 'Loading data (first time or empty)');
+    await _loadAyatDataOptimized(targetPage);
+  } else {
+    appLogger.log('MODE_TOGGLE', 'Skipping reload - data already loaded');
+    
+    // Just update current page without reloading
+    _currentPage = targetPage;
+    
+    // Update surah name for target page
+    await _updateSurahNameForPage(targetPage);
+    
+    // Load page-specific data if switching to mushaf
+    if (_isQuranMode) {
+      await _loadCurrentPageAyats();
+      
+      // ✅ IMPORTANT: Ensure page is in cache before switching
+      if (!pageCache.containsKey(targetPage)) {
+        appLogger.log('MODE_TOGGLE', 'Loading target page $targetPage to cache');
+        final lines = await _sqliteService.getMushafPageLines(targetPage);
+        pageCache[targetPage] = lines;
+      }
+      
+      // Preload adjacent pages
+      Future.microtask(() => _preloadAdjacentPagesAggressively());
+    }
   }
+
+  // ✅ FINAL: Notify UI again after data ready
+  notifyListeners();
+  
+  appLogger.log('MODE_TOGGLE', 'Toggle complete - now at page $_currentPage (${_isQuranMode ? "Mushaf" : "List"})');
+}
 
   void toggleHideUnread() {
     _hideUnreadAyat = !_hideUnreadAyat;
@@ -780,12 +915,12 @@ class SttController with ChangeNotifier {
   }
 
   static bool containsArabicNumbers(String text) {
-    return RegExp(r'[٠-٩]+').hasMatch(text);
+    return RegExp(r'[Ù -Ù©]+').hasMatch(text);
   }
 
   static bool isPureArabicNumber(String text) {
     final trimmedText = text.trim();
-    return RegExp(r'^[٠-٩۰۱۲۳۴۵۶۷۸۹ۺۻ۞ﮞﮟ\s]+$').hasMatch(trimmedText) &&
+    return RegExp(r'^[Ù -Ù©Û°Û±Û²Û³Û´ÛµÛ¶Û·Û¸Û¹ÛºÛ»Ûžï®žï®Ÿ\s]+$').hasMatch(trimmedText) &&
         containsArabicNumbers(trimmedText);
   }
 
@@ -805,20 +940,20 @@ class SttController with ChangeNotifier {
 
   // ===== WEBSOCKET & RECORDING =====
   void _initializeWebSocket() {
-    print('🔌 SttController: Initializing WebSocket subscriptions...');
+    print('ðŸ”Œ SttController: Initializing WebSocket subscriptions...');
 
-    // ✅ Cancel old subscriptions if they exist
+    // âœ… Cancel old subscriptions if they exist
     _wsSubscription?.cancel();
     _connectionSubscription?.cancel();
 
-    // ✅ Create new subscriptions (will get fresh streams if controllers were recreated)
+    // âœ… Create new subscriptions (will get fresh streams if controllers were recreated)
     _wsSubscription = _webSocketService.messages.listen(
       _handleWebSocketMessage,
       onError: (error) {
-        print('❌ SttController: Message stream error: $error');
+        print('âŒ SttController: Message stream error: $error');
       },
       onDone: () {
-        print('⚠️ SttController: Message stream closed');
+        print('âš ï¸ SttController: Message stream closed');
       },
     );
 
@@ -828,25 +963,25 @@ class SttController with ChangeNotifier {
           _isConnected = isConnected;
           if (_isConnected) {
             _errorMessage = '';
-            print('✅ SttController: Connection status changed to CONNECTED');
+            print('âœ… SttController: Connection status changed to CONNECTED');
           } else if (_isRecording) {
             _errorMessage = 'Connection lost. Attempting to reconnect...';
             print(
-              '⚠️ SttController: Connection status changed to DISCONNECTED',
+              'âš ï¸ SttController: Connection status changed to DISCONNECTED',
             );
           }
           notifyListeners();
         }
       },
       onError: (error) {
-        print('❌ SttController: Connection stream error: $error');
+        print('âŒ SttController: Connection stream error: $error');
       },
       onDone: () {
-        print('⚠️ SttController: Connection stream closed');
+        print('âš ï¸ SttController: Connection stream closed');
       },
     );
 
-    print('✅ SttController: WebSocket subscriptions initialized');
+    print('âœ… SttController: WebSocket subscriptions initialized');
 
     // Auto-connect
     _connectWebSocket();
@@ -866,7 +1001,7 @@ class SttController with ChangeNotifier {
   void _handleWebSocketMessage(Map<String, dynamic> message) {
     final type = message['type'];
     appLogger.log('WS_MESSAGE', 'Received: $type');
-    print('🔔 STT CONTROLLER: Received message type: $type');
+    print('ðŸ”” STT CONTROLLER: Received message type: $type');
 
     switch (type) {
       case 'word_processing':
@@ -899,18 +1034,18 @@ class SttController with ChangeNotifier {
 
         _currentAyatIndex = _ayatList.indexWhere((a) => a.ayah == ayah);
 
-        // ✅ UPDATE _wordStatusMap (existing behavior)
+        // âœ… UPDATE _wordStatusMap (existing behavior)
         if (!_wordStatusMap.containsKey(ayah)) _wordStatusMap[ayah] = {};
         _wordStatusMap[ayah]![wordIndex] = _mapWordStatus(status);
         print(
-          '🗺️ STT: Updated wordStatusMap[$ayah][$wordIndex] = ${_mapWordStatus(status)}',
+          'ðŸ—ºï¸ STT: Updated wordStatusMap[$ayah][$wordIndex] = ${_mapWordStatus(status)}',
         );
-        print('🗺️ STT: Full wordStatusMap[$ayah] = ${_wordStatusMap[ayah]}');
+        print('ðŸ—ºï¸ STT: Full wordStatusMap[$ayah] = ${_wordStatusMap[ayah]}');
 
-        // 🔥 NEW: Update _currentWords REALTIME
+        // ðŸ”¥ NEW: Update _currentWords REALTIME
         if (_currentWords.isEmpty || _currentWords.length != totalWords) {
           print(
-            '🔥 STT: Initializing _currentWords for ayah $ayah with $totalWords words',
+            'ðŸ”¥ STT: Initializing _currentWords for ayah $ayah with $totalWords words',
           );
           _currentWords = List.generate(
             totalWords,
@@ -932,7 +1067,7 @@ class SttController with ChangeNotifier {
             transcribedWord: transcribedWord,
           );
           print(
-            '🔥 STT REALTIME: Updated _currentWords[$wordIndex] = $expectedWord (${_mapWordStatus(status)})',
+            'ðŸ”¥ STT REALTIME: Updated _currentWords[$wordIndex] = $expectedWord (${_mapWordStatus(status)})',
           );
         }
 
@@ -941,9 +1076,9 @@ class SttController with ChangeNotifier {
 
       case 'progress':
         final int completedAyah = message['ayah'];
-        print('📥 STT: Progress for ayah $completedAyah');
+        print('ðŸ“¥ STT: Progress for ayah $completedAyah');
 
-        // 🚫 DON'T overwrite _currentWords if still recording same ayah!
+        // ðŸš« DON'T overwrite _currentWords if still recording same ayah!
         // word_feedback updates are more accurate and realtime
         if (!_isRecording ||
             _currentAyatIndex !=
@@ -952,25 +1087,25 @@ class SttController with ChangeNotifier {
             _currentWords = (message['words'] as List)
                 .map((w) => WordFeedback.fromJson(w))
                 .toList();
-            print('🎨 STT: Parsed ${_currentWords.length} words for display');
+            print('ðŸŽ¨ STT: Parsed ${_currentWords.length} words for display');
           }
 
           // Update expected ayah from backend
           if (message['expected_ayah'] != null) {
             _expectedAyah = message['expected_ayah'];
-            print('✅ STT: Updated expected_ayah to: $_expectedAyah');
+            print('âœ… STT: Updated expected_ayah to: $_expectedAyah');
           }
 
-          // ✅ Only update currentAyatIndex if NOT recording
+          // âœ… Only update currentAyatIndex if NOT recording
           if (!_isRecording) {
             _currentAyatIndex = _ayatList.indexWhere(
               (a) => a.ayah == _expectedAyah,
             );
-            print('✅ STT: Moved currentAyatIndex to: $_currentAyatIndex');
+            print('âœ… STT: Moved currentAyatIndex to: $_currentAyatIndex');
           }
         } else {
           print(
-            '🚫 STT SKIP: Keeping realtime word_feedback data (recording in progress)',
+            'ðŸš« STT SKIP: Keeping realtime word_feedback data (recording in progress)',
           );
         }
 
@@ -1026,7 +1161,7 @@ class SttController with ChangeNotifier {
     switch (status.toLowerCase()) {
       case 'matched':
       case 'correct':
-      case 'close': // ✅ Close = hampir benar = HIJAU
+      case 'close': // âœ… Close = hampir benar = HIJAU
         return WordStatus.matched;
       case 'processing':
         return WordStatus.processing;
@@ -1041,21 +1176,21 @@ class SttController with ChangeNotifier {
   }
 
   Future<void> startRecording() async {
-    // ✅ FIX: Sync provider flag from service FIRST
+    // âœ… FIX: Sync provider flag from service FIRST
     final serviceConnected = _webSocketService.isConnected;
     _isConnected = serviceConnected;
-    print('🎤 startRecording(): Called.');
+    print('ðŸŽ¤ startRecording(): Called.');
     print('   - _isConnected (cached) = $_isConnected');
     print('   - service.isConnected (fresh) = $serviceConnected');
 
     if (!_isConnected) {
-      print('⚠️ startRecording(): Not connected, attempting to connect...');
+      print('âš ï¸ startRecording(): Not connected, attempting to connect...');
       _errorMessage = 'Connecting...';
       notifyListeners();
       await _connectWebSocket();
       await Future.delayed(const Duration(milliseconds: 500));
       if (!_isConnected) {
-        print('❌ startRecording(): Connect failed!');
+        print('âŒ startRecording(): Connect failed!');
         _errorMessage = 'Cannot connect to server';
         notifyListeners();
         return;
@@ -1063,14 +1198,14 @@ class SttController with ChangeNotifier {
     }
 
     try {
-      print('✅ startRecording(): Connected, clearing state...');
+      print('âœ… startRecording(): Connected, clearing state...');
       _tartibStatus.clear();
       _wordStatusMap.clear();
       _expectedAyah = 1;
       _sessionId = null;
       _errorMessage = '';
 
-      // ✅ FIX: Determine surah ID with proper priority
+      // âœ… FIX: Determine surah ID with proper priority
       int recordingSurahId;
 
       if (suratId != null) {
@@ -1098,11 +1233,11 @@ class SttController with ChangeNotifier {
       }
 
       print(
-        '📤 startRecording(): Sending START message for surah $recordingSurahId...',
+        'ðŸ“¤ startRecording(): Sending START message for surah $recordingSurahId...',
       );
       _webSocketService.sendStartRecording(recordingSurahId);
 
-      print('🎙️ startRecording(): Starting audio recording...');
+      print('ðŸŽ™ï¸ startRecording(): Starting audio recording...');
       await _audioService.startRecording(
         onAudioChunk: (base64Audio) {
           if (_webSocketService.isConnected) {
@@ -1113,10 +1248,10 @@ class SttController with ChangeNotifier {
       _hideUnreadAyat = true;
       _isRecording = true;
       appLogger.log('RECORDING', 'Started for surah $recordingSurahId');
-      print('✅ startRecording(): Recording started successfully');
+      print('âœ… startRecording(): Recording started successfully');
       notifyListeners();
     } catch (e) {
-      print('❌ startRecording(): Exception: $e');
+      print('âŒ startRecording(): Exception: $e');
       _errorMessage = 'Failed to start: $e';
       _isRecording = false;
       appLogger.log('RECORDING_ERROR', e.toString());
@@ -1125,16 +1260,16 @@ class SttController with ChangeNotifier {
   }
 
   Future<void> stopRecording() async {
-    print('🛑 stopRecording(): Called');
+    print('ðŸ›‘ stopRecording(): Called');
     try {
       await _audioService.stopRecording();
       _webSocketService.sendStopRecording();
       _isRecording = false;
       appLogger.log('RECORDING', 'Stopped');
-      print('✅ stopRecording(): Stopped successfully');
+      print('âœ… stopRecording(): Stopped successfully');
       notifyListeners();
     } catch (e) {
-      print('❌ stopRecording(): Exception: $e');
+      print('âŒ stopRecording(): Exception: $e');
       _errorMessage = 'Failed to stop: $e';
       appLogger.log('RECORDING_ERROR', e.toString());
       notifyListeners();
@@ -1165,37 +1300,56 @@ class SttController with ChangeNotifier {
 
   // REPLACE method updateVisiblePage dengan:
   void updateVisiblePage(int pageNumber) {
-    if (_currentPage != pageNumber) {
-      _currentPage = pageNumber;
-
-      // Update surah name for new visible page
-      _updateSurahNameForPage(pageNumber);
-
-      // Trigger pre-loading for both modes
-      if (!_isQuranMode) {
-        Future.microtask(() => _preloadAdjacentPagesAggressively());
-      }
-
-      notifyListeners();
+  if (_currentPage != pageNumber) {
+    appLogger.log('VISIBLE_PAGE', 'Updating visible page: $_currentPage → $pageNumber');
+    
+    _currentPage = pageNumber;
+    
+    // ✅ CRITICAL: Track list view position separately
+    if (!_isQuranMode) {
+      _listViewCurrentPage = pageNumber;
+      appLogger.log('VISIBLE_PAGE', 'List view position saved: $pageNumber');
     }
+
+    _updateSurahNameForPage(pageNumber);
+
+    // Update current ayat index based on visible page
+    if (_ayatList.isNotEmpty) {
+      final firstAyatOnPage = _ayatList.firstWhere(
+        (a) => a.page == pageNumber,
+        orElse: () => _ayatList.first,
+      );
+      final newIndex = _ayatList.indexOf(firstAyatOnPage);
+      if (newIndex >= 0) {
+        _currentAyatIndex = newIndex;
+        appLogger.log('VISIBLE_PAGE', 'Updated ayat index to: $_currentAyatIndex');
+      }
+    }
+
+    if (!_isQuranMode) {
+      Future.microtask(() => _preloadAdjacentPagesAggressively());
+    }
+
+    notifyListeners();
   }
+}
 
   // ===== DISPOSAL =====
   @override
   void dispose() {
-    print('💀 SttController: DISPOSE CALLED for surah $suratId');
+    print('ðŸ’€ SttController: DISPOSE CALLED for surah $suratId');
     appLogger.log('DISPOSAL', 'Starting cleanup process');
 
-    // ✅ Cancel subscriptions
+    // âœ… Cancel subscriptions
     _wsSubscription?.cancel();
     _connectionSubscription?.cancel();
 
-    // ✅ Dispose audio service
+    // âœ… Dispose audio service
     _audioService.dispose();
 
-    // ✅ DON'T dispose singleton WebSocketService!
-    // _webSocketService.dispose();  // ← REMOVED: Singleton should not be disposed
-    // ✅ QuranService singleton - jangan dispose, database tetap hidup
+    // âœ… DON'T dispose singleton WebSocketService!
+    // _webSocketService.dispose();  // â† REMOVED: Singleton should not be disposed
+    // âœ… QuranService singleton - jangan dispose, database tetap hidup
     _scrollController.dispose();
     appLogger.dispose();
     super.dispose();

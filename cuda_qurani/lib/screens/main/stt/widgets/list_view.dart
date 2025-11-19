@@ -1,5 +1,4 @@
 // lib\screens\main\stt\widgets\list_view.dart
-
 import 'package:cuda_qurani/models/quran_models.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -21,6 +20,9 @@ class _QuranListViewState extends State<QuranListView> {
   final ScrollController _scrollController = ScrollController();
   int _currentVisiblePage = 1;
 
+  // ✅ ADD: Expose current page untuk sync
+  int get currentVisiblePage => _currentVisiblePage;
+
   @override
   void initState() {
     super.initState();
@@ -30,14 +32,17 @@ class _QuranListViewState extends State<QuranListView> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final controller = context.read<SttController>();
-      _jumpToPage(controller.currentPage);
+      
+final targetPage = controller.listViewCurrentPage;
+print('📍 LIST_VIEW_INIT: Jumping to saved position: $targetPage'); // ✅ USE print instead
+_jumpToPage(targetPage);
     });
   }
 
   void _jumpToPage(int pageNumber) {
     if (!mounted || !_scrollController.hasClients) return;
 
-    // ✅ GANTI estimasi dengan persentase screen height
+    // âœ… GANTI estimasi dengan persentase screen height
     final screenHeight = MediaQuery.of(context).size.height;
     final estimatedPageHeight = screenHeight * 0.75; // ~600px pada 800px height
     final offset = (pageNumber - 1) * estimatedPageHeight;
@@ -52,8 +57,8 @@ class _QuranListViewState extends State<QuranListView> {
 
     final offset = _scrollController.offset;
     final screenHeight = MediaQuery.of(context).size.height;
-    final estimatedPageHeight = screenHeight * 0.75; // ✅ TAMBAH ini
-    final pageNumber = (offset / estimatedPageHeight).round() + 1; // ✅ GANTI
+    final estimatedPageHeight = screenHeight * 0.75; // âœ… TAMBAH ini
+    final pageNumber = (offset / estimatedPageHeight).round() + 1; // âœ… GANTI
 
     if (pageNumber != _currentVisiblePage &&
         pageNumber >= 1 &&
@@ -118,12 +123,12 @@ class _VerticalPageWidget extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return SizedBox(
             height:
-                MediaQuery.of(context).size.height * 0.75, // ✅ GANTI dari 600
+                MediaQuery.of(context).size.height * 0.75, // âœ… GANTI dari 600
             child: Center(
               child: SizedBox(
                 width:
                     MediaQuery.of(context).size.width *
-                    0.045, // ✅ GANTI dari 18
+                    0.045, // âœ… GANTI dari 18
                 height: MediaQuery.of(context).size.width * 0.045,
                 child: const CircularProgressIndicator(strokeWidth: 2),
               ),
@@ -134,7 +139,7 @@ class _VerticalPageWidget extends StatelessWidget {
         if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
           return SizedBox(
             height:
-                MediaQuery.of(context).size.height * 0.75, // ✅ GANTI dari 600
+                MediaQuery.of(context).size.height * 0.75, // âœ… GANTI dari 600
             child: Center(
               child: Text(
                 'Error loading page $pageNumber',
@@ -142,7 +147,7 @@ class _VerticalPageWidget extends StatelessWidget {
                   color: Colors.grey,
                   fontSize:
                       MediaQuery.of(context).size.width *
-                      0.03, // ✅ GANTI dari 12
+                      0.03, // âœ… GANTI dari 12
                 ),
               ),
             ),
@@ -183,18 +188,18 @@ class _VerticalPageContent extends StatelessWidget {
 
     return Container(
       constraints: BoxConstraints(
-        minHeight: screenHeight * 0.75, // ✅ GANTI dari 600
+        minHeight: screenHeight * 0.75, // âœ… GANTI dari 600
       ),
       padding: EdgeInsets.symmetric(
-        horizontal: screenWidth * 0.04, // ✅ GANTI dari 16
-        vertical: screenHeight * 0.015, // ✅ GANTI dari 12
+        horizontal: screenWidth * 0.04, // âœ… GANTI dari 16
+        vertical: screenHeight * 0.015, // âœ… GANTI dari 12
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _PageHeader(pageNumber: pageNumber, juzNumber: juz),
           ..._buildLinesInOrder(controller),
-          SizedBox(height: screenHeight * 0.025), // ✅ GANTI dari 20
+          SizedBox(height: screenHeight * 0.025), // âœ… GANTI dari 20
         ],
       ),
     );
@@ -300,7 +305,7 @@ class _PageHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fontSize =
-        MediaQuery.of(context).size.width * 0.03; // ✅ ~12px pada 400px
+        MediaQuery.of(context).size.width * 0.03; // âœ… ~12px pada 400px
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -308,7 +313,7 @@ class _PageHeader extends StatelessWidget {
         Text(
           'Juz $juzNumber',
           style: TextStyle(
-            fontSize: fontSize, // ✅ GANTI dari 12
+            fontSize: fontSize, // âœ… GANTI dari 12
             color: Colors.black,
             fontWeight: FontWeight.w100,
           ),
@@ -316,7 +321,7 @@ class _PageHeader extends StatelessWidget {
         Text(
           '$pageNumber',
           style: TextStyle(
-            fontSize: fontSize, // ✅ GANTI dari 12
+            fontSize: fontSize, // âœ… GANTI dari 12
             color: Colors.black,
             fontWeight: FontWeight.w100,
           ),
@@ -338,20 +343,20 @@ class _SurahHeader extends StatelessWidget {
     final surahGlyphCode = _formatSurahGlyph(surahId);
     final screenHeight = MediaQuery.of(context).size.height;
 
-    final headerSize = screenHeight * 0.056; // ✅ ~48px pada 800px
-    final surahNameSize = screenHeight * 0.0475; // ✅ ~38px pada 800px
-    final verticalMargin = screenHeight * 0.015; // ✅ ~12px pada 800px
+    final headerSize = screenHeight * 0.056; // âœ… ~48px pada 800px
+    final surahNameSize = screenHeight * 0.0475; // âœ… ~38px pada 800px
+    final verticalMargin = screenHeight * 0.015; // âœ… ~12px pada 800px
 
     return Container(
       alignment: Alignment.center,
-      margin: EdgeInsets.symmetric(vertical: verticalMargin), // ✅ GANTI
+      margin: EdgeInsets.symmetric(vertical: verticalMargin), // âœ… GANTI
       child: Stack(
         alignment: Alignment.center,
         children: [
           Text(
             'header',
             style: TextStyle(
-              fontSize: headerSize, // ✅ GANTI dari 48
+              fontSize: headerSize, // âœ… GANTI dari 48
               fontFamily: 'Quran-Common',
               color: Colors.black87,
             ),
@@ -359,7 +364,7 @@ class _SurahHeader extends StatelessWidget {
           Text(
             surahGlyphCode,
             style: TextStyle(
-              fontSize: surahNameSize, // ✅ GANTI dari 38
+              fontSize: surahNameSize, // âœ… GANTI dari 38
               fontFamily: 'surah-name-v2',
               color: Colors.black,
             ),
@@ -384,16 +389,16 @@ class _Basmallah extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
-    final basmallahSize = screenHeight * 0.04; // ✅ ~32px pada 800px
-    final verticalPadding = screenHeight * 0.01; // ✅ ~8px pada 800px
+    final basmallahSize = screenHeight * 0.04; // âœ… ~32px pada 800px
+    final verticalPadding = screenHeight * 0.01; // âœ… ~8px pada 800px
 
     return Container(
       alignment: Alignment.center,
-      padding: EdgeInsets.symmetric(vertical: verticalPadding), // ✅ GANTI
+      padding: EdgeInsets.symmetric(vertical: verticalPadding), // âœ… GANTI
       child: Text(
         '﷽',
         style: TextStyle(
-          fontSize: basmallahSize, // ✅ GANTI dari 32
+          fontSize: basmallahSize, // âœ… GANTI dari 32
           fontFamily: 'Quran-Common',
           color: Colors.black87,
         ),
@@ -425,13 +430,13 @@ class _CompleteAyahWidget extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
-    final badgeFontSize = screenWidth * 0.0275; // ✅ ~11px pada 400px
-    final badgePaddingH = screenWidth * 0.02; // ✅ ~8px
-    final badgePaddingV = screenHeight * 0.005; // ✅ ~4px
-    final badgeBottomMargin = screenHeight * 0.01; // ✅ ~8px
-    final containerBottomPadding = screenHeight * 0.015; // ✅ ~12px
-    final containerTopPadding = screenHeight * 0.005; // ✅ ~4px
-    final wordFontSize = screenWidth * 0.0625; // ✅ ~25px pada 400px
+    final badgeFontSize = screenWidth * 0.0275; // âœ… ~11px pada 400px
+    final badgePaddingH = screenWidth * 0.02; // âœ… ~8px
+    final badgePaddingV = screenHeight * 0.005; // âœ… ~4px
+    final badgeBottomMargin = screenHeight * 0.01; // âœ… ~8px
+    final containerBottomPadding = screenHeight * 0.015; // âœ… ~12px
+    final containerTopPadding = screenHeight * 0.005; // âœ… ~4px
+    final wordFontSize = screenWidth * 0.0625; // âœ… ~25px pada 400px
 
     return Container(
       width: double.infinity,
@@ -441,8 +446,8 @@ class _CompleteAyahWidget extends StatelessWidget {
         ),
       ),
       padding: EdgeInsets.only(
-        bottom: containerBottomPadding, // ✅ GANTI
-        top: containerTopPadding, // ✅ GANTI
+        bottom: containerBottomPadding, // âœ… GANTI
+        top: containerTopPadding, // âœ… GANTI
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -450,13 +455,13 @@ class _CompleteAyahWidget extends StatelessWidget {
           // Ayah number badge
           if (segment.isStartOfAyah)
             Padding(
-              padding: EdgeInsets.only(bottom: badgeBottomMargin), // ✅ GANTI
+              padding: EdgeInsets.only(bottom: badgeBottomMargin), // âœ… GANTI
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Container(
                   padding: EdgeInsets.symmetric(
-                    horizontal: badgePaddingH, // ✅ GANTI
-                    vertical: badgePaddingV, // ✅ GANTI
+                    horizontal: badgePaddingH, // âœ… GANTI
+                    vertical: badgePaddingV, // âœ… GANTI
                   ),
                   decoration: BoxDecoration(
                     color: Colors.transparent,
@@ -471,7 +476,7 @@ class _CompleteAyahWidget extends StatelessWidget {
                     style: TextStyle(
                       color: isCurrentAyat ? primaryColor : Colors.black87,
                       fontWeight: FontWeight.w600,
-                      fontSize: badgeFontSize, // ✅ GANTI dari 11
+                      fontSize: badgeFontSize, // âœ… GANTI dari 11
                     ),
                   ),
                 ),
@@ -502,20 +507,20 @@ class _CompleteAyahWidget extends StatelessWidget {
                     wordIndex == (segment.words.length - 1);
                 
                 // Deteksi angka Arab
-                final hasNumber = RegExp(r'[٠-٩0-9]').hasMatch(word.text);
+                final hasNumber = RegExp(r'[Ù -Ù©0-9]').hasMatch(word.text);
 
                 // ========== PRIORITAS 1: Background color dari wordStatus ==========
                 if (wordStatus != null && controller.isRecording) {
                   switch (wordStatus) {
                     case WordStatus.matched:
-                      wordBg = correctColor.withOpacity(0.4); // 🟩 HIJAU
+                      wordBg = correctColor.withOpacity(0.4); // ðŸŸ© HIJAU
                       break;
                     case WordStatus.mismatched:
                     case WordStatus.skipped:
-                      wordBg = errorColor.withOpacity(0.4); // 🟥 MERAH
+                      wordBg = errorColor.withOpacity(0.4); // ðŸŸ¥ MERAH
                       break;
                     case WordStatus.processing:
-                      wordBg = listeningColor.withOpacity(0.3); // 🟦 BIRU
+                      wordBg = listeningColor.withOpacity(0.3); // ðŸŸ¦ BIRU
                       break;
                     default:
                       break;
@@ -526,7 +531,7 @@ class _CompleteAyahWidget extends StatelessWidget {
                 if (controller.hideUnreadAyat) {
                   // CASE 1: Kata yang SUDAH DIPROSES (ada wordStatus & bukan pending)
                   if (wordStatus != null && wordStatus != WordStatus.pending) {
-                    opacity = 1.0; // ✅ SELALU VISIBLE (ada blok warna)
+                    opacity = 1.0; // âœ… SELALU VISIBLE (ada blok warna)
                   }
                   // CASE 2: Ayat SEDANG DIBACA - sembunyikan kata yang belum diproses
                   else if (isCurrentAyat) {
@@ -549,7 +554,7 @@ class _CompleteAyahWidget extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: wordBg,
                     borderRadius: BorderRadius.circular(3),
-                    // ✅ TASK 1: Underline tipis (kecuali kata terakhir ayat)
+                    // âœ… TASK 1: Underline tipis (kecuali kata terakhir ayat)
                     border: (controller.hideUnreadAyat && !isLastWordInAyah)
                         ? Border(
                             bottom: BorderSide(
@@ -565,7 +570,7 @@ class _CompleteAyahWidget extends StatelessWidget {
                     child: Text(
                       word.text,
                       style: TextStyle(
-                        fontSize: wordFontSize, // ✅ GANTI dari 25
+                        fontSize: wordFontSize, // âœ… GANTI dari 25
                         fontFamily: fontFamily,
                         color: isCurrentAyat ? listeningColor : Colors.black87,
                         fontWeight: FontWeight.w400,

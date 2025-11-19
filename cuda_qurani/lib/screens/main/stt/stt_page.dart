@@ -140,18 +140,34 @@ Widget build(BuildContext context) {
   }
 
   Widget _buildQuranText(BuildContext context, SttController controller) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final margin = screenWidth * 0.01; // ✅ ~4px pada 400px width
+  final screenWidth = MediaQuery.of(context).size.width;
+  final margin = screenWidth * 0.01;
 
-    return Container(
-      margin: EdgeInsets.fromLTRB(margin, 0, margin, 0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-      ),
+  return Container(
+    margin: EdgeInsets.fromLTRB(margin, 0, margin, 0),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: AnimatedSwitcher(
+      duration: const Duration(milliseconds: 200), // ✅ ADD: Smooth transition
+      switchInCurve: Curves.easeInOut,
+      switchOutCurve: Curves.easeInOut,
+      transitionBuilder: (child, animation) {
+        // ✅ ADD: Fade transition for smooth mode switch
+        return FadeTransition(
+          opacity: animation,
+          child: child,
+        );
+      },
       child: controller.isQuranMode
-          ? const MushafDisplay()
-          : const QuranListView(),
-    );
-  }
+          ? MushafDisplay(
+              key: ValueKey('mushaf_${controller.currentPage}'), // ✅ ADD: Unique key
+            )
+          : QuranListView(
+              key: ValueKey('list_${controller.listViewCurrentPage}'), // ✅ ADD: Unique key
+            ),
+    ),
+  );
+}
 }
