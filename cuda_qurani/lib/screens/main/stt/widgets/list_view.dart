@@ -494,34 +494,51 @@ class _CompleteAyahWidget extends StatelessWidget {
                     controller.wordStatusMap[segment.ayahNumber]?[wordIndex];
 
                 Color wordBg = Colors.transparent;
+                double opacity = 1.0;
+                
+                // Cek apakah kata terakhir ayat
+                final isLastWordInAyah =
+                    segment.isEndOfAyah &&
+                    wordIndex == (segment.words.length - 1);
+                
+                // Deteksi angka Arab
+                final hasNumber = RegExp(r'[٠-٩0-9]').hasMatch(word.text);
+
+                // ========== PRIORITAS 1: Background color dari wordStatus ==========
                 if (wordStatus != null && controller.isRecording) {
                   switch (wordStatus) {
                     case WordStatus.matched:
-                      wordBg = correctColor.withOpacity(0.4);
+                      wordBg = correctColor.withOpacity(0.4); // 🟩 HIJAU
                       break;
                     case WordStatus.mismatched:
                     case WordStatus.skipped:
-                      wordBg = errorColor.withOpacity(0.4);
+                      wordBg = errorColor.withOpacity(0.4); // 🟥 MERAH
                       break;
                     case WordStatus.processing:
-                      wordBg = listeningColor.withOpacity(0.3);
+                      wordBg = listeningColor.withOpacity(0.3); // 🟦 BIRU
                       break;
                     default:
                       break;
                   }
                 }
 
-                double opacity = 1.0;
-                if (controller.hideUnreadAyat && !isCurrentAyat) {
-                  final hasNumber = RegExp(r'[٠-٩0-9]').hasMatch(word.text);
-                  final isLastWord =
-                      wordIndex ==
-                      (segment.words.length - 1); // ✅ Cek kata terakhir
-                  opacity = (hasNumber || isLastWord) ? 1.0 : 0.0;
+                // ========== PRIORITAS 2: Logika Opacity (hideUnread) ==========
+                if (controller.hideUnreadAyat) {
+                  // CASE 1: Kata yang SUDAH DIPROSES (ada wordStatus & bukan pending)
+                  if (wordStatus != null && wordStatus != WordStatus.pending) {
+                    opacity = 1.0; // ✅ SELALU VISIBLE (ada blok warna)
+                  }
+                  // CASE 2: Ayat SEDANG DIBACA - sembunyikan kata yang belum diproses
+                  else if (isCurrentAyat) {
+                    // Tampilkan HANYA: angka Arab atau kata terakhir ayat
+                    opacity = (hasNumber || isLastWordInAyah) ? 1.0 : 0.0;
+                  }
+                  // CASE 3: Ayat BELUM/SUDAH SELESAI DIBACA
+                  else {
+                    // Tampilkan HANYA: angka Arab atau kata terakhir ayat
+                    opacity = (hasNumber || isLastWordInAyah) ? 1.0 : 0.0;
+                  }
                 }
-                final isLastWordInAyah =
-                    segment.isEndOfAyah &&
-                    wordIndex == (segment.words.length - 1);
 
                 return AnimatedContainer(
                   duration: const Duration(milliseconds: 200),

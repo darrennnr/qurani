@@ -1,4 +1,3 @@
-
 // lib/screens/main/home/screens/surah_list_page.dart
 
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
@@ -13,6 +12,8 @@ import 'dart:async';
 
 enum TabType { surah, juz, page }
 
+enum SlideDirection { leftToRight, rightToLeft }
+
 class SurahListPage extends StatefulWidget {
   const SurahListPage({super.key});
 
@@ -24,6 +25,8 @@ class _SurahListPageState extends State<SurahListPage> {
   TabType _currentTab = TabType.surah;
   final TextEditingController _searchController = TextEditingController();
   final MetadataCacheService _cache = MetadataCacheService();
+
+  TabType _previousTab = TabType.surah;
 
   bool _isSearching = false;
   List<Map<String, dynamic>> _searchResults = [];
@@ -39,7 +42,7 @@ class _SurahListPageState extends State<SurahListPage> {
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
-    
+
     // ✅ Load dari cache (instant)
     _loadFromCache();
   }
@@ -51,7 +54,9 @@ class _SurahListPageState extends State<SurahListPage> {
         _juz = _cache.allJuz;
         _isInitialized = true;
       });
-      print('[SurahList] ✅ Loaded ${_surahs.length} surahs + ${_juz.length} juz from cache (INSTANT)');
+      print(
+        '[SurahList] ✅ Loaded ${_surahs.length} surahs + ${_juz.length} juz from cache (INSTANT)',
+      );
     } else {
       // Fallback: initialize cache on-demand
       print('[SurahList] ⚠️ Cache not ready, initializing...');
@@ -61,6 +66,16 @@ class _SurahListPageState extends State<SurahListPage> {
         }
       });
     }
+  }
+
+  SlideDirection _getSlideDirection(TabType from, TabType to) {
+    final tabs = [TabType.surah, TabType.juz, TabType.page];
+    final fromIndex = tabs.indexOf(from);
+    final toIndex = tabs.indexOf(to);
+
+    return toIndex > fromIndex
+        ? SlideDirection.leftToRight
+        : SlideDirection.rightToLeft;
   }
 
   @override
@@ -183,9 +198,9 @@ class _SurahListPageState extends State<SurahListPage> {
     int ayahNumber,
   ) async {
     final page = await LocalDatabaseService.getPageNumber(surahId, ayahNumber);
-    await Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => SttPage(pageId: page)),
-    );
+    await Navigator.of(
+      context,
+    ).pushReplacement(MaterialPageRoute(builder: (_) => SttPage(pageId: page)));
   }
 
   Future<void> _openJuz(
@@ -316,7 +331,9 @@ class _SurahListPageState extends State<SurahListPage> {
           Container(
             decoration: BoxDecoration(
               color: AppColors.surfaceContainerLowest,
-              borderRadius: BorderRadius.circular(AppDesignSystem.radiusSmall * s),
+              borderRadius: BorderRadius.circular(
+                AppDesignSystem.radiusSmall * s,
+              ),
             ),
             padding: EdgeInsets.all(AppDesignSystem.space4 * s),
             child: Row(
@@ -327,7 +344,10 @@ class _SurahListPageState extends State<SurahListPage> {
                   isSelected: _currentTab == TabType.surah,
                   onTap: () {
                     AppHaptics.light();
-                    setState(() => _currentTab = TabType.surah);
+                    setState(() {
+                      _previousTab = _currentTab;
+                      _currentTab = TabType.surah;
+                    });
                   },
                   s: s,
                 ),
@@ -338,7 +358,10 @@ class _SurahListPageState extends State<SurahListPage> {
                   isSelected: _currentTab == TabType.juz,
                   onTap: () {
                     AppHaptics.light();
-                    setState(() => _currentTab = TabType.juz);
+                    setState(() {
+                      _previousTab = _currentTab;
+                      _currentTab = TabType.juz;
+                    });
                   },
                   s: s,
                 ),
@@ -349,14 +372,17 @@ class _SurahListPageState extends State<SurahListPage> {
                   isSelected: _currentTab == TabType.page,
                   onTap: () {
                     AppHaptics.light();
-                    setState(() => _currentTab = TabType.page);
+                    setState(() {
+                      _previousTab = _currentTab;
+                      _currentTab = TabType.page;
+                    });
                   },
                   s: s,
                 ),
               ],
             ),
           ),
-          
+
           // Bottom divider
           SizedBox(height: AppDesignSystem.space12 * s),
           Container(height: 1 * s, color: AppColors.borderLight),
@@ -378,12 +404,12 @@ class _SurahListPageState extends State<SurahListPage> {
         child: AnimatedContainer(
           duration: AppDesignSystem.durationFast,
           curve: Curves.easeInOut,
-          padding: EdgeInsets.symmetric(
-            vertical: AppDesignSystem.space10 * s,
-          ),
+          padding: EdgeInsets.symmetric(vertical: AppDesignSystem.space10 * s),
           decoration: BoxDecoration(
             color: isSelected ? AppColors.surface : Colors.transparent,
-            borderRadius: BorderRadius.circular(AppDesignSystem.radiusSmall * s),
+            borderRadius: BorderRadius.circular(
+              AppDesignSystem.radiusSmall * s,
+            ),
             boxShadow: isSelected
                 ? [
                     BoxShadow(
@@ -400,7 +426,9 @@ class _SurahListPageState extends State<SurahListPage> {
             style: AppTypography.label(
               context,
               color: isSelected ? AppColors.primary : AppColors.textTertiary,
-              weight: isSelected ? AppTypography.semiBold : AppTypography.medium,
+              weight: isSelected
+                  ? AppTypography.semiBold
+                  : AppTypography.medium,
             ),
           ),
         ),
@@ -415,14 +443,50 @@ class _SurahListPageState extends State<SurahListPage> {
       return _buildSearchResults();
     }
 
-    switch (_currentTab) {
-      case TabType.surah:
-        return _buildSurahList();
-      case TabType.juz:
-        return _buildJuzList();
-      case TabType.page:
-        return _buildPageList();
-    }
+    // ✅ WRAP dengan AnimatedSwitcher
+    final slideDirection = _getSlideDirection(_previousTab, _currentTab);
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      transitionBuilder: (Widget child, Animation<double> animation) {
+        final offsetAnimation =
+            Tween<Offset>(
+              begin: slideDirection == SlideDirection.leftToRight
+                  ? const Offset(-1.0, 0.0)
+                  : const Offset(1.0, 0.0),
+              end: Offset.zero,
+            ).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+            );
+
+        return SlideTransition(
+          position: offsetAnimation,
+          child: FadeTransition(opacity: animation, child: child),
+        );
+      },
+      child: _buildTabContent(),
+    );
+  }
+
+  Widget _buildTabContent() {
+    // Key unik agar AnimatedSwitcher detect perubahan
+    return KeyedSubtree(
+      key: ValueKey<TabType>(_currentTab),
+      child: Builder(
+        builder: (context) {
+          switch (_currentTab) {
+            case TabType.surah:
+              return _buildSurahList();
+            case TabType.juz:
+              return _buildJuzList();
+            case TabType.page:
+              return _buildPageList();
+          }
+        },
+      ),
+    );
   }
 
   // ==================== SURAH LIST ====================
@@ -439,7 +503,9 @@ class _SurahListPageState extends State<SurahListPage> {
         final int id = surah['id'] as int;
         final String name = surah['name_simple'] ?? 'Surah $id';
         final int ayat = surah['verses_count'] ?? 0;
-        final String place = (surah['revelation_place'] ?? '').toString().toLowerCase();
+        final String place = (surah['revelation_place'] ?? '')
+            .toString()
+            .toLowerCase();
         final String type = place == 'makkah' || place == 'mecca'
             ? 'Makkiyah'
             : place == 'madinah' || place == 'medina'
@@ -517,9 +583,15 @@ class _SurahListPageState extends State<SurahListPage> {
     }
 
     final juzResults = _searchResults.where((r) => r['type'] == 'juz').toList();
-    final pageResults = _searchResults.where((r) => r['type'] == 'page').toList();
-    final surahResults = _searchResults.where((r) => r['type'] == 'surah').toList();
-    final verseResults = _searchResults.where((r) => r['type'] == 'verse').toList();
+    final pageResults = _searchResults
+        .where((r) => r['type'] == 'page')
+        .toList();
+    final surahResults = _searchResults
+        .where((r) => r['type'] == 'surah')
+        .toList();
+    final verseResults = _searchResults
+        .where((r) => r['type'] == 'verse')
+        .toList();
 
     return ListView(
       padding: EdgeInsets.only(
@@ -559,7 +631,8 @@ class _SurahListPageState extends State<SurahListPage> {
       ),
       leading: AppIconContainer(icon: Icons.auto_stories_rounded),
       title: 'Juz ${r['juz_number']}',
-      subtitle: '${r['first_verse_key']} - ${r['last_verse_key']} · ${r['verses_count']} Ayat',
+      subtitle:
+          '${r['first_verse_key']} - ${r['last_verse_key']} · ${r['verses_count']} Ayat',
       trailing: Icon(
         Icons.chevron_right_rounded,
         color: AppColors.borderDark,
@@ -571,7 +644,7 @@ class _SurahListPageState extends State<SurahListPage> {
   Widget _buildPageSearchTile(Map<String, dynamic> r) {
     final pageNum = r['page_number'] as int;
     final surahName = _cache.getPrimarySurahForPage(pageNum);
-    
+
     return AppListTile(
       onTap: () => _openPage(context, pageNum),
       leading: AppIconContainer(icon: Icons.description_rounded),
@@ -601,7 +674,7 @@ class _SurahListPageState extends State<SurahListPage> {
 
   Widget _buildVerseSearchTile(Map<String, dynamic> r) {
     final s = AppDesignSystem.getScaleFactor(context);
-    
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -679,7 +752,7 @@ class _OptimizedListState extends State<_OptimizedList> {
 
   void _jumpToItem(int itemNumber) {
     if (_isJumping) return;
-    
+
     setState(() => _isJumping = true);
 
     final itemHeight = 70.0;
@@ -740,10 +813,7 @@ class _OptimizedPageList extends StatefulWidget {
   final Function(int) onPageTap;
   final MetadataCacheService cache;
 
-  const _OptimizedPageList({
-    required this.onPageTap,
-    required this.cache,
-  });
+  const _OptimizedPageList({required this.onPageTap, required this.cache});
 
   @override
   State<_OptimizedPageList> createState() => _OptimizedPageListState();
@@ -869,10 +939,7 @@ class _GlobalSlider extends StatefulWidget {
   final int totalItems;
   final Function(int) onItemSelected;
 
-  const _GlobalSlider({
-    required this.totalItems,
-    required this.onItemSelected,
-  });
+  const _GlobalSlider({required this.totalItems, required this.onItemSelected});
 
   @override
   State<_GlobalSlider> createState() => _GlobalSliderState();

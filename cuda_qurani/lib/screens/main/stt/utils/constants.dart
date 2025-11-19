@@ -9,7 +9,7 @@ const Color correctColor = Color(0xFF27AE60);
 const Color errorColor = Color(0xFFE74C3C);
 const Color warningColor = Color(0xFFF39C12);
 const Color unreadColor = Color(0xFFBDC3C7);
-const Color listeningColor = Color(0xFF3498DB);
+const Color listeningColor = Color.fromARGB(255, 0, 0, 0);
 const Color accentColor = Color(0xFF9B59B6);
 const Color skippedColor = Color(0xFF95A5A6);
 

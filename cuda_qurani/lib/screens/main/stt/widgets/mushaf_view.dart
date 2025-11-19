@@ -398,45 +398,48 @@ class _JustifiedAyahLine extends StatelessWidget {
         final wordSegments = controller.segmentText(word.text);
         final hasArabicNumber = wordSegments.any((s) => s.isArabicNumber);
 
+                Color wordBg = Colors.transparent;
         double wordOpacity = 1.0;
-        Color wordBg = Colors.transparent;
+        
+        // Cek apakah kata terakhir ayat
+        final isLastWordInAyah =
+            segment.isEndOfAyah && i == (segment.words.length - 1);
 
-        // Background color based on word status - HANYA HIJAU DAN MERAH
+        // ========== PRIORITAS 1: Background color dari wordStatus ==========
         if (wordStatus != null) {
           switch (wordStatus) {
             case WordStatus.matched:
-              wordBg = correctColor.withOpacity(0.4); // ðŸŸ© HIJAU - BENAR
-              if (controller.isRecording &&
-                  segment.ayahNumber == controller.currentAyatNumber) {
-                print(
-                  '   âœ… SET COLOR: Hijau (matched) untuk word $wordIndex',
-                );
-              }
+              wordBg = correctColor.withOpacity(0.4); // 🟩 HIJAU - BENAR
               break;
             case WordStatus.mismatched:
             case WordStatus.skipped:
-              wordBg = errorColor.withOpacity(0.4); // ðŸŸ¥ MERAH - SALAH
-              if (controller.isRecording &&
-                  segment.ayahNumber == controller.currentAyatNumber) {
-                print('   âŒ SET COLOR: Merah (salah) untuk word $wordIndex');
-              }
+              wordBg = errorColor.withOpacity(0.4); // 🟥 MERAH - SALAH
               break;
             case WordStatus.processing:
             case WordStatus.pending:
             default:
-              wordBg = Colors.transparent; // Tidak ada warna
+              wordBg = Colors.transparent;
               break;
           }
         }
 
-        if (controller.hideUnreadAyat && !isCurrentAyat) {
-          final isLastWordInAyah =
-              segment.isEndOfAyah &&
-              i == (segment.words.length - 1); // ✅ FIX: cek akhir ayat
-          wordOpacity = (hasArabicNumber || isLastWordInAyah) ? 1.0 : 0.0;
+        // ========== PRIORITAS 2: Logika Opacity (hideUnread) ==========
+        if (controller.hideUnreadAyat) {
+          // CASE 1: Kata yang SUDAH DIPROSES (ada wordStatus & bukan pending)
+          if (wordStatus != null && wordStatus != WordStatus.pending) {
+            wordOpacity = 1.0; // ✅ SELALU VISIBLE (ada blok warna)
+          }
+          // CASE 2: Ayat SEDANG DIBACA - sembunyikan kata yang belum diproses
+          else if (isCurrentAyat) {
+            // Tampilkan HANYA: angka Arab atau kata terakhir ayat
+            wordOpacity = (hasArabicNumber || isLastWordInAyah) ? 1.0 : 0.0;
+          }
+          // CASE 3: Ayat BELUM/SUDAH SELESAI DIBACA
+          else {
+            // Tampilkan HANYA: angka Arab atau kata terakhir ayat
+            wordOpacity = (hasArabicNumber || isLastWordInAyah) ? 1.0 : 0.0;
+          }
         }
-        final isLastWordInAyah =
-            segment.isEndOfAyah && i == (segment.words.length - 1);
 
         final segments = controller.segmentText(word.text);
         for (final textSegment in segments) {
