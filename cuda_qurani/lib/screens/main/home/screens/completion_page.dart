@@ -492,18 +492,11 @@ class _CompletionPageState extends State<CompletionPage> {
                 ),
                 child: Row(
                   children: [
-                    Container(
-                      padding: EdgeInsets.all(AppDesignSystem.space10 * s),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(AppDesignSystem.radiusSmall * s),
-                      ),
-                      child: Icon(
-                        Icons.menu_book_rounded,
+                      Icon(
+                        Icons.auto_stories,
                         color: Colors.white,
-                        size: AppDesignSystem.iconMedium * s,
+                        size: AppDesignSystem.iconXLarge * s,
                       ),
-                    ),
                     SizedBox(width: AppDesignSystem.space12 * s),
                     Expanded(
                       child: Column(
