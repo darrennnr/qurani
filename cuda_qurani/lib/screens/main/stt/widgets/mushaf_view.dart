@@ -20,7 +20,7 @@ class MushafRenderer {
   static const double PAGE_PADDING = 0.0; // Minimal side padding
   static const double WORD_SPACING_MIN = 0.0; // Minimum gap between words
   static const double WORD_SPACING_MAX =
-      0.0; // Maximum gap to prevent huge spaces
+      1.0; // Maximum gap to prevent huge spaces
 
   // Render justified text for ayah lines
   static Widget renderJustifiedLine({
@@ -52,7 +52,7 @@ class MushafRenderer {
     return SizedBox(
       height: lineH,
       width: availableWidth,
-      child: _buildJustifiedText(
+      child: _usText(
         wordSpans: wordSpans,
         maxWidth: availableWidth,
         allowOverflow: allowOverflow,
@@ -61,7 +61,7 @@ class MushafRenderer {
     );
   }
 
-  static Widget _buildJustifiedText({
+  static Widget _usText({
     required List<InlineSpan> wordSpans,
     required double maxWidth,
     bool allowOverflow = false,
@@ -357,7 +357,13 @@ class _JustifiedAyahLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final baseFontSize = screenWidth * 0.065;
+
+    // ✅ SPECIAL: Slightly larger font for page 1 & 2
+    final fontSizeMultiplier = (pageNumber == 1 || pageNumber == 2)
+        ? 0.085
+        : 0.065;
+    final baseFontSize = screenWidth * fontSizeMultiplier;
+
     if (line.ayahSegments == null || line.ayahSegments!.isEmpty) {
       return SizedBox(height: MushafRenderer.lineHeight(context));
     }
@@ -398,9 +404,9 @@ class _JustifiedAyahLine extends StatelessWidget {
         final wordSegments = controller.segmentText(word.text);
         final hasArabicNumber = wordSegments.any((s) => s.isArabicNumber);
 
-                Color wordBg = Colors.transparent;
+        Color wordBg = Colors.transparent;
         double wordOpacity = 1.0;
-        
+
         // Cek apakah kata terakhir ayat
         final isLastWordInAyah =
             segment.isEndOfAyah && i == (segment.words.length - 1);
