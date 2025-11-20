@@ -32,10 +32,12 @@ class _QuranListViewState extends State<QuranListView> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final controller = context.read<SttController>();
-      
-final targetPage = controller.listViewCurrentPage;
-print('📍 LIST_VIEW_INIT: Jumping to saved position: $targetPage'); // ✅ USE print instead
-_jumpToPage(targetPage);
+
+      final targetPage = controller.listViewCurrentPage;
+      print(
+        '📍 LIST_VIEW_INIT: Jumping to saved position: $targetPage',
+      ); // ✅ USE print instead
+      _jumpToPage(targetPage);
     });
   }
 
@@ -500,12 +502,12 @@ class _CompleteAyahWidget extends StatelessWidget {
 
                 Color wordBg = Colors.transparent;
                 double opacity = 1.0;
-                
+
                 // Cek apakah kata terakhir ayat
                 final isLastWordInAyah =
                     segment.isEndOfAyah &&
                     wordIndex == (segment.words.length - 1);
-                
+
                 // Deteksi angka Arab
                 final hasNumber = RegExp(r'[Ù -Ù©0-9]').hasMatch(word.text);
 
