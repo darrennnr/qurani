@@ -2,6 +2,7 @@
 
 import 'package:cuda_qurani/screens/main/home/screens/activity_page.dart';
 import 'package:cuda_qurani/screens/main/home/screens/completion_page.dart';
+import 'package:cuda_qurani/screens/main/home/screens/premium_offer_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cuda_qurani/screens/main/stt/utils/constants.dart' as constants;
@@ -35,7 +36,8 @@ class MenuAppBar extends StatefulWidget implements PreferredSizeWidget {
   State<MenuAppBar> createState() => _MenuAppBarState();
 }
 
-class _MenuAppBarState extends State<MenuAppBar> with SingleTickerProviderStateMixin {
+class _MenuAppBarState extends State<MenuAppBar>
+    with SingleTickerProviderStateMixin {
   bool _isSearchFocused = false;
   late FocusNode _searchFocusNode;
   late AnimationController _animationController;
@@ -48,7 +50,7 @@ class _MenuAppBarState extends State<MenuAppBar> with SingleTickerProviderStateM
     {'label': 'Completion', 'index': 2, 'icon': Icons.flag_outlined},
     {'label': 'Activity', 'index': 4, 'icon': Icons.analytics_outlined},
     {'label': 'History', 'index': 5, 'icon': Icons.history_outlined},
-    {'label': 'Settings', 'index': 6, 'icon': Icons.settings_outlined},
+    {'label': 'Premium', 'index': 6, 'icon': Icons.settings_outlined},
   ];
 
   @override
@@ -56,7 +58,7 @@ class _MenuAppBarState extends State<MenuAppBar> with SingleTickerProviderStateM
     super.initState();
     _searchFocusNode = FocusNode();
     _searchFocusNode.addListener(_handleSearchFocusChange);
-    
+
     // Animation for smooth interactions
     _animationController = AnimationController(
       vsync: this,
@@ -106,10 +108,7 @@ class _MenuAppBarState extends State<MenuAppBar> with SingleTickerProviderStateM
         bottom: false,
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildTopBar(context),
-            _buildMenuBar(context),
-          ],
+          children: [_buildTopBar(context), _buildMenuBar(context)],
         ),
       ),
     );
@@ -117,52 +116,50 @@ class _MenuAppBarState extends State<MenuAppBar> with SingleTickerProviderStateM
 
   // ==================== TOP BAR ====================
   Widget _buildTopBar(BuildContext context) {
-  final s = AppDesignSystem.getScaleFactor(context);
+    final s = AppDesignSystem.getScaleFactor(context);
 
-  return Container(
-    height: 60 * s,
-    padding: EdgeInsets.symmetric(
-      horizontal: AppDesignSystem.space20 * s,
-    ),
-    child: Row(
-      children: [
-        // Logo
-        Image.asset(
-          'assets/images/qurani-white-text.png',
-          height: 28 * s,
-          color: AppColors.primary,
-          fit: BoxFit.contain,
-        ),
-        
-        SizedBox(width: AppDesignSystem.space16 * s),
-        
-        const Spacer(), // ✅ GANTI search field dengan Spacer
-        
-        SizedBox(width: AppDesignSystem.space12 * s),
-        
-        // Profile button
-        _buildTopIconButton(
-          context,
-          icon: Icons.person_outline_rounded,
-          onTap: () => _navigateToPage(context, 3),
-          isSelected: widget.selectedIndex == 3,
-          tooltip: 'Profile',
-        ),
-        
-        SizedBox(width: AppDesignSystem.space8 * s),
-        
-        // Settings button
-        if (widget.selectedIndex != 6)
+    return Container(
+      height: 60 * s,
+      padding: EdgeInsets.symmetric(horizontal: AppDesignSystem.space20 * s),
+      child: Row(
+        children: [
+          // Logo
+          Image.asset(
+            'assets/images/qurani-white-text.png',
+            height: 28 * s,
+            color: AppColors.primary,
+            fit: BoxFit.contain,
+          ),
+
+          SizedBox(width: AppDesignSystem.space16 * s),
+
+          const Spacer(), // ✅ GANTI search field dengan Spacer
+
+          SizedBox(width: AppDesignSystem.space12 * s),
+
+          // Profile button
           _buildTopIconButton(
             context,
-            icon: Icons.settings_outlined,
-            onTap: () => _navigateToPage(context, 6),
-            tooltip: 'Settings',
+            icon: Icons.person_outline_rounded,
+            onTap: () => _navigateToPage(context, 3),
+            isSelected: widget.selectedIndex == 3,
+            tooltip: 'Profile',
           ),
-      ],
-    ),
-  );
-}
+
+          SizedBox(width: AppDesignSystem.space8 * s),
+
+          // Settings button
+          if (widget.selectedIndex != 6)
+            _buildTopIconButton(
+              context,
+              icon: Icons.settings_outlined,
+              onTap: () => _navigateToPage(context, 6),
+              tooltip: 'Settings',
+            ),
+        ],
+      ),
+    );
+  }
 
   // ==================== TOP ICON BUTTON ====================
   Widget _buildTopIconButton(
@@ -193,7 +190,9 @@ class _MenuAppBarState extends State<MenuAppBar> with SingleTickerProviderStateM
             color: isSelected
                 ? AppColors.primaryWithOpacity(0.1)
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium * s),
+            borderRadius: BorderRadius.circular(
+              AppDesignSystem.radiusMedium * s,
+            ),
             border: isSelected
                 ? Border.all(
                     color: AppColors.primary.withOpacity(0.2),
@@ -211,10 +210,7 @@ class _MenuAppBarState extends State<MenuAppBar> with SingleTickerProviderStateM
     );
 
     if (tooltip != null) {
-      return Tooltip(
-        message: tooltip,
-        child: button,
-      );
+      return Tooltip(message: tooltip, child: button);
     }
 
     return button;
@@ -279,9 +275,7 @@ class _MenuAppBarState extends State<MenuAppBar> with SingleTickerProviderStateM
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
-                color: isSelected
-                    ? AppColors.primary
-                    : Colors.transparent,
+                color: isSelected ? AppColors.primary : Colors.transparent,
                 width: AppDesignSystem.borderXXThick * s,
               ),
             ),
@@ -298,7 +292,7 @@ class _MenuAppBarState extends State<MenuAppBar> with SingleTickerProviderStateM
               //       : AppColors.textDisabled,
               // ),
               // SizedBox(height: AppDesignSystem.space4 * s),
-              
+
               // Label
               Text(
                 label,
@@ -333,9 +327,9 @@ class _MenuAppBarState extends State<MenuAppBar> with SingleTickerProviderStateM
       case 1:
         targetPage = const SurahListPage();
         break;
-case 2:
-  targetPage = const CompletionPage();
-  break;
+      case 2:
+        targetPage = const CompletionPage();
+        break;
       case 3:
         targetPage = const ProfilePage();
         break;
@@ -346,7 +340,7 @@ case 2:
         targetPage = const HomePage(); // TODO: Replace with HistoryPage
         break;
       case 6:
-        targetPage = const SettingsPage();
+        targetPage = const PremiumOfferPage();
         break;
       default:
         return;
@@ -359,29 +353,25 @@ case 2:
           const begin = Offset(0.0, 0.03);
           const end = Offset.zero;
           const curve = Curves.easeInOut;
-          var tween = Tween(begin: begin, end: end).chain(
-            CurveTween(curve: curve),
-          );
+          var tween = Tween(
+            begin: begin,
+            end: end,
+          ).chain(CurveTween(curve: curve));
           var offsetAnimation = animation.drive(tween);
           var fadeAnimation = animation.drive(
-            Tween(begin: 0.0, end: 1.0).chain(
-              CurveTween(curve: curve),
-            ),
+            Tween(begin: 0.0, end: 1.0).chain(CurveTween(curve: curve)),
           );
 
           return FadeTransition(
             opacity: fadeAnimation,
-            child: SlideTransition(
-              position: offsetAnimation,
-              child: child,
-            ),
+            child: SlideTransition(position: offsetAnimation, child: child),
           );
         },
         transitionDuration: AppDesignSystem.durationNormal,
       ),
     );
   }
-}// ==================== IMPROVED PROFILE APP BAR ====================
+} // ==================== IMPROVED PROFILE APP BAR ====================
 // ✅ Full Design System Integration
 // ✅ Consistent with MenuAppBar
 // ✅ Enhanced Back Navigation
@@ -390,7 +380,7 @@ class ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final List<Widget>? actions;
   final bool showBackButton;
-  
+
   const ProfileAppBar({
     Key? key,
     this.title = 'Account',
@@ -404,7 +394,7 @@ class ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppDesignSystem.getScaleFactor(context);
-    
+
     return AppBar(
       backgroundColor: AppColors.surface,
       foregroundColor: AppColors.textPrimary,
@@ -425,27 +415,29 @@ class ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
                           const HomePage(),
                       transitionsBuilder:
                           (context, animation, secondaryAnimation, child) {
-                        const begin = Offset(-0.03, 0.0);
-                        const end = Offset.zero;
-                        const curve = Curves.easeInOut;
-                        var tween = Tween(begin: begin, end: end).chain(
-                          CurveTween(curve: curve),
-                        );
-                        var offsetAnimation = animation.drive(tween);
-                        var fadeAnimation = animation.drive(
-                          Tween(begin: 0.0, end: 1.0).chain(
-                            CurveTween(curve: curve),
-                          ),
-                        );
+                            const begin = Offset(-0.03, 0.0);
+                            const end = Offset.zero;
+                            const curve = Curves.easeInOut;
+                            var tween = Tween(
+                              begin: begin,
+                              end: end,
+                            ).chain(CurveTween(curve: curve));
+                            var offsetAnimation = animation.drive(tween);
+                            var fadeAnimation = animation.drive(
+                              Tween(
+                                begin: 0.0,
+                                end: 1.0,
+                              ).chain(CurveTween(curve: curve)),
+                            );
 
-                        return FadeTransition(
-                          opacity: fadeAnimation,
-                          child: SlideTransition(
-                            position: offsetAnimation,
-                            child: child,
-                          ),
-                        );
-                      },
+                            return FadeTransition(
+                              opacity: fadeAnimation,
+                              child: SlideTransition(
+                                position: offsetAnimation,
+                                child: child,
+                              ),
+                            );
+                          },
                       transitionDuration: AppDesignSystem.durationNormal,
                     ),
                   );
