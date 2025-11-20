@@ -121,7 +121,7 @@ class MushafRenderer {
           for (int i = 0; i < wordSpans.length; i++) ...[
             RichText(
               textDirection: TextDirection.rtl,
-              overflow: TextOverflow.clip,
+              overflow: TextOverflow.visible,
               maxLines: 1,
               text: wordSpans[i] as TextSpan,
             ),
@@ -367,11 +367,14 @@ class _JustifiedAyahLine extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
 
-    // ✅ SPECIAL: Slightly larger font for page 1 & 2
+    // âœ… SPECIAL: Slightly larger font for page 1 & 2
     final fontSizeMultiplier = (pageNumber == 1 || pageNumber == 2)
-        ? 0.085
-        : 0.064;
+        ? 0.080
+        : 0.066;
     final baseFontSize = screenWidth * fontSizeMultiplier;
+
+    // âœ… OPTIMIZATION: Font size untuk kata terakhir ayat (angka ayat)
+    final lastWordFontMultiplier = 0.85; // 28% reduction
 
     if (line.ayahSegments == null || line.ayahSegments!.isEmpty) {
       return SizedBox(height: MushafRenderer.lineHeight(context));
@@ -457,18 +460,26 @@ class _JustifiedAyahLine extends StatelessWidget {
         }
 
         final segments = controller.segmentText(word.text);
+
+        // âœ… OPTIMIZATION: Hitung font size & spacing berdasarkan posisi kata
+        final isLastWord = isLastWordInAyah;
+        final effectiveFontSize = isLastWord
+            ? baseFontSize * lastWordFontMultiplier
+            : baseFontSize;
+
         for (final textSegment in segments) {
           spans.add(
             TextSpan(
               text: textSegment.text,
               style: TextStyle(
-                fontSize: baseFontSize,
+                fontSize: effectiveFontSize,
                 fontFamily: fontFamily,
                 color: _getWordColor(isCurrentAyat).withOpacity(wordOpacity),
                 backgroundColor: wordBg,
                 fontWeight: FontWeight.w400,
-                // âœ… TASK 1: Underline tipis (kecuali kata terakhir ayat)
-                decoration: (controller.hideUnreadAyat && !isLastWordInAyah)
+
+                // âœ… Underline tipis (kecuali kata terakhir ayat)
+                decoration: (controller.hideUnreadAyat && !isLastWord)
                     ? TextDecoration.underline
                     : null,
                 decorationColor: Colors.black.withOpacity(0.15),
