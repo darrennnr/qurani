@@ -1,0 +1,305 @@
+// lib/screens/main/home/screens/settings/submenu/mistake_feedback.dart
+import 'package:flutter/material.dart';
+import 'package:cuda_qurani/core/design_system/app_design_system.dart';
+import 'package:cuda_qurani/screens/main/home/screens/settings/widgets/appbar.dart';
+import 'package:cuda_qurani/screens/main/home/screens/settings/widgets/sound_effect.dart';
+
+/// ==================== MISTAKE FEEDBACK SETTINGS PAGE ====================
+/// Halaman untuk mengatur pengaturan feedback saat terjadi kesalahan
+
+class MistakeFeedbackPage extends StatefulWidget {
+  const MistakeFeedbackPage({Key? key}) : super(key: key);
+
+  @override
+  State<MistakeFeedbackPage> createState() => _MistakeFeedbackPageState();
+}
+
+class _MistakeFeedbackPageState extends State<MistakeFeedbackPage> {
+  // Default states untuk semua toggle (dummy state)
+  bool _playSound = true;
+  bool _vibrateDevice = true;
+  String _selectedSoundEffect = 'Error';
+
+  void _togglePlaySound(bool value) {
+    setState(() {
+      _playSound = value;
+    });
+    AppHaptics.selection();
+
+    // TODO: Implement toggle logic
+  }
+
+  void _toggleVibrateDevice(bool value) {
+    setState(() {
+      _vibrateDevice = value;
+    });
+    AppHaptics.selection();
+
+    // TODO: Implement toggle logic
+  }
+
+  void _navigateToSoundEffect() {
+    AppHaptics.light();
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            SoundEffectPage(
+          currentSoundEffect: _selectedSoundEffect,
+          onSoundEffectSelected: (soundEffect) {
+            setState(() {
+              _selectedSoundEffect = soundEffect;
+            });
+          },
+        ),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(1.0, 0.0);
+          const end = Offset.zero;
+          const curve = Curves.easeInOut;
+          var tween =
+              Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+          var offsetAnimation = animation.drive(tween);
+          var fadeAnimation = animation.drive(
+            Tween(begin: 0.0, end: 1.0).chain(CurveTween(curve: curve)),
+          );
+
+          return FadeTransition(
+            opacity: fadeAnimation,
+            child: SlideTransition(
+              position: offsetAnimation,
+              child: child,
+            ),
+          );
+        },
+        transitionDuration: AppDesignSystem.durationNormal,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppDesignSystem.getScaleFactor(context);
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: const SettingsAppBar(title: 'Mistake Feedback'),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.all(AppDesignSystem.space20 * s * 0.9),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Sound Section
+                Text(
+                  'Sound',
+                  style: TextStyle(
+                    fontSize: 14 * s * 0.9,
+                    fontWeight: AppTypography.medium,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+
+                SizedBox(height: AppDesignSystem.space12 * s * 0.9),
+
+                // Sound Container
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(
+                      AppDesignSystem.radiusMedium * s * 0.9,
+                    ),
+                    border: Border.all(
+                      color: AppColors.borderLight,
+                      width: 1.0 * s * 0.9,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      // Play a sound
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: AppDesignSystem.space16 * s * 0.9,
+                          vertical: AppDesignSystem.space16 * s * 0.9,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.volume_up,
+                              size: 20 * s * 0.9,
+                              color: AppColors.textPrimary,
+                            ),
+                            SizedBox(width: AppDesignSystem.space12 * s * 0.9),
+                            Expanded(
+                              child: Text(
+                                'Play a sound',
+                                style: TextStyle(
+                                  fontSize: 16 * s * 0.9,
+                                  fontWeight: AppTypography.regular,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ),
+                            Switch(
+                              value: _playSound,
+                              onChanged: _togglePlaySound,
+                              activeColor: Color(0xFF4CAF50),
+                              inactiveThumbColor: AppColors.borderMedium,
+                              inactiveTrackColor: AppColors.borderLight,
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Divider
+                      Divider(
+                        height: 1,
+                        thickness: 1 * s * 0.9,
+                        color: AppColors.borderLight,
+                      ),
+
+                      // Sound effect
+                      InkWell(
+                        onTap: _navigateToSoundEffect,
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: AppDesignSystem.space16 * s * 0.9,
+                            vertical: AppDesignSystem.space16 * s * 0.9,
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'Sound effect',
+                                  style: TextStyle(
+                                    fontSize: 16 * s * 0.9,
+                                    fontWeight: AppTypography.regular,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                _selectedSoundEffect,
+                                style: TextStyle(
+                                  fontSize: 16 * s * 0.9,
+                                  fontWeight: AppTypography.regular,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              SizedBox(
+                                  width: AppDesignSystem.space8 * s * 0.9),
+                              Icon(
+                                Icons.chevron_right,
+                                size: 20 * s * 0.9,
+                                color: AppColors.textSecondary,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                SizedBox(height: AppDesignSystem.space12 * s * 0.9),
+
+                // Description text
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppDesignSystem.space4 * s * 0.9,
+                  ),
+                  child: Text(
+                    'Adjust the sound played when a mistake is detected during recitation.',
+                    style: TextStyle(
+                      fontSize: 14 * s * 0.9,
+                      fontWeight: AppTypography.regular,
+                      color: AppColors.textSecondary,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+
+                SizedBox(height: AppDesignSystem.space24 * s * 0.9),
+
+                // Haptic Section
+                Text(
+                  'Haptic',
+                  style: TextStyle(
+                    fontSize: 14 * s * 0.9,
+                    fontWeight: AppTypography.medium,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+
+                SizedBox(height: AppDesignSystem.space12 * s * 0.9),
+
+                // Vibrate Container
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppDesignSystem.space16 * s * 0.9,
+                    vertical: AppDesignSystem.space16 * s * 0.9,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(
+                      AppDesignSystem.radiusMedium * s * 0.9,
+                    ),
+                    border: Border.all(
+                      color: AppColors.borderLight,
+                      width: 1.0 * s * 0.9,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.vibration,
+                        size: 20 * s * 0.9,
+                        color: AppColors.textPrimary,
+                      ),
+                      SizedBox(width: AppDesignSystem.space12 * s * 0.9),
+                      Expanded(
+                        child: Text(
+                          'Vibrate my device',
+                          style: TextStyle(
+                            fontSize: 16 * s * 0.9,
+                            fontWeight: AppTypography.regular,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      Switch(
+                        value: _vibrateDevice,
+                        onChanged: _toggleVibrateDevice,
+                        activeColor: Color(0xFF4CAF50),
+                        inactiveThumbColor: AppColors.borderMedium,
+                        inactiveTrackColor: AppColors.borderLight,
+                      ),
+                    ],
+                  ),
+                ),
+
+                SizedBox(height: AppDesignSystem.space12 * s * 0.9),
+
+                // Description text
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppDesignSystem.space4 * s * 0.9,
+                  ),
+                  child: Text(
+                    'Adjust the haptic feedback when a mistake is detected during recitation.',
+                    style: TextStyle(
+                      fontSize: 14 * s * 0.9,
+                      fontWeight: AppTypography.regular,
+                      color: AppColors.textSecondary,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

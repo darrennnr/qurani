@@ -106,8 +106,8 @@ class _SplashScreenState extends State<SplashScreen>
                     child: ScaleTransition(
                       scale: _scaleAnimation,
                       child: SizedBox(
-                        width: 200 * s,
-                        height: 200 * s,
+                        width: 250 * s,
+                        height: 250 * s,
                         child: Center(
                           child: Text(
                             'ﲐ',

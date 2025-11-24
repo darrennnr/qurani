@@ -1,43 +1,92 @@
-// lib/screens/main/home/screens/settings/submenu/theme.dart
+// lib/screens/main/home/screens/settings/submenu/language.dart
 import 'package:flutter/material.dart';
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
 import 'package:cuda_qurani/screens/main/home/screens/settings/widgets/appbar.dart';
 
-/// ==================== THEME SETTINGS PAGE ====================
-/// Halaman untuk memilih tema aplikasi: Auto, Light, Dark
+/// ==================== LANGUAGE SETTINGS PAGE ====================
+/// Halaman untuk memilih bahasa aplikasi dengan infinite scroll
 
-enum ThemeMode { auto, light, dark }
-
-class ThemePage extends StatefulWidget {
-  const ThemePage({Key? key}) : super(key: key);
+class LanguagePage extends StatefulWidget {
+  const LanguagePage({Key? key}) : super(key: key);
 
   @override
-  State<ThemePage> createState() => _ThemePageState();
+  State<LanguagePage> createState() => _LanguagePageState();
 }
 
-class _ThemePageState extends State<ThemePage> {
-  // Default selected theme (dummy state)
-  ThemeMode _selectedTheme = ThemeMode.light;
+class _LanguagePageState extends State<LanguagePage> {
+  // Default selected language (dummy state)
+  String _selectedLanguage = 'English';
 
-  void _selectTheme(ThemeMode theme) {
+  // Dummy language data for infinite scroll
+  final List<String> _languages = [
+    'English',
+    'Indonesia',
+    'العربية (Arabic)',
+    'Türkçe (Turkish)',
+    'اردو (Urdu)',
+    'فارسی (Persian)',
+    'Français (French)',
+    'Deutsch (German)',
+    'Español (Spanish)',
+    'Português (Portuguese)',
+    '中文 (Chinese)',
+    '日本語 (Japanese)',
+    '한국어 (Korean)',
+    'Русский (Russian)',
+    'Italiano (Italian)',
+    'Nederlands (Dutch)',
+    'Polski (Polish)',
+    'Українська (Ukrainian)',
+    'Bahasa Melayu (Malay)',
+    'বাংলা (Bengali)',
+    'हिन्दी (Hindi)',
+    'ภาษาไทย (Thai)',
+    'Tiếng Việt (Vietnamese)',
+    'Svenska (Swedish)',
+    'Norsk (Norwegian)',
+    'Dansk (Danish)',
+    'Suomi (Finnish)',
+    'Ελληνικά (Greek)',
+    'עברית (Hebrew)',
+    'Català (Catalan)',
+    'Čeština (Czech)',
+    'Magyar (Hungarian)',
+    'Română (Romanian)',
+    'Български (Bulgarian)',
+    'Srpski (Serbian)',
+    'Hrvatski (Croatian)',
+    'Slovenščina (Slovenian)',
+    'Lietuvių (Lithuanian)',
+    'Latviešu (Latvian)',
+    'Eesti (Estonian)',
+    'Shqip (Albanian)',
+    'Македонски (Macedonian)',
+    'Bosanski (Bosnian)',
+    'Íslenska (Icelandic)',
+    'Gaeilge (Irish)',
+    'Cymraeg (Welsh)',
+    'Euskara (Basque)',
+    'Galego (Galician)',
+  ];
+
+  void _selectLanguage(String language) {
     setState(() {
-      _selectedTheme = theme;
+      _selectedLanguage = language;
     });
     AppHaptics.selection();
     
-    // TODO: Implement theme change logic
-    // Example: Provider.of<ThemeProvider>(context, listen: false).setTheme(theme);
+    // TODO: Implement language change logic
+    // Example: Provider.of<LanguageProvider>(context, listen: false).setLanguage(language);
   }
 
-  Widget _buildThemeOption({
+  Widget _buildLanguageOption({
     required String label,
-    required ThemeMode themeMode,
     required bool isSelected,
   }) {
     final s = AppDesignSystem.getScaleFactor(context);
 
     return InkWell(
-      onTap: () => _selectTheme(themeMode),
+      onTap: () => _selectLanguage(label),
       borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium * s * 0.9),
       child: Container(
         padding: EdgeInsets.symmetric(
@@ -102,39 +151,22 @@ class _ThemePageState extends State<ThemePage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: const SettingsAppBar(
-        title: 'Theme',
+        title: 'Language',
       ),
       body: SafeArea(
-        child: Padding(
+        child: ListView.separated(
           padding: EdgeInsets.all(AppDesignSystem.space20 * s * 0.9),
-          child: Column(
-            children: [
-              // Auto (Light/Dark) Option
-              _buildThemeOption(
-                label: 'Auto (Light/Dark)',
-                themeMode: ThemeMode.auto,
-                isSelected: _selectedTheme == ThemeMode.auto,
-              ),
-
-              SizedBox(height: AppDesignSystem.space16 * s * 0.9),
-
-              // Light Option
-              _buildThemeOption(
-                label: 'Light',
-                themeMode: ThemeMode.light,
-                isSelected: _selectedTheme == ThemeMode.light,
-              ),
-
-              SizedBox(height: AppDesignSystem.space16 * s * 0.9),
-
-              // Dark Option
-              _buildThemeOption(
-                label: 'Dark',
-                themeMode: ThemeMode.dark,
-                isSelected: _selectedTheme == ThemeMode.dark,
-              ),
-            ],
+          itemCount: _languages.length,
+          separatorBuilder: (context, index) => SizedBox(
+            height: AppDesignSystem.space16 * s * 0.9,
           ),
+          itemBuilder: (context, index) {
+            final language = _languages[index];
+            return _buildLanguageOption(
+              label: language,
+              isSelected: _selectedLanguage == language,
+            );
+          },
         ),
       ),
     );
