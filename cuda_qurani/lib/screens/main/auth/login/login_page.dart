@@ -3,9 +3,10 @@
 import 'package:cuda_qurani/screens/main/auth/register/register_page.dart';
 import 'package:cuda_qurani/screens/main/home/screens/home_page.dart';
 import 'package:flutter/material.dart';
-import 'package:cuda_qurani/screens/main/stt/utils/constants.dart' as constants;
 import 'package:provider/provider.dart';
 import '../../../../providers/auth_provider.dart';
+import '../../../../core/design_system/app_design_system.dart';
+import '../../../../core/widgets/app_components.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -38,7 +39,7 @@ class _LoginPageState extends State<LoginPage> {
       _isLoading = true;
     });
 
-    print('🔑 LoginPage: Starting login for ${_emailController.text.trim()}');
+    print('🔐 LoginPage: Starting login for ${_emailController.text.trim()}');
 
     final success = await authProvider.signIn(
       email: _emailController.text.trim(),
@@ -46,7 +47,7 @@ class _LoginPageState extends State<LoginPage> {
       rememberMe: _rememberMe,
     );
 
-    print('🔑 LoginPage: Login result = $success');
+    print('🔐 LoginPage: Login result = $success');
 
     setState(() {
       _isLoading = false;
@@ -56,15 +57,13 @@ class _LoginPageState extends State<LoginPage> {
       print('✅ LoginPage: Login SUCCESS! Navigating to HomePage...');
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Login berhasil!'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 1),
+        AppComponentStyles.successSnackBar(
+          message: 'Login berhasil!',
+          duration: const Duration(seconds: 1),
         ),
       );
 
       // ✅ FIX: Manual navigation instead of relying on AuthWrapper Consumer
-      // Navigate and remove all previous routes
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (context) => const HomePage(),
@@ -74,9 +73,8 @@ class _LoginPageState extends State<LoginPage> {
     } else if (!success && mounted) {
       print('❌ LoginPage: Login FAILED - ${authProvider.errorMessage}');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(authProvider.errorMessage ?? 'Login gagal'),
-          backgroundColor: Colors.red,
+        AppComponentStyles.errorSnackBar(
+          message: authProvider.errorMessage ?? 'Login gagal',
         ),
       );
     }
@@ -84,501 +82,431 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    // --- Responsive Setup ---
-    const double designWidth = 406.0;
-    final double s = MediaQuery.of(context).size.width / designWidth;
-    // --- End Responsive Setup ---
+    final s = AppDesignSystem.getScaleFactor(context);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24.0 * s),
+            padding: AppPadding.horizontal(context, AppDesignSystem.space24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                SizedBox(height: 50 * s),
+                AppMargin.customGap(context, AppDesignSystem.space40),
 
                 // Logo Section
-                Center(
-                  child: Column(
-                    children: [
-                      // Logo container
-                      Container(
-                        width: 137 * s,
-                        height: 137 * s,
-                        decoration: BoxDecoration(
-                          color: const Color.fromARGB(
-                            255,
-                            255,
-                            255,
-                            255,
-                          ).withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(24 * s),
-                          boxShadow: [
-                            BoxShadow(
-                              color: constants.primaryColor.withOpacity(0.1),
-                              blurRadius: 20 * s,
-                              offset: Offset(0, 4 * s),
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Text(
-                            'ﲐ',
-                            style: TextStyle(
-                              fontFamily: 'surah_names',
-                              fontSize: 110 * s,
-                              color: constants.primaryColor,
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 24 * s),
-                      // Brand name
-                      Image.asset(
-                        'assets/images/qurani-white-text.png',
-                        height: 36 * s,
-                        color: constants.primaryColor,
-                      ),
-                      SizedBox(height: 6 * s),
-                      Text(
-                        'Hafidz',
-                        style: TextStyle(
-                          fontSize: 16 * s,
-                          fontWeight: FontWeight.w600,
-                          color: constants.primaryColor,
-                          letterSpacing: 2 * s,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                _buildLogoSection(context, s),
 
-                SizedBox(height: 40 * s),
+                AppMargin.customGap(context, AppDesignSystem.space32),
 
                 // Welcome Text
-                Text(
-                  'Selamat Datang',
-                  style: TextStyle(
-                    fontSize: 32 * s,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black87,
-                    letterSpacing: -0.5 * s,
-                  ),
-                ),
-                SizedBox(height: 8 * s),
-                Text(
-                  'Masuk untuk melanjutkan perjalanan Quran Anda',
-                  style: TextStyle(
-                    fontSize: 15 * s,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w400,
-                    height: 1.5, // Tetap
-                  ),
-                ),
+                _buildWelcomeText(context),
 
-                SizedBox(height: 40 * s),
+                AppMargin.customGap(context, AppDesignSystem.space32),
 
                 // Form Section
-                Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Email Field
-                      TextFormField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        style: TextStyle(
-                          fontSize: 15 * s,
-                          color: Colors.black87,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        decoration: InputDecoration(
-                          labelText: 'Email',
-                          labelStyle: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 15 * s,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          prefixIcon: Container(
-                            margin: EdgeInsets.only(right: 12 * s),
-                            child: Icon(
-                              Icons.email_outlined,
-                              color: Colors.grey[600],
-                              size: 22 * s,
-                            ),
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey[50],
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14 * s),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14 * s),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14 * s),
-                            borderSide: BorderSide(
-                              color: constants.primaryColor,
-                              width: 2 * s,
-                            ),
-                          ),
-                          errorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14 * s),
-                            borderSide: const BorderSide(
-                              color: constants.errorColor,
-                            ),
-                          ),
-                          focusedErrorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14 * s),
-                            borderSide: BorderSide(
-                              color: constants.errorColor,
-                              width: 2 * s,
-                            ),
-                          ),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 20 * s,
-                            vertical: 18 * s,
-                          ),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Email tidak boleh kosong';
-                          }
-                          if (!RegExp(
-                            r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                          ).hasMatch(value)) {
-                            return 'Format email tidak valid';
-                          }
-                          return null;
-                        },
-                      ),
+                _buildFormSection(context, s),
 
-                      SizedBox(height: 18 * s),
+                AppMargin.customGap(context, AppDesignSystem.space24),
 
-                      // Password Field
-                      TextFormField(
-                        controller: _passwordController,
-                        obscureText: !_isPasswordVisible,
-                        style: TextStyle(
-                          fontSize: 15 * s,
-                          color: Colors.black87,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        decoration: InputDecoration(
-                          labelText: 'Password',
-                          labelStyle: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 15 * s,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          prefixIcon: Container(
-                            margin: EdgeInsets.only(right: 12 * s),
-                            child: Icon(
-                              Icons.lock_outline,
-                              color: Colors.grey[600],
-                              size: 22 * s,
-                            ),
-                          ),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _isPasswordVisible
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
-                              color: Colors.grey[600],
-                              size: 22 * s,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _isPasswordVisible = !_isPasswordVisible;
-                              });
-                            },
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey[50],
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14 * s),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14 * s),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14 * s),
-                            borderSide: BorderSide(
-                              color: constants.primaryColor,
-                              width: 2 * s,
-                            ),
-                          ),
-                          errorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14 * s),
-                            borderSide: const BorderSide(
-                              color: constants.errorColor,
-                            ),
-                          ),
-                          focusedErrorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14 * s),
-                            borderSide: BorderSide(
-                              color: constants.errorColor,
-                              width: 2 * s,
-                            ),
-                          ),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 20 * s,
-                            vertical: 18 * s,
-                          ),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Password tidak boleh kosong';
-                          }
-                          if (value.length < 6) {
-                            return 'Password minimal 6 karakter';
-                          }
-                          return null;
-                        },
-                      ),
+                // Divider
+                _buildDivider(context, s),
 
-                      SizedBox(height: 18 * s),
+                AppMargin.customGap(context, AppDesignSystem.space24),
 
-                      // Remember Me & Forgot Password
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              SizedBox(
-                                height: 22 * s,
-                                width: 22 * s,
-                                child: Checkbox(
-                                  value: _rememberMe,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _rememberMe = value ?? false;
-                                    });
-                                  },
-                                  activeColor: constants.primaryColor,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(5 * s),
-                                  ),
-                                ),
-                              ),
-                              SizedBox(width: 10 * s),
-                              Text(
-                                'Ingat saya',
-                                style: TextStyle(
-                                  fontSize: 14 * s,
-                                  color: Colors.grey[700],
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              // Handle forgot password
-                            },
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 4 * s,
-                                vertical: 8 * s,
-                              ),
-                              minimumSize: const Size(0, 0),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            child: Text(
-                              'Lupa Password?',
-                              style: TextStyle(
-                                fontSize: 14 * s,
-                                color: constants.primaryColor,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                // Google Sign In Button
+                _buildGoogleButton(context, s),
 
-                      SizedBox(height: 32 * s),
-
-                      // Login Button
-                      Container(
-                        height: 56 * s,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(14 * s),
-                          boxShadow: [
-                            BoxShadow(
-                              color: constants.primaryColor.withOpacity(0.3),
-                              blurRadius: 12 * s,
-                              offset: Offset(0, 6 * s),
-                            ),
-                          ],
-                        ),
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _handleLogin,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: constants.primaryColor,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14 * s),
-                            ),
-                            disabledBackgroundColor: constants.primaryColor
-                                .withOpacity(0.6),
-                          ),
-                          child: _isLoading
-                              ? SizedBox(
-                                  height: 22 * s,
-                                  width: 22 * s,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.5 * s,
-                                    valueColor:
-                                        const AlwaysStoppedAnimation<Color>(
-                                          Colors.white,
-                                        ),
-                                  ),
-                                )
-                              : Text(
-                                  'Masuk',
-                                  style: TextStyle(
-                                    fontSize: 16 * s,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.5 * s,
-                                  ),
-                                ),
-                        ),
-                      ),
-
-                      SizedBox(height: 28 * s),
-
-                      // Divider
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Divider(
-                              color: Colors.grey[300],
-                              thickness: 1 * s,
-                            ),
-                          ),
-                          Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 20 * s),
-                            child: Text(
-                              'atau',
-                              style: TextStyle(
-                                fontSize: 13 * s,
-                                color: Colors.grey[500],
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Divider(
-                              color: Colors.grey[300],
-                              thickness: 1 * s,
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      SizedBox(height: 28 * s),
-
-                      // Google Sign In Button
-                      SizedBox(
-                        height: 56 * s,
-                        child: OutlinedButton.icon(
-                          onPressed: () {
-                            // Handle Google sign in
-                          },
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(
-                              color: Colors.grey[300]!,
-                              width: 1.5 * s,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14 * s),
-                            ),
-                            backgroundColor: Colors.white,
-                          ),
-                          icon: Image.asset(
-                            'assets/images/google-icon.png',
-                            height: 24 * s,
-                            width: 24 * s,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Icon(
-                                Icons.g_mobiledata,
-                                size: 24 * s,
-                                color: Colors.black87,
-                              );
-                            },
-                          ),
-                          label: Text(
-                            'Masuk dengan Google',
-                            style: TextStyle(
-                              fontSize: 15 * s,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
-                              letterSpacing: 0.3 * s,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                SizedBox(height: 32 * s),
+                AppMargin.customGap(context, AppDesignSystem.space24),
 
                 // Register Link
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Belum punya akun? ',
-                      style: TextStyle(
-                        fontSize: 14 * s,
-                        color: Colors.grey[600],
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => const RegisterPage(),
-                          ),
-                        );
-                      },
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 4 * s,
-                          vertical: 8 * s,
-                        ),
-                        minimumSize: const Size(0, 0),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      child: Text(
-                        'Daftar Sekarang',
-                        style: TextStyle(
-                          fontSize: 14 * s,
-                          color: constants.primaryColor,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                _buildRegisterLink(context),
 
-                SizedBox(height: 40 * s),
+                AppMargin.customGap(context, AppDesignSystem.space32),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  // ==================== LOGO SECTION ====================
+  Widget _buildLogoSection(BuildContext context, double s) {
+    return Center(
+      child: Column(
+        children: [
+          // Logo container
+          Container(
+            width: AppDesignSystem.scale(context, 150),
+            height: AppDesignSystem.scale(context, 150),
+            decoration: BoxDecoration(
+              color: Color.fromARGB(0, 36, 124, 100),
+              borderRadius: BorderRadius.circular(AppDesignSystem.radiusLarge * s),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color.fromARGB(0, 36, 124, 100),
+                  blurRadius: AppDesignSystem.scale(context, 16),
+                  offset: Offset(0, AppDesignSystem.scale(context, 4)),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Text(
+                'ﲐ',
+                style: TextStyle(
+                  fontFamily: 'surah_names',
+                  fontSize: AppDesignSystem.scale(context, 90),
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+          ),
+          
+          AppMargin.customGap(context, AppDesignSystem.space20),
+          
+          // Brand name
+          Image.asset(
+            'assets/images/qurani-white-text.png',
+            height: AppDesignSystem.scale(context, 32),
+            color: AppColors.primary,
+            errorBuilder: (context, error, stackTrace) {
+              return Text(
+                'QURANI',
+                style: AppTypography.h2(
+                  context,
+                  color: AppColors.primary,
+                  weight: AppTypography.bold,
+                ),
+              );
+            },
+          ),
+          
+          AppMargin.gapSmall(context),
+          
+          Text(
+            'Hafidz',
+            style: AppTypography.label(
+              context,
+              color: AppColors.primary,
+              weight: AppTypography.semiBold,
+            ).copyWith(
+              letterSpacing: AppDesignSystem.scale(context, 2),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==================== WELCOME TEXT ====================
+  Widget _buildWelcomeText(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Selamat Datang',
+          style: AppTypography.displaySmall(
+            context,
+            color: AppColors.textPrimary,
+            weight: AppTypography.bold,
+          ),
+        ),
+        AppMargin.gapSmall(context),
+        Text(
+          'Masuk untuk melanjutkan perjalanan Quran Anda',
+          style: AppTypography.body(
+            context,
+            color: AppColors.textTertiary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ==================== FORM SECTION ====================
+  Widget _buildFormSection(BuildContext context, double s) {
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Email Field
+          TextFormField(
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            style: AppTypography.body(
+              context,
+              color: AppColors.textPrimary,
+              weight: AppTypography.medium,
+            ),
+            decoration: AppComponentStyles.inputDecoration(
+              context: context,
+              labelText: 'Email',
+              prefixIcon: Padding(
+                padding: EdgeInsets.only(
+                  left: AppDesignSystem.space16 * s,
+                  right: AppDesignSystem.space12 * s,
+                ),
+                child: Icon(
+                  Icons.email_outlined,
+                  color: AppColors.textTertiary,
+                  size: AppDesignSystem.iconLarge * s,
+                ),
+              ),
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Email tidak boleh kosong';
+              }
+              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                return 'Format email tidak valid';
+              }
+              return null;
+            },
+          ),
+
+          AppMargin.gap(context),
+
+          // Password Field
+          TextFormField(
+            controller: _passwordController,
+            obscureText: !_isPasswordVisible,
+            style: AppTypography.body(
+              context,
+              color: AppColors.textPrimary,
+              weight: AppTypography.medium,
+            ),
+            decoration: AppComponentStyles.inputDecoration(
+              context: context,
+              labelText: 'Password',
+              prefixIcon: Padding(
+                padding: EdgeInsets.only(
+                  left: AppDesignSystem.space16 * s,
+                  right: AppDesignSystem.space12 * s,
+                ),
+                child: Icon(
+                  Icons.lock_outline,
+                  color: AppColors.textTertiary,
+                  size: AppDesignSystem.iconLarge * s,
+                ),
+              ),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _isPasswordVisible
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
+                  color: AppColors.textTertiary,
+                  size: AppDesignSystem.iconLarge * s,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _isPasswordVisible = !_isPasswordVisible;
+                  });
+                },
+              ),
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Password tidak boleh kosong';
+              }
+              if (value.length < 6) {
+                return 'Password minimal 6 karakter';
+              }
+              return null;
+            },
+          ),
+
+          AppMargin.gap(context),
+
+          // Remember Me & Forgot Password
+          _buildRememberAndForgot(context, s),
+
+          AppMargin.gapLarge(context),
+
+          // Login Button
+          _buildLoginButton(context),
+        ],
+      ),
+    );
+  }
+
+  // ==================== REMEMBER & FORGOT ====================
+  Widget _buildRememberAndForgot(BuildContext context, double s) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            SizedBox(
+              height: AppDesignSystem.scale(context, 20),
+              width: AppDesignSystem.scale(context, 20),
+              child: Checkbox(
+                value: _rememberMe,
+                onChanged: (value) {
+                  setState(() {
+                    _rememberMe = value ?? false;
+                  });
+                },
+                activeColor: AppColors.primary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppDesignSystem.radiusXSmall * s),
+                ),
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+            SizedBox(width: AppDesignSystem.space8 * s),
+            Text(
+              'Ingat saya',
+              style: AppTypography.body(
+                context,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+        AppTextButton(
+          text: 'Lupa Password?',
+          onPressed: () {
+            // Handle forgot password
+          },
+          color: AppColors.primary,
+        ),
+      ],
+    );
+  }
+
+  // ==================== LOGIN BUTTON ====================
+  Widget _buildLoginButton(BuildContext context) {
+    return Container(
+      height: AppDesignSystem.scale(context, AppDesignSystem.buttonHeightLarge),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(
+          AppDesignSystem.radiusMedium * AppDesignSystem.getScaleFactor(context),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.25),
+            blurRadius: AppDesignSystem.scale(context, 12),
+            offset: Offset(0, AppDesignSystem.scale(context, 4)),
+          ),
+        ],
+      ),
+      child: ElevatedButton(
+        onPressed: _isLoading ? null : _handleLogin,
+        style: AppComponentStyles.primaryButton(context),
+        child: _isLoading
+            ? SizedBox(
+                height: AppDesignSystem.scale(context, 20),
+                width: AppDesignSystem.scale(context, 20),
+                child: const CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : Text(
+                'Masuk',
+                style: AppTypography.label(
+                  context,
+                  color: Colors.white,
+                  weight: AppTypography.semiBold,
+                ),
+              ),
+      ),
+    );
+  }
+
+  // ==================== DIVIDER ====================
+  Widget _buildDivider(BuildContext context, double s) {
+    return Row(
+      children: [
+        Expanded(
+          child: AppDivider(
+            color: AppColors.divider,
+            thickness: 1 * s,
+          ),
+        ),
+        Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: AppDesignSystem.space16 * s,
+          ),
+          child: Text(
+            'atau',
+            style: AppTypography.caption(
+              context,
+              color: AppColors.textTertiary,
+            ),
+          ),
+        ),
+        Expanded(
+          child: AppDivider(
+            color: AppColors.divider,
+            thickness: 1 * s,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ==================== GOOGLE BUTTON ====================
+  Widget _buildGoogleButton(BuildContext context, double s) {
+    return SizedBox(
+      height: AppDesignSystem.scale(context, AppDesignSystem.buttonHeightLarge),
+      child: OutlinedButton.icon(
+        onPressed: () {
+          // Handle Google sign in
+        },
+        style: AppComponentStyles.secondaryButton(context),
+        icon: Image.asset(
+          'assets/images/google-icon.png',
+          height: AppDesignSystem.scale(context, 20),
+          width: AppDesignSystem.scale(context, 20),
+          errorBuilder: (context, error, stackTrace) {
+            return Icon(
+              Icons.g_mobiledata,
+              size: AppDesignSystem.iconLarge * s,
+              color: AppColors.textPrimary,
+            );
+          },
+        ),
+        label: Text(
+          'Masuk dengan Google',
+          style: AppTypography.label(
+            context,
+            color: AppColors.textPrimary,
+            weight: AppTypography.semiBold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ==================== REGISTER LINK ====================
+  Widget _buildRegisterLink(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          'Belum punya akun? ',
+          style: AppTypography.body(
+            context,
+            color: AppColors.textTertiary,
+          ),
+        ),
+        AppTextButton(
+          text: 'Daftar Sekarang',
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const RegisterPage(),
+              ),
+            );
+          },
+          color: AppColors.primary,
+        ),
+      ],
     );
   }
 }

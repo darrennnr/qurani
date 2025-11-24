@@ -305,7 +305,7 @@ class _PremiumOfferPageState extends State<PremiumOfferPage> {
                 child: Text(
                   'PREMIUM',
                   style: TextStyle(
-                    fontSize: 10 * s,
+                    fontSize: 9 * s,
                     fontWeight: AppTypography.bold,
                     color: Colors.white,
                     letterSpacing: 0.5,
@@ -500,7 +500,7 @@ class _PremiumOfferPageState extends State<PremiumOfferPage> {
         AppDesignSystem.space16 * s,
         AppDesignSystem.space10 * s,
         AppDesignSystem.space16 * s,
-        AppDesignSystem.space16 * s,
+        AppDesignSystem.space10 * s,
       ),
       decoration: BoxDecoration(
         color: AppColors.surface,

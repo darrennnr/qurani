@@ -3,11 +3,14 @@
 import 'package:cuda_qurani/providers/auth_provider.dart';
 import 'package:cuda_qurani/screens/main/home/screens/home_page.dart';
 import 'package:flutter/material.dart';
-import 'package:cuda_qurani/screens/main/stt/utils/constants.dart' as constants;
 import 'package:provider/provider.dart';
+import 'package:cuda_qurani/core/design_system/app_design_system.dart';
+import 'package:cuda_qurani/core/widgets/app_components.dart';
+import 'package:cuda_qurani/screens/main/stt/utils/constants.dart' as constants;
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
+  
   @override
   State<RegisterPage> createState() => _RegisterPageState();
 }
@@ -21,7 +24,6 @@ class _RegisterPageState extends State<RegisterPage> {
 
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
-  bool _isLoading = false;
   bool _agreeToTerms = false;
 
   @override
@@ -34,25 +36,11 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Future<void> _handleRegister() async {
-    // --- Responsive Scaling ---
-    // (diperlukan di sini untuk SnackBar sebelum build selesai)
-    // Ambil 's' dari konteks jika ada, jika tidak, hitung dengan cepat.
-    // Ini adalah fallback, idealnya 's' didapat dari build.
-    // Tapi untuk SnackBar, kita perlu konteks.
-    const double designWidth = 406.0;
-    final double s = MediaQuery.of(context).size.width / designWidth;
-    // --- End Responsive Scaling ---
-
     if (!_agreeToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Anda harus menyetujui syarat dan ketentuan'),
-          backgroundColor: constants.errorColor,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12 * s),
-          ),
-          margin: EdgeInsets.all(16 * s),
+        AppComponentStyles.errorSnackBar(
+          message: 'Anda harus menyetujui syarat dan ketentuan',
+          duration: const Duration(seconds: 2),
         ),
       );
       return;
@@ -62,11 +50,8 @@ class _RegisterPageState extends State<RegisterPage> {
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-    print(
-      '📝 RegisterPage: Starting registration for ${_emailController.text.trim()}',
-    );
+    print('📝 RegisterPage: Starting registration for ${_emailController.text.trim()}');
 
-    // ✅ FIXED: Use real AuthProvider instead of simulation
     final success = await authProvider.signUp(
       email: _emailController.text.trim(),
       password: _passwordController.text,
@@ -74,9 +59,7 @@ class _RegisterPageState extends State<RegisterPage> {
     );
 
     print('📝 RegisterPage: Registration result = $success');
-    print(
-      '📝 RegisterPage: isAuthenticated after signup = ${authProvider.isAuthenticated}',
-    );
+    print('📝 RegisterPage: isAuthenticated after signup = ${authProvider.isAuthenticated}');
 
     if (!mounted) return;
 
@@ -85,41 +68,25 @@ class _RegisterPageState extends State<RegisterPage> {
 
       // Check if email confirmation is required
       if (authProvider.errorMessage?.contains('email') == true) {
-        // Email confirmation required
         print('📧 RegisterPage: Email confirmation required');
         
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Registrasi berhasil! Silakan cek email untuk verifikasi'),
-            backgroundColor: constants.correctColor,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12 * s),
-            ),
-            margin: EdgeInsets.all(16 * s),
+          AppComponentStyles.successSnackBar(
+            message: 'Registrasi berhasil! Silakan cek email untuk verifikasi',
             duration: const Duration(seconds: 3),
           ),
         );
         
-        // Navigate back to login page
         Navigator.of(context).pop();
       } else {
-        // No email confirmation needed, user is logged in
         print('✅ RegisterPage: Navigating to HomePage...');
         
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Registrasi berhasil! Selamat datang'),
-            backgroundColor: constants.correctColor,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12 * s),
-            ),
-            margin: EdgeInsets.all(16 * s),
+          AppComponentStyles.successSnackBar(
+            message: 'Registrasi berhasil! Selamat datang',
           ),
         );
 
-        // ✅ FIX: Manual navigation instead of relying on AuthWrapper Consumer
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
             builder: (context) => const HomePage(),
@@ -128,729 +95,524 @@ class _RegisterPageState extends State<RegisterPage> {
         );
       }
     } else {
-      print(
-        '❌ RegisterPage: Registration FAILED - ${authProvider.errorMessage}',
-      );
-      // Show error message
+      print('❌ RegisterPage: Registration FAILED - ${authProvider.errorMessage}');
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(authProvider.errorMessage ?? 'Registrasi gagal'),
-          backgroundColor: constants.errorColor,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12 * s),
-          ),
-          margin: EdgeInsets.all(16 * s),
+        AppComponentStyles.errorSnackBar(
+          message: authProvider.errorMessage ?? 'Registrasi gagal',
         ),
       );
     }
   }
 
+  void _handleGoogleSignUp() {
+    // TODO: Implement Google Sign Up
+    ScaffoldMessenger.of(context).showSnackBar(
+      AppComponentStyles.infoSnackBar(
+        message: 'Google Sign Up akan segera tersedia',
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // --- Responsive Setup ---
-    // Berdasarkan perangkat referensi: 1220px (lebar)
-    // Asumsi ~3.0x device pixel ratio: 1220 / 3.0 = 406.6 logical pixels
-    // Kita gunakan 406.0 sebagai lebar desain.
-    const double designWidth = 406.0;
-    final double s = MediaQuery.of(context).size.width / designWidth;
-    // --- End Responsive Setup ---
+    final s = AppDesignSystem.getScaleFactor(context);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surface,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
-        leading: IconButton(
-          icon: Container(
-            padding: EdgeInsets.all(8 * s),
-            decoration: BoxDecoration(
-              color: const Color.fromARGB(0, 245, 245, 245),
-              borderRadius: BorderRadius.circular(10 * s),
-            ),
-            child: Icon(
-              Icons.arrow_back_ios_new,
-              color: Colors.black87,
-              size: 18 * s,
-            ),
-          ),
+        leading: AppIconButton(
+          icon: Icons.arrow_back_ios_new,
+          iconColor: AppColors.textPrimary,
+          size: 40,
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24.0 * s),
+            padding: AppPadding.page(context),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                SizedBox(height: 0),
-
                 // Logo Section
-                Center(
-                  child: Column(
-                    children: [
-                      // Logo container
-                      Container(
-                        width: 137 * s,
-                        height: 137 * s,
-                        decoration: BoxDecoration(
-                          color: const Color.fromARGB(
-                            255,
-                            255,
-                            255,
-                            255,
-                          ).withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(24 * s),
-                          boxShadow: [
-                            BoxShadow(
-                              color: constants.primaryColor.withOpacity(0.1),
-                              blurRadius: 20 * s,
-                              offset: Offset(0, 4 * s),
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Text(
-                            'ﲐ',
-                            style: TextStyle(
-                              fontFamily: 'surah_names',
-                              fontSize: 110 * s,
-                              color: constants.primaryColor,
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 24 * s),
-                      // Brand name
-                      Image.asset(
-                        'assets/images/qurani-white-text.png',
-                        height: 36 * s,
-                        color: constants.primaryColor,
-                      ),
-                      SizedBox(height: 6 * s),
-                      Text(
-                        'Hafidz',
-                        style: TextStyle(
-                          fontSize: 16 * s,
-                          fontWeight: FontWeight.w600,
-                          color: constants.primaryColor,
-                          letterSpacing: 2 * s,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                SizedBox(height: 40 * s),
+                _buildLogoSection(context, s),
+                
+                AppMargin.gapXLarge(context),
 
                 // Welcome Text
-                Text(
-                  'Buat Akun Baru',
-                  style: TextStyle(
-                    fontSize: 30 * s,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black87,
-                    letterSpacing: -0.5 * s,
-                  ),
-                ),
-                SizedBox(height: 8 * s),
-                Text(
-                  'Daftar untuk memulai perjalanan Quran Anda',
-                  style: TextStyle(
-                    fontSize: 15 * s,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w400,
-                    height: 1.5, // Line height (faktor) biasanya tetap
-                  ),
-                ),
+                _buildWelcomeSection(context),
 
-                SizedBox(height: 32 * s),
+                AppMargin.gapLarge(context),
 
                 // Form Section
-                Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Name Field
-                      TextFormField(
-                        controller: _nameController,
-                        textCapitalization: TextCapitalization.words,
-                        style: TextStyle(
-                          fontSize: 15 * s,
-                          color: Colors.black87,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        decoration: InputDecoration(
-                          labelText: 'Username',
-                          labelStyle: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 15 * s,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          prefixIcon: Container(
-                            margin: EdgeInsets.only(right: 12 * s),
-                            child: Icon(
-                              Icons.person_outline,
-                              color: Colors.grey[600],
-                              size: 22 * s,
-                            ),
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey[50],
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14 * s),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14 * s),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14 * s),
-                            borderSide: BorderSide(
-                              color: constants.primaryColor,
-                              width: 2 * s,
-                            ),
-                          ),
-                          errorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14 * s),
-                            borderSide: const BorderSide(
-                              color: constants.errorColor,
-                            ),
-                          ),
-                          focusedErrorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14 * s),
-                            borderSide: BorderSide(
-                              color: constants.errorColor,
-                              width: 2 * s,
-                            ),
-                          ),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 20 * s,
-                            vertical: 18 * s,
-                          ),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Nama tidak boleh kosong';
-                          }
-                          if (value.length < 3) {
-                            return 'Nama minimal 3 karakter';
-                          }
-                          return null;
-                        },
-                      ),
+                _buildFormSection(context, s),
 
-                      SizedBox(height: 16 * s),
+                AppMargin.gapLarge(context),
 
-                      // Email Field
-                      TextFormField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        style: TextStyle(
-                          fontSize: 15 * s,
-                          color: Colors.black87,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        decoration: InputDecoration(
-                          labelText: 'Email',
-                          labelStyle: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 15 * s,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          prefixIcon: Container(
-                            margin: EdgeInsets.only(right: 12 * s),
-                            child: Icon(
-                              Icons.email_outlined,
-                              color: Colors.grey[600],
-                              size: 22 * s,
-                            ),
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey[50],
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14 * s),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14 * s),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14 * s),
-                            borderSide: BorderSide(
-                              color: constants.primaryColor,
-                              width: 2 * s,
-                            ),
-                          ),
-                          errorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14 * s),
-                            borderSide: const BorderSide(
-                              color: constants.errorColor,
-                            ),
-                          ),
-                          focusedErrorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14 * s),
-                            borderSide: BorderSide(
-                              color: constants.errorColor,
-                              width: 2 * s,
-                            ),
-                          ),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 20 * s,
-                            vertical: 18 * s,
-                          ),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Email tidak boleh kosong';
-                          }
-                          if (!RegExp(
-                            r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                          ).hasMatch(value)) {
-                            return 'Format email tidak valid';
-                          }
-                          return null;
-                        },
-                      ),
+                // Register Button
+                _buildRegisterButton(context),
 
-                      SizedBox(height: 16 * s),
+                AppMargin.gap(context),
 
-                      // Password Field
-                      TextFormField(
-                        controller: _passwordController,
-                        obscureText: !_isPasswordVisible,
-                        style: TextStyle(
-                          fontSize: 15 * s,
-                          color: Colors.black87,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        decoration: InputDecoration(
-                          labelText: 'Password',
-                          labelStyle: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 15 * s,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          prefixIcon: Container(
-                            margin: EdgeInsets.only(right: 12 * s),
-                            child: Icon(
-                              Icons.lock_outline,
-                              color: Colors.grey[600],
-                              size: 22 * s,
-                            ),
-                          ),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _isPasswordVisible
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
-                              color: Colors.grey[600],
-                              size: 22 * s,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _isPasswordVisible = !_isPasswordVisible;
-                              });
-                            },
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey[50],
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14 * s),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14 * s),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14 * s),
-                            borderSide: BorderSide(
-                              color: constants.primaryColor,
-                              width: 2 * s,
-                            ),
-                          ),
-                          errorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14 * s),
-                            borderSide: const BorderSide(
-                              color: constants.errorColor,
-                            ),
-                          ),
-                          focusedErrorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14 * s),
-                            borderSide: BorderSide(
-                              color: constants.errorColor,
-                              width: 2 * s,
-                            ),
-                          ),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 20 * s,
-                            vertical: 18 * s,
-                          ),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Password tidak boleh kosong';
-                          }
-                          if (value.length < 6) {
-                            return 'Password minimal 6 karakter';
-                          }
-                          return null;
-                        },
-                      ),
+                // Divider
+                _buildDivider(context),
 
-                      SizedBox(height: 16 * s),
+                AppMargin.gap(context),
 
-                      // Confirm Password Field
-                      TextFormField(
-                        controller: _confirmPasswordController,
-                        obscureText: !_isConfirmPasswordVisible,
-                        style: TextStyle(
-                          fontSize: 15 * s,
-                          color: Colors.black87,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        decoration: InputDecoration(
-                          labelText: 'Konfirmasi Password',
-                          labelStyle: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 15 * s,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          prefixIcon: Container(
-                            margin: EdgeInsets.only(right: 12 * s),
-                            child: Icon(
-                              Icons.lock_outline,
-                              color: Colors.grey[600],
-                              size: 22 * s,
-                            ),
-                          ),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _isConfirmPasswordVisible
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
-                              color: Colors.grey[600],
-                              size: 22 * s,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _isConfirmPasswordVisible =
-                                    !_isConfirmPasswordVisible;
-                              });
-                            },
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey[50],
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14 * s),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14 * s),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14 * s),
-                            borderSide: BorderSide(
-                              color: constants.primaryColor,
-                              width: 2 * s,
-                            ),
-                          ),
-                          errorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14 * s),
-                            borderSide: const BorderSide(
-                              color: constants.errorColor,
-                            ),
-                          ),
-                          focusedErrorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14 * s),
-                            borderSide: BorderSide(
-                              color: constants.errorColor,
-                              width: 2 * s,
-                            ),
-                          ),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 20 * s,
-                            vertical: 18 * s,
-                          ),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Konfirmasi password tidak boleh kosong';
-                          }
-                          if (value != _passwordController.text) {
-                            return 'Password tidak sama';
-                          }
-                          return null;
-                        },
-                      ),
+                // Google Sign Up Button
+                _buildGoogleButton(context),
 
-                      SizedBox(height: 20 * s),
-
-                      // Terms & Conditions
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(
-                            height: 22 * s,
-                            width: 22 * s,
-                            child: Checkbox(
-                              value: _agreeToTerms,
-                              onChanged: (value) {
-                                setState(() {
-                                  _agreeToTerms = value ?? false;
-                                });
-                              },
-                              activeColor: constants.primaryColor,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(5 * s),
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: 12 * s),
-                          Expanded(
-                            child: Padding(
-                              padding: EdgeInsets.only(top: 2 * s),
-                              child: RichText(
-                                text: TextSpan(
-                                  style: TextStyle(
-                                    fontSize: 13 * s,
-                                    color: Colors.grey[700],
-                                    height: 1.5, // Tetap
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  children: [
-                                    const TextSpan(text: 'Saya menyetujui '),
-                                    WidgetSpan(
-                                      child: GestureDetector(
-                                        onTap: () {
-                                          // Handle terms tap
-                                        },
-                                        child: Text(
-                                          'Syarat dan Ketentuan',
-                                          style: TextStyle(
-                                            fontSize: 13 * s,
-                                            color: constants.primaryColor,
-                                            fontWeight: FontWeight.w700,
-                                            decoration:
-                                                TextDecoration.underline,
-                                            decorationColor:
-                                                constants.primaryColor,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    const TextSpan(text: ' serta '),
-                                    WidgetSpan(
-                                      child: GestureDetector(
-                                        onTap: () {
-                                          // Handle privacy tap
-                                        },
-                                        child: Text(
-                                          'Kebijakan Privasi',
-                                          style: TextStyle(
-                                            fontSize: 13 * s,
-                                            color: constants.primaryColor,
-                                            fontWeight: FontWeight.w700,
-                                            decoration:
-                                                TextDecoration.underline,
-                                            decorationColor:
-                                                constants.primaryColor,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      SizedBox(height: 28 * s),
-
-                      // Register Button
-                      Container(
-                        height: 56 * s,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(14 * s),
-                          boxShadow: [
-                            BoxShadow(
-                              color: constants.primaryColor.withOpacity(0.3),
-                              blurRadius: 12 * s,
-                              offset: Offset(0, 6 * s),
-                            ),
-                          ],
-                        ),
-                        child: Consumer<AuthProvider>(
-                          builder: (context, auth, _) {
-                            return ElevatedButton(
-                              onPressed: auth.isLoading
-                                  ? null
-                                  : _handleRegister,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: constants.primaryColor,
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                disabledBackgroundColor: constants.primaryColor
-                                    .withOpacity(0.6),
-                              ),
-                              child: auth.isLoading
-                                  ? const SizedBox(
-                                      height: 22,
-                                      width: 22,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2.5,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                              Colors.white,
-                                            ),
-                                      ),
-                                    )
-                                  : const Text(
-                                      'Daftar',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                            );
-                          },
-                        ),
-                      ),
-
-                      SizedBox(height: 26 * s),
-
-                      // Divider
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Divider(
-                              color: Colors.grey[300],
-                              thickness: 1 * s,
-                            ),
-                          ),
-                          Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 20 * s),
-                            child: Text(
-                              'atau',
-                              style: TextStyle(
-                                fontSize: 13 * s,
-                                color: Colors.grey[500],
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Divider(
-                              color: Colors.grey[300],
-                              thickness: 1 * s,
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      SizedBox(height: 26 * s),
-
-                      // Google Sign Up Button
-                      SizedBox(
-                        height: 56 * s,
-                        child: OutlinedButton.icon(
-                          onPressed: () {
-                            // Handle Google sign up
-                          },
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(
-                              color: Colors.grey[300]!,
-                              width: 1.5 * s,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14 * s),
-                            ),
-                            backgroundColor: Colors.white,
-                          ),
-                          icon: Image.asset(
-                            'assets/images/google-icon.png',
-                            height: 24 * s,
-                            width: 24 * s,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Icon(
-                                Icons.g_mobiledata,
-                                size: 24 * s,
-                                color: Colors.black87,
-                              );
-                            },
-                          ),
-                          label: Text(
-                            'Daftar dengan Google',
-                            style: TextStyle(
-                              fontSize: 15 * s,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
-                              letterSpacing: 0.3 * s,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                SizedBox(height: 28 * s),
+                AppMargin.gap(context),
 
                 // Login Link
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Sudah punya akun? ',
-                      style: TextStyle(
-                        fontSize: 14 * s,
-                        color: Colors.grey[600],
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 4 * s,
-                          vertical: 8 * s,
-                        ),
-                        minimumSize: const Size(0, 0),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      child: Text(
-                        'Masuk',
-                        style: TextStyle(
-                          fontSize: 14 * s,
-                          color: constants.primaryColor,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                _buildLoginLink(context),
 
-                SizedBox(height: 40 * s),
+                AppMargin.gapLarge(context),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildLogoSection(BuildContext context, double s) {
+    return Center(
+      child: Column(
+        children: [
+          // Logo container
+          Container(
+            width: 140 * s,
+            height: 140 * s,
+            decoration: BoxDecoration(
+              color: Color.fromARGB(0, 36, 124, 100),
+              borderRadius: BorderRadius.circular(AppDesignSystem.radiusLarge * s),
+              
+            ),
+            child: Center(
+              child: Text(
+                'ﲐ',
+                style: TextStyle(
+                  fontFamily: 'surah_names',
+                  fontSize: 90 * s,
+                  color: AppColors.primary,
+                  height: 1.0,
+                ),
+              ),
+            ),
+          ),
+          
+          AppMargin.gap(context),
+          
+          // Brand name
+          Image.asset(
+            'assets/images/qurani-white-text.png',
+            height: 28 * s,
+            color: AppColors.primary,
+            errorBuilder: (context, error, stackTrace) {
+              return Text(
+                'Qurani',
+                style: AppTypography.h2(
+                  context,
+                  color: AppColors.primary,
+                  weight: AppTypography.bold,
+                ),
+              );
+            },
+          ),
+          
+          SizedBox(height: 4 * s),
+          
+          Text(
+            'Hafidz',
+            style: AppTypography.label(
+              context,
+              color: AppColors.primary,
+              weight: AppTypography.semiBold,
+            ).copyWith(
+              letterSpacing: 2 * s,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWelcomeSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Buat Akun Baru',
+          style: AppTypography.displaySmall(context),
+        ),
+        AppMargin.gapSmall(context),
+        Text(
+          'Daftar untuk memulai perjalanan Quran Anda',
+          style: AppTypography.body(
+            context,
+            color: AppColors.textTertiary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFormSection(BuildContext context, double s) {
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Name Field
+          _buildNameField(context, s),
+          
+          AppMargin.gap(context),
+
+          // Email Field
+          _buildEmailField(context, s),
+
+          AppMargin.gap(context),
+
+          // Password Field
+          _buildPasswordField(context, s),
+
+          AppMargin.gap(context),
+
+          // Confirm Password Field
+          _buildConfirmPasswordField(context, s),
+
+          AppMargin.gap(context),
+
+          // Terms & Conditions
+          _buildTermsCheckbox(context, s),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNameField(BuildContext context, double s) {
+    return TextFormField(
+      controller: _nameController,
+      textCapitalization: TextCapitalization.words,
+      style: AppTypography.body(context),
+      decoration: AppComponentStyles.inputDecoration(
+        context: context,
+        labelText: 'Username',
+        prefixIcon: Padding(
+          padding: EdgeInsets.only(left: AppDesignSystem.space12 * s),
+          child: Icon(
+            Icons.person_outline_rounded,
+            color: AppColors.textTertiary,
+            size: AppDesignSystem.iconLarge * s,
+          ),
+        ),
+      ),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Username tidak boleh kosong';
+        }
+        if (value.length < 3) {
+          return 'Username minimal 3 karakter';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _buildEmailField(BuildContext context, double s) {
+    return TextFormField(
+      controller: _emailController,
+      keyboardType: TextInputType.emailAddress,
+      style: AppTypography.body(context),
+      decoration: AppComponentStyles.inputDecoration(
+        context: context,
+        labelText: 'Email',
+        prefixIcon: Padding(
+          padding: EdgeInsets.only(left: AppDesignSystem.space12 * s),
+          child: Icon(
+            Icons.email_outlined,
+            color: AppColors.textTertiary,
+            size: AppDesignSystem.iconLarge * s,
+          ),
+        ),
+      ),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Email tidak boleh kosong';
+        }
+        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+          return 'Format email tidak valid';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _buildPasswordField(BuildContext context, double s) {
+    return TextFormField(
+      controller: _passwordController,
+      obscureText: !_isPasswordVisible,
+      style: AppTypography.body(context),
+      decoration: AppComponentStyles.inputDecoration(
+        context: context,
+        labelText: 'Password',
+        prefixIcon: Padding(
+          padding: EdgeInsets.only(left: AppDesignSystem.space12 * s),
+          child: Icon(
+            Icons.lock_outline_rounded,
+            color: AppColors.textTertiary,
+            size: AppDesignSystem.iconLarge * s,
+          ),
+        ),
+        suffixIcon: IconButton(
+          icon: Icon(
+            _isPasswordVisible
+                ? Icons.visibility_outlined
+                : Icons.visibility_off_outlined,
+            color: AppColors.textTertiary,
+            size: AppDesignSystem.iconLarge * s,
+          ),
+          onPressed: () {
+            setState(() {
+              _isPasswordVisible = !_isPasswordVisible;
+            });
+          },
+        ),
+      ),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Password tidak boleh kosong';
+        }
+        if (value.length < 6) {
+          return 'Password minimal 6 karakter';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _buildConfirmPasswordField(BuildContext context, double s) {
+    return TextFormField(
+      controller: _confirmPasswordController,
+      obscureText: !_isConfirmPasswordVisible,
+      style: AppTypography.body(context),
+      decoration: AppComponentStyles.inputDecoration(
+        context: context,
+        labelText: 'Konfirmasi Password',
+        prefixIcon: Padding(
+          padding: EdgeInsets.only(left: AppDesignSystem.space12 * s),
+          child: Icon(
+            Icons.lock_outline_rounded,
+            color: AppColors.textTertiary,
+            size: AppDesignSystem.iconLarge * s,
+          ),
+        ),
+        suffixIcon: IconButton(
+          icon: Icon(
+            _isConfirmPasswordVisible
+                ? Icons.visibility_outlined
+                : Icons.visibility_off_outlined,
+            color: AppColors.textTertiary,
+            size: AppDesignSystem.iconLarge * s,
+          ),
+          onPressed: () {
+            setState(() {
+              _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+            });
+          },
+        ),
+      ),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Konfirmasi password tidak boleh kosong';
+        }
+        if (value != _passwordController.text) {
+          return 'Password tidak sama';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _buildTermsCheckbox(BuildContext context, double s) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          height: 20 * s,
+          width: 20 * s,
+          child: Checkbox(
+            value: _agreeToTerms,
+            onChanged: (value) {
+              setState(() {
+                _agreeToTerms = value ?? false;
+              });
+            },
+            activeColor: AppColors.primary,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(4 * s),
+            ),
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            visualDensity: VisualDensity.compact,
+          ),
+        ),
+        SizedBox(width: AppDesignSystem.space12 * s),
+        Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(top: 1 * s),
+            child: RichText(
+              text: TextSpan(
+                style: AppTypography.bodySmall(
+                  context,
+                  color: AppColors.textSecondary,
+                ),
+                children: [
+                  const TextSpan(text: 'Saya menyetujui '),
+                  WidgetSpan(
+                    alignment: PlaceholderAlignment.baseline,
+                    baseline: TextBaseline.alphabetic,
+                    child: GestureDetector(
+                      onTap: () {
+                        // Handle terms tap
+                      },
+                      child: Text(
+                        'Syarat dan Ketentuan',
+                        style: AppTypography.bodySmall(
+                          context,
+                          color: AppColors.primary,
+                          weight: AppTypography.semiBold,
+                        ).copyWith(
+                          decoration: TextDecoration.underline,
+                          decorationColor: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const TextSpan(text: ' serta '),
+                  WidgetSpan(
+                    alignment: PlaceholderAlignment.baseline,
+                    baseline: TextBaseline.alphabetic,
+                    child: GestureDetector(
+                      onTap: () {
+                        // Handle privacy tap
+                      },
+                      child: Text(
+                        'Kebijakan Privasi',
+                        style: AppTypography.bodySmall(
+                          context,
+                          color: AppColors.primary,
+                          weight: AppTypography.semiBold,
+                        ).copyWith(
+                          decoration: TextDecoration.underline,
+                          decorationColor: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRegisterButton(BuildContext context) {
+    return Consumer<AuthProvider>(
+      builder: (context, auth, _) {
+        return AppButton(
+          text: 'Daftar',
+          onPressed: auth.isLoading ? null : _handleRegister,
+          loading: auth.isLoading,
+          fullWidth: true,
+        );
+      },
+    );
+  }
+
+  Widget _buildDivider(BuildContext context) {
+    return Row(
+      children: [
+        const Expanded(child: AppDivider()),
+        Padding(
+          padding: AppPadding.horizontal(context, AppDesignSystem.space16),
+          child: Text(
+            'atau',
+            style: AppTypography.caption(
+              context,
+              color: AppColors.textDisabled,
+            ),
+          ),
+        ),
+        const Expanded(child: AppDivider()),
+      ],
+    );
+  }
+
+  Widget _buildGoogleButton(BuildContext context) {
+    final s = AppDesignSystem.getScaleFactor(context);
+    
+    return SizedBox(
+      height: AppDesignSystem.buttonHeightLarge * s,
+      child: OutlinedButton(
+        onPressed: _handleGoogleSignUp,
+        style: AppComponentStyles.secondaryButton(context).copyWith(
+          backgroundColor: MaterialStateProperty.all(AppColors.surface),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(
+              'assets/images/google-icon.png',
+              height: AppDesignSystem.iconLarge * s,
+              width: AppDesignSystem.iconLarge * s,
+              errorBuilder: (context, error, stackTrace) {
+                return Icon(
+                  Icons.g_mobiledata_rounded,
+                  size: AppDesignSystem.iconXLarge * s,
+                  color: AppColors.textPrimary,
+                );
+              },
+            ),
+            AppMargin.gapHSmall(context),
+            Text(
+              'Daftar dengan Google',
+              style: AppTypography.label(
+                context,
+                color: AppColors.textPrimary,
+                weight: AppTypography.semiBold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoginLink(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          'Sudah punya akun? ',
+          style: AppTypography.body(
+            context,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        AppTextButton(
+          text: 'Masuk',
+          onPressed: () => Navigator.of(context).pop(),
+          color: AppColors.primary,
+        ),
+      ],
     );
   }
 }

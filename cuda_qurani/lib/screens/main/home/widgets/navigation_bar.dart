@@ -9,7 +9,7 @@ import 'package:cuda_qurani/screens/main/stt/utils/constants.dart' as constants;
 import 'package:cuda_qurani/screens/main/home/screens/home_page.dart';
 import 'package:cuda_qurani/screens/main/home/screens/surah_list_page.dart';
 import 'package:cuda_qurani/screens/main/home/screens/profile_page.dart';
-import 'package:cuda_qurani/screens/main/home/screens/settings_page.dart';
+import 'package:cuda_qurani/screens/main/home/screens/settings/settings_page.dart';
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
 import 'package:cuda_qurani/core/widgets/app_components.dart';
 
@@ -119,7 +119,7 @@ class _MenuAppBarState extends State<MenuAppBar>
     final s = AppDesignSystem.getScaleFactor(context);
 
     return Container(
-      height: 60 * s,
+      height: 50 * s,
       padding: EdgeInsets.symmetric(horizontal: AppDesignSystem.space20 * s),
       child: Row(
         children: [
@@ -153,7 +153,7 @@ class _MenuAppBarState extends State<MenuAppBar>
             _buildTopIconButton(
               context,
               icon: Icons.settings_outlined,
-              onTap: () => _navigateToPage(context, 6),
+              onTap: () => _navigateToPage(context, 5),
               tooltip: 'Settings',
             ),
         ],
@@ -337,7 +337,7 @@ class _MenuAppBarState extends State<MenuAppBar>
         targetPage = const ActivityPage();
         break;
       case 5:
-        targetPage = const HomePage(); // TODO: Replace with HistoryPage
+        targetPage = const SettingsPage();
         break;
       case 6:
         targetPage = const PremiumOfferPage();

@@ -247,71 +247,91 @@ class _SurahListPageState extends State<SurahListPage> {
     final s = AppDesignSystem.getScaleFactor(context);
 
     return Container(
-      color: AppColors.surface,
-      padding: EdgeInsets.symmetric(
-        horizontal: AppDesignSystem.space20 * s,
-        vertical: AppDesignSystem.space20 * s,
+  color: AppColors.surface,
+  padding: EdgeInsets.symmetric(
+    horizontal: AppDesignSystem.space20 * s,
+    vertical: AppDesignSystem.space20 * s,
+  ),
+  child: Container(
+    height: 38 * s,
+    decoration: BoxDecoration(
+      color: AppColors.surfaceContainerLowest,
+      borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium * s),
+      border: Border.all(
+        color: _searchController.text.isNotEmpty
+            ? AppColors.borderFocus
+            : Colors.transparent,
+        width: AppDesignSystem.borderThick * s,
       ),
-      child: Container(
-        height: 44 * s,
-        decoration: BoxDecoration(
-          color: AppColors.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium * s),
-          border: Border.all(
+    ),
+    child: TextField(
+      controller: _searchController,
+      style: AppTypography.body(context, color: AppColors.textPrimary),
+      textAlignVertical: TextAlignVertical.center, // teks center VERTIKAL
+      decoration: InputDecoration(
+        isDense: true,
+        border: InputBorder.none,
+        contentPadding: EdgeInsets.zero, // wajib supaya vertical center akurat
+
+        hintText: 'Search surah, juz, or page...',
+        hintStyle: AppTypography.body(
+          context,
+          color: AppColors.textHint,
+          weight: AppTypography.regular,
+        ),
+
+        // PREFIX ICON - IKON CENTER SECARA VERTIKAL
+        prefixIcon: Padding(
+          padding: EdgeInsets.only(left: AppDesignSystem.space12 * s),
+          child: Icon(
+            Icons.search_rounded,
             color: _searchController.text.isNotEmpty
-                ? AppColors.borderFocus
-                : Colors.transparent,
-            width: AppDesignSystem.borderThick * s,
+                ? AppColors.primary
+                : AppColors.textTertiary,
+            size: AppDesignSystem.iconMedium * s,
           ),
         ),
-        child: TextField(
-          controller: _searchController,
-          style: AppTypography.body(context, color: AppColors.textPrimary),
-          decoration: InputDecoration(
-            hintText: 'Search surah, juz, or page...',
-            hintStyle: AppTypography.body(
-              context,
-              color: AppColors.textHint,
-              weight: AppTypography.regular,
-            ),
-            prefixIcon: Padding(
-              padding: EdgeInsets.all(AppDesignSystem.space12 * s),
-              child: Icon(
-                Icons.search_rounded,
-                color: _searchController.text.isNotEmpty
-                    ? AppColors.primary
-                    : AppColors.textTertiary,
-                size: AppDesignSystem.iconMedium * s,
-              ),
-            ),
-            suffixIcon: _searchController.text.isNotEmpty
-                ? IconButton(
-                    icon: Icon(
-                      Icons.close_rounded,
-                      color: AppColors.textTertiary,
-                      size: AppDesignSystem.iconMedium * s,
-                    ),
-                    onPressed: () {
-                      AppHaptics.light();
-                      _searchController.clear();
-                      setState(() {
-                        _isSearching = false;
-                        _searchResults = [];
-                      });
-                    },
-                    padding: EdgeInsets.zero,
-                    splashRadius: 20 * s,
-                  )
-                : null,
-            border: InputBorder.none,
-            contentPadding: EdgeInsets.symmetric(
-              vertical: AppDesignSystem.space12 * s,
-            ),
-            isDense: true,
-          ),
+
+        // agar prefixIcon tidak ter-stretch tinggi
+        prefixIconConstraints: BoxConstraints(
+          minWidth: 0,
+          minHeight: 0,
+        ),
+
+        // SUFFIX ICON - CLEAR BUTTON CENTER VERTIKAL
+        suffixIcon: _searchController.text.isNotEmpty
+            ? Padding(
+                padding: EdgeInsets.only(right: AppDesignSystem.space12 * s),
+                child: IconButton(
+                  icon: Icon(
+                    Icons.close_rounded,
+                    color: AppColors.textTertiary,
+                    size: AppDesignSystem.iconMedium * s,
+                  ),
+                  onPressed: () {
+                    AppHaptics.light();
+                    _searchController.clear();
+                    setState(() {
+                      _isSearching = false;
+                      _searchResults = [];
+                    });
+                  },
+                  padding: EdgeInsets.zero,
+                  splashRadius: 20 * s,
+                ),
+              )
+            : null,
+
+        suffixIconConstraints: BoxConstraints(
+          minWidth: 0,
+          minHeight: 0,
         ),
       ),
-    );
+    ),
+  ),
+);
+
+
   }
 
   // ==================== SEGMENTED BUTTON TAB BAR ====================
@@ -323,7 +343,6 @@ class _SurahListPageState extends State<SurahListPage> {
       color: AppColors.surface,
       padding: EdgeInsets.symmetric(
         horizontal: AppDesignSystem.space20 * s,
-        vertical: AppDesignSystem.space12 * s,
       ),
       child: Column(
         children: [
