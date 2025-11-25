@@ -13,14 +13,22 @@ class SttPage extends StatelessWidget {
   final int? suratId;
   final int? pageId;
   final int? juzId;
+  final Map<String, dynamic>? resumeSession; // ✅ NEW: Resume parameter
 
-  const SttPage({Key? key, this.suratId, this.pageId, this.juzId})
-    : assert(
+  const SttPage({
+    Key? key, 
+    this.suratId, 
+    this.pageId, 
+    this.juzId,
+    this.resumeSession, // ✅ NEW
+  }) : assert(
+        // ✅ Allow resumeSession OR one of the navigation params
+        resumeSession != null || 
         (suratId != null ? 1 : 0) +
                 (pageId != null ? 1 : 0) +
                 (juzId != null ? 1 : 0) ==
             1,
-        'Exactly one of suratId, pageId, or juzId must be provided',
+        'Provide either resumeSession OR exactly one of suratId, pageId, or juzId',
       ),
       super(key: key);
 
@@ -30,12 +38,34 @@ Widget build(BuildContext context) {
     providers: [
       ChangeNotifierProvider(
         create: (_) {
+          // ✅ Extract suratId from resumeSession if provided
+          int? effectiveSuratId = suratId;
+          int? effectivePageId = pageId;
+          int? effectiveJuzId = juzId;
+          
+          if (resumeSession != null) {
+            effectiveSuratId = resumeSession!['surah_id'] as int?;
+            // Could also get page/juz from session if needed
+          }
+          
           final controller = SttController(
-            suratId: suratId,
-            pageId: pageId,
-            juzId: juzId,
+            suratId: effectiveSuratId,
+            pageId: effectivePageId,
+            juzId: effectiveJuzId,
           );
-          Future.microtask(() => controller.initializeApp());
+          
+          // ✅ Initialize app first, then resume if session provided
+          Future.microtask(() async {
+            await controller.initializeApp();
+            
+            // ✅ Auto-resume if session provided
+            if (resumeSession != null) {
+              print('🔄 SttPage: Auto-resuming session...');
+              await Future.delayed(const Duration(milliseconds: 500));
+              await controller.resumeFromSession(resumeSession!);
+            }
+          });
+          
           return controller;
         },
       ),

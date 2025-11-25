@@ -4,6 +4,9 @@ import 'package:cuda_qurani/core/design_system/app_design_system.dart';
 import 'package:cuda_qurani/screens/main/home/screens/all_session_page.dart';
 import 'package:cuda_qurani/screens/main/home/widgets/navigation_bar.dart';
 import 'package:cuda_qurani/providers/auth_provider.dart';
+import 'package:cuda_qurani/services/supabase_service.dart'; // ✅ NEW
+import 'package:cuda_qurani/services/auth_service.dart'; // ✅ NEW
+import 'package:cuda_qurani/screens/main/stt/stt_page.dart'; // ✅ NEW: For navigation
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -23,6 +26,43 @@ class _HomePageState extends State<HomePage> {
   int _completionPercentage = 2;
   int _memorizedPercentage = 0;
   String _engagementTime = "1:33:26";
+  
+  // ✅ NEW: Backend integration
+  final SupabaseService _supabaseService = SupabaseService();
+  final AuthService _authService = AuthService();
+  Map<String, dynamic>? _latestSession;
+  bool _isLoadingSession = true;
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadLatestSession(); // ✅ Load session on init
+  }
+  
+  /// ✅ NEW: Load latest resumable session from backend
+  Future<void> _loadLatestSession() async {
+    if (!_authService.isAuthenticated) {
+      setState(() => _isLoadingSession = false);
+      return;
+    }
+    
+    final userUuid = _authService.userId;
+    if (userUuid == null) {
+      setState(() => _isLoadingSession = false);
+      return;
+    }
+    
+    try {
+      final session = await _supabaseService.getResumableSession(userUuid);
+      setState(() {
+        _latestSession = session;
+        _isLoadingSession = false;
+      });
+    } catch (e) {
+      print('Error loading latest session: $e');
+      setState(() => _isLoadingSession = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -102,12 +142,82 @@ class _HomePageState extends State<HomePage> {
 
   // ==================== LATEST SESSION CARD ====================
   Widget _buildLatestSession(BuildContext context) {
+    // ✅ Show loading state
+    if (_isLoadingSession) {
+      return Container(
+        padding: AppPadding.card(context),
+        decoration: AppComponentStyles.card(
+          color: AppColors.surface,
+          borderRadius: AppDesignSystem.radiusLarge,
+          borderColor: AppColors.borderLight,
+          borderWidth: AppDesignSystem.borderNormal,
+          shadow: true,
+        ),
+        child: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+    
+    // ✅ No session found
+    if (_latestSession == null) {
+      return Container(
+        padding: AppPadding.card(context),
+        decoration: AppComponentStyles.card(
+          color: AppColors.surface,
+          borderRadius: AppDesignSystem.radiusLarge,
+          borderColor: AppColors.borderLight,
+          borderWidth: AppDesignSystem.borderNormal,
+          shadow: true,
+        ),
+        child: Column(
+          children: [
+            const Icon(Icons.book_outlined, size: 48, color: AppColors.textTertiary),
+            AppMargin.gapSmall(context),
+            Text(
+              'No recent session',
+              style: AppTypography.body(context, color: AppColors.textTertiary),
+            ),
+            AppMargin.gapSmall(context),
+            Text(
+              'Start your first recitation',
+              style: AppTypography.caption(context),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    // ✅ Extract session data from backend
+    final surahId = _latestSession!['surah_id'] ?? 0;
+    final ayah = _latestSession!['ayah'] ?? 0;
+    final position = _latestSession!['position'] ?? 0;
+    final status = _latestSession!['status'] ?? 'unknown';
+    final updatedAt = _latestSession!['updated_at'] ?? '';
+    
+    // Calculate time ago
+    String timeAgo = 'Just now';
+    try {
+      final updated = DateTime.parse(updatedAt);
+      final diff = DateTime.now().difference(updated);
+      if (diff.inMinutes < 60) {
+        timeAgo = '${diff.inMinutes} min ago';
+      } else if (diff.inHours < 24) {
+        timeAgo = '${diff.inHours} hour${diff.inHours > 1 ? 's' : ''} ago';
+      } else {
+        timeAgo = '${diff.inDays} day${diff.inDays > 1 ? 's' : ''} ago';
+      }
+    } catch (e) {
+      // Keep default
+    }
+    
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
           AppHaptics.light();
           // Navigate to continue reading
+          _resumeSession();
         },
         borderRadius: BorderRadius.circular(AppDesignSystem.radiusLarge),
         splashColor: AppComponentStyles.rippleColor,
@@ -133,14 +243,14 @@ class _HomePageState extends State<HomePage> {
                       Container(
                         width: AppDesignSystem.space6,
                         height: AppDesignSystem.space6,
-                        decoration: const BoxDecoration(
-                          color: AppColors.primary,
+                        decoration: BoxDecoration(
+                          color: status == 'paused' ? AppColors.warning : AppColors.primary,
                           shape: BoxShape.circle,
                         ),
                       ),
                       AppMargin.gapHSmall(context),
                       Text(
-                        'LATEST SESSION',
+                        status == 'paused' ? 'PAUSED SESSION' : 'LATEST SESSION',
                         style: AppTypography.overline(context),
                       ),
                     ],
@@ -187,12 +297,12 @@ class _HomePageState extends State<HomePage> {
               AppMargin.gap(context),
               // Surah Title
               Text(
-                'Surah Ya-sin',
+                'Surah $surahId',
                 style: AppTypography.h2(context, weight: AppTypography.bold),
               ),
               AppMargin.gapSmall(context),
               Text(
-                '1-45 · 9 min ago',
+                'Ayah $ayah, Word ${position + 1} · $timeAgo',
                 style: AppTypography.caption(context),
               ),
               AppMargin.gap(context),
@@ -202,7 +312,7 @@ class _HomePageState extends State<HomePage> {
                 child: OutlinedButton(
                   onPressed: () {
                     AppHaptics.medium();
-                    // Continue reading action
+                    _resumeSession();
                   },
                   style: AppComponentStyles.secondaryButton(context).copyWith(
                     side: MaterialStateProperty.all(
@@ -227,6 +337,41 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
     );
+  }
+  
+  /// ✅ NEW: Resume session action
+  Future<void> _resumeSession() async {
+    if (_latestSession == null) return;
+    
+    try {
+      final surahId = _latestSession!['surah_id'] as int;
+      final ayah = _latestSession!['ayah'] as int?;
+      final position = _latestSession!['position'] as int?;
+      
+      print('▶️ Navigating to resume session:');
+      print('   Surah: $surahId');
+      print('   Ayah: $ayah');
+      print('   Position: $position');
+      
+      // ✅ Navigate to STT page with resume session
+      await Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => SttPage(
+            resumeSession: _latestSession, // ✅ Pass session data
+          ),
+        ),
+      );
+      
+    } catch (e) {
+      print('❌ Failed to resume session: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to resume: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   // ==================== STREAK SECTION ====================
