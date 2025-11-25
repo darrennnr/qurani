@@ -14,6 +14,8 @@ import '../utils/constants.dart';
 import '../utils/logger.dart';
 import 'package:cuda_qurani/services/audio_service.dart';
 import 'package:cuda_qurani/services/websocket_service.dart';
+import 'package:cuda_qurani/services/supabase_service.dart'; // ✅ NEW: For session management
+import 'package:cuda_qurani/services/auth_service.dart'; // ✅ NEW: For user UUID
 import 'package:cuda_qurani/config/app_config.dart';
 import 'package:cuda_qurani/services/metadata_cache_service.dart';
 
@@ -44,6 +46,12 @@ class SttController with ChangeNotifier {
   // Services
   final QuranService _sqliteService = QuranService();
   final AppLogger appLogger = AppLogger();
+  final SupabaseService _supabaseService = SupabaseService(); // ✅ NEW
+  final AuthService _authService = AuthService(); // ✅ NEW
+  
+  // ✅ NEW: Resumable session detection
+  bool _hasResumableSession = false;
+  bool get hasResumableSession => _hasResumableSession;
 
   // Core State
   bool _isLoading = true;
@@ -134,6 +142,9 @@ ListeningAudioService? get listeningAudioService => _listeningAudioService;
     _isLoading = true;
     _errorMessage = '';
     notifyListeners();
+    
+    // ✅ NEW: Check for resumable session
+    await _checkForResumableSession();
 
     try {
       await _sqliteService.initialize();
@@ -1226,7 +1237,7 @@ Future<void> resumeListening() async {
     }
   }
 
-  void _handleWebSocketMessage(Map<String, dynamic> message) {
+  Future<void> _handleWebSocketMessage(Map<String, dynamic> message) async {
     final type = message['type'];
     appLogger.log('WS_MESSAGE', 'Received: $type');
     print('ðŸ”” STT CONTROLLER: Received message type: $type');
@@ -1384,6 +1395,192 @@ Future<void> resumeListening() async {
         _errorMessage = message['message'];
         notifyListeners();
         break;
+
+      // ✅ NEW: Handle paused message from backend
+      case 'paused':
+        final pausedSessionId = message['session_id'];
+        final pausedSurah = message['surah'] ?? 0;
+        final pausedAyah = message['ayah'] ?? 0;
+        final pausedPosition = message['position'] ?? 0;
+        
+        print('⏸️ STT: Session PAUSED');
+        print('   Session ID: $pausedSessionId');
+        print('   Location: Surah $pausedSurah, Ayah $pausedAyah, Word ${pausedPosition + 1}');
+        
+        _sessionId = pausedSessionId;
+        _isRecording = false;
+        
+        // Show pause confirmation message
+        _errorMessage = 'Session paused. You can resume anytime.';
+        notifyListeners();
+        
+        // Clear message after 3 seconds
+        Future.delayed(const Duration(seconds: 3), () {
+          if (_errorMessage == 'Session paused. You can resume anytime.') {
+            _errorMessage = '';
+            notifyListeners();
+          }
+        });
+        break;
+
+      // ✅ NEW: Handle resumed message from backend
+      case 'resumed':
+        final resumedSurah = message['surah'] ?? 0;
+        final resumedAyah = message['ayah'] ?? 0;
+        final resumedPosition = message['position'] ?? 0;
+        
+        print('▶️ STT: Session RESUMED');
+        print('   Location: Surah $resumedSurah, Ayah $resumedAyah, Word ${resumedPosition + 1}');
+        
+        // ✅ CRITICAL: Navigate to the correct PAGE for this ayah
+        try {
+          final targetPage = await LocalDatabaseService.getPageNumber(
+            resumedSurah, 
+            resumedAyah,
+          );
+          
+          print('📍 Resume target page: $targetPage (for Surah $resumedSurah, Ayah $resumedAyah)');
+          
+          // Update page if different from current
+          if (_currentPage != targetPage) {
+            print('📄 Navigating from page $_currentPage to page $targetPage');
+            _currentPage = targetPage;
+            _listViewCurrentPage = targetPage;
+            
+            // Load ayats for the target page
+            await _loadCurrentPageAyats();
+          }
+        } catch (e) {
+          print('⚠️ Failed to get page number: $e');
+          // Continue anyway with current page
+        }
+        
+        // Update current ayat index
+        _currentAyatIndex = _ayatList.indexWhere((a) => a.ayah == resumedAyah);
+        
+        // If ayat not found in current list, try to find it
+        if (_currentAyatIndex == -1) {
+          print('⚠️ Ayah $resumedAyah not found in current ayat list');
+          // Try to find any ayat from the resumed surah
+          _currentAyatIndex = _ayatList.indexWhere((a) => a.surah_id == resumedSurah);
+          if (_currentAyatIndex == -1) {
+            print('⚠️ Surah $resumedSurah not found, defaulting to index 0');
+            _currentAyatIndex = 0;
+          }
+        }
+        
+        print('📍 Resume ayat index: $_currentAyatIndex');
+        
+        // Restore word status map if provided
+        if (message['word_status_map'] != null) {
+          final Map<String, dynamic> backendWordMap = message['word_status_map'];
+          backendWordMap.forEach((ayahKey, wordMap) {
+            final int ayahNum = int.tryParse(ayahKey) ?? -1;
+            if (ayahNum > 0 && wordMap is Map) {
+              _wordStatusMap[ayahNum] = {};
+              (wordMap as Map<String, dynamic>).forEach((wordIndexKey, status) {
+                final int wordIndex = int.tryParse(wordIndexKey) ?? -1;
+                if (wordIndex >= 0) {
+                  _wordStatusMap[ayahNum]![wordIndex] = _mapWordStatus(status.toString());
+                }
+              });
+            }
+          });
+          print('✅ Restored word status for ${_wordStatusMap.length} ayahs');
+        }
+        
+        // ✅ Restore verse status (ayah-level colors: matched/mismatched)
+        if (message['verse_status_map'] != null) {
+          final Map<String, dynamic> verseStatusMap = message['verse_status_map'] as Map<String, dynamic>;
+          verseStatusMap.forEach((ayahKey, status) {
+            final int ayahNum = int.tryParse(ayahKey) ?? -1;
+            if (ayahNum > 0) {
+              // Store verse status for UI display
+              // This is used for ayah-level coloring (entire ayah hijau/merah)
+              // You can add this to your state if needed
+              print('✅ Restored verse status: Ayah $ayahNum = $status');
+            }
+          });
+        }
+        
+        // ✅ Restore tartib status
+        if (message['tartib_status'] != null) {
+          final Map<String, dynamic> tartibMap = message['tartib_status'] as Map<String, dynamic>;
+          tartibMap.forEach((ayahKey, status) {
+            final int ayahNum = int.tryParse(ayahKey) ?? -1;
+            if (ayahNum > 0) {
+              final String statusStr = status.toString().toLowerCase();
+              switch (statusStr) {
+                case 'correct':
+                  _tartibStatus[ayahNum] = TartibStatus.correct;
+                  break;
+                case 'skipped':
+                  _tartibStatus[ayahNum] = TartibStatus.skipped;
+                  break;
+                default:
+                  _tartibStatus[ayahNum] = TartibStatus.unread;
+              }
+            }
+          });
+          print('✅ Restored tartib status for ${_tartibStatus.length} ayahs');
+        }
+        
+        _errorMessage = 'Session resumed: Surah $resumedSurah, Ayah $resumedAyah, Word ${resumedPosition + 1}';
+        notifyListeners();
+        
+        // Clear message after 3 seconds
+        Future.delayed(const Duration(seconds: 3), () {
+          if (_errorMessage == 'Session resumed: Surah $resumedSurah, Ayah $resumedAyah, Word ${resumedPosition + 1}') {
+            _errorMessage = '';
+            notifyListeners();
+          }
+        });
+        break;
+
+      // ✅ NEW: Handle summary message from backend
+      case 'summary':
+        print('📊 STT: Received session SUMMARY');
+        
+        final summaryAyah = message['ayah'] ?? 0;
+        final wordResults = message['word_results'] as List?;
+        final accuracy = message['accuracy'] as Map<String, dynamic>?;
+        
+        if (accuracy != null) {
+          final benar = accuracy['benar'] ?? 0;
+          final salah = accuracy['salah'] ?? 0;
+          final total = accuracy['total'] ?? 0;
+          final accuracyPct = accuracy['accuracy'] ?? 0.0;
+          
+          print('   ✅ Benar: $benar');
+          print('   ❌ Salah: $salah');
+          print('   📈 Total: $total');
+          print('   🎯 Accuracy: ${accuracyPct.toStringAsFixed(1)}%');
+        }
+        
+        if (wordResults != null) {
+          print('   📝 Word results: ${wordResults.length} words');
+        }
+        
+        _isRecording = false;
+        notifyListeners();
+        break;
+
+      // ✅ NEW: Handle completed message from backend
+      case 'completed':
+        print('✅ STT: Session COMPLETED');
+        
+        _isRecording = false;
+        _errorMessage = 'Session completed successfully!';
+        notifyListeners();
+        
+        // Clear message after 3 seconds
+        Future.delayed(const Duration(seconds: 3), () {
+          if (_errorMessage == 'Session completed successfully!') {
+            _errorMessage = '';
+            notifyListeners();
+          }
+        });
+        break;
     }
   }
 
@@ -1402,6 +1599,105 @@ Future<void> resumeListening() async {
         return WordStatus.skipped;
       default:
         return WordStatus.pending;
+    }
+  }
+
+  /// ✅ NEW: Resume from existing session
+  Future<void> resumeFromSession(Map<String, dynamic> session) async {
+    print('▶️ Resuming session: ${session['session_id']}');
+    print('   Location: Surah ${session['surah_id']}, Ayah ${session['ayah']}, Word ${(session['position'] ?? 0) + 1}');
+    
+    try {
+      // Connect WebSocket if not connected
+      if (!_webSocketService.isConnected) {
+        print('🔌 Connecting to WebSocket...');
+        await _webSocketService.connect();
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
+      
+      // Send resume request
+      _webSocketService.sendResumeSession(
+        sessionId: session['session_id'],
+        surahNumber: session['surah_id'],
+        position: session['position'],
+      );
+      
+      print('✅ Resume request sent, waiting for backend response...');
+      
+    } catch (e) {
+      print('❌ Failed to resume session: $e');
+      _errorMessage = 'Failed to resume session: $e';
+      notifyListeners();
+    }
+  }
+
+  /// ✅ NEW: Check for resumable session (internal)
+  Future<void> _checkForResumableSession() async {
+    try {
+      if (!_authService.isAuthenticated) {
+        print('⚠️ User not authenticated, no resumable session');
+        _hasResumableSession = false;
+        return;
+      }
+      
+      final userUuid = _authService.userId;
+      if (userUuid == null) {
+        print('⚠️ User UUID is null');
+        _hasResumableSession = false;
+        return;
+      }
+      
+      print('🔍 Checking for resumable session...');
+      final latestSession = await _supabaseService.getResumableSession(userUuid);
+      
+      if (latestSession != null) {
+        print('✅ Found resumable session: ${latestSession['session_id']}');
+        print('   Surah: ${latestSession['surah_id']}, Ayah: ${latestSession['ayah']}');
+        _hasResumableSession = true;
+      } else {
+        print('⚠️ No resumable session found');
+        _hasResumableSession = false;
+      }
+      
+      notifyListeners();
+    } catch (e) {
+      print('❌ Error checking for resumable session: $e');
+      _hasResumableSession = false;
+      notifyListeners();
+    }
+  }
+  
+  /// ✅ NEW: Resume last session (called by button)
+  Future<void> resumeLastSession() async {
+    try {
+      if (!_authService.isAuthenticated) {
+        print('⚠️ Cannot resume: User not authenticated');
+        return;
+      }
+      
+      final userUuid = _authService.userId;
+      if (userUuid == null) {
+        print('⚠️ Cannot resume: User UUID is null');
+        return;
+      }
+      
+      print('📡 Fetching resumable session...');
+      final session = await _supabaseService.getResumableSession(userUuid);
+      
+      if (session != null) {
+        print('✅ Resuming session: ${session['session_id']}');
+        await resumeFromSession(session);
+        _hasResumableSession = false;  // Clear flag after resume
+        notifyListeners();
+      } else {
+        print('⚠️ No session to resume');
+        _errorMessage = 'No paused session found';
+        notifyListeners();
+      }
+    } catch (e) {
+      print('❌ Error resuming last session: $e');
+      _errorMessage = 'Failed to resume session: $e';
+      notifyListeners();
     }
   }
 

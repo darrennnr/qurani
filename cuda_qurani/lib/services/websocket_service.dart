@@ -271,17 +271,60 @@ class WebSocketService {
     }
   }
   
-  void sendRecoverSession(String sessionId) {
+  /// ✅ NEW: Send pause recording (session can be resumed later)
+  void sendPauseRecording() {
     if (_isConnected && _channel != null) {
       final message = jsonEncode({
-        'type': 'recover',
-        'session_id': sessionId,
+        'type': 'pause',
       });
       _channel!.sink.add(message);
-      print('🔁 WebSocket: Sent SESSION RECOVERY request (session_id: $sessionId)');
+      print('⏸️ WebSocket: Sent PAUSE command (Total chunks sent: $_audioChunksSent)');
     } else {
-      print('❌ Cannot recover session: WebSocket not connected');
+      print('❌ Cannot pause recording: WebSocket not connected');
     }
+  }
+  
+  /// ✅ FIX: Resume session sesuai backend (type: "start" + resume_session_id)
+  void sendResumeSession({
+    required String sessionId,
+    required int surahNumber,
+    int? position,
+  }) {
+    if (_isConnected && _channel != null) {
+      final messageData = {
+        'type': 'start',  // ✅ Backend expects "start" not "recover"
+        'surah': surahNumber,
+        'resume_session_id': sessionId,  // ✅ Backend key untuk resume
+      };
+      
+      // Add position if provided
+      if (position != null) {
+        messageData['position'] = position;
+      }
+      
+      // ✅ Add user info if authenticated
+      if (_authService.isAuthenticated) {
+        messageData['user_uuid'] = _authService.userId ?? '';
+        messageData['user_email'] = _authService.currentUser?.email ?? '';
+      }
+      
+      final message = jsonEncode(messageData);
+      _channel!.sink.add(message);
+      print('🔁 WebSocket: Sent RESUME request (session_id: $sessionId, surah: $surahNumber, position: $position)');
+    } else {
+      print('❌ Cannot resume session: WebSocket not connected');
+      if (_shouldAutoReconnect && !_isReconnecting) {
+        _scheduleReconnection();
+      }
+    }
+  }
+  
+  /// @deprecated Use sendResumeSession() instead (backward compatibility)
+  void sendRecoverSession(String sessionId) {
+    print('⚠️ DEPRECATED: sendRecoverSession() is deprecated, use sendResumeSession() instead');
+    // For backward compatibility, try to resume with session ID only
+    // This might not work properly without surah number
+    sendResumeSession(sessionId: sessionId, surahNumber: 1);
   }
   
   void sendHeartbeat() {
