@@ -374,7 +374,6 @@ class _HomePageState extends State<HomePage> {
       await Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => SttPage(
-            resumeSession: _latestSession, // ✅ Pass session data
           ),
         ),
       );
