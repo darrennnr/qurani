@@ -41,25 +41,42 @@ class _HomePageState extends State<HomePage> {
   
   /// ✅ NEW: Load latest resumable session from backend
   Future<void> _loadLatestSession() async {
+    print('🔄 HOME: Loading latest session...');
+    
     if (!_authService.isAuthenticated) {
+      print('⚠️ HOME: User not authenticated');
       setState(() => _isLoadingSession = false);
       return;
     }
     
     final userUuid = _authService.userId;
+    print('👤 HOME: User UUID: $userUuid');
+    
     if (userUuid == null) {
+      print('⚠️ HOME: User UUID is null');
       setState(() => _isLoadingSession = false);
       return;
     }
     
     try {
+      print('📡 HOME: Fetching session from database...');
       final session = await _supabaseService.getResumableSession(userUuid);
+      
+      if (session != null) {
+        print('✅ HOME: Session found!');
+        print('   Session ID: ${session['session_id']}');
+        print('   Surah: ${session['surah_id']}, Ayah: ${session['ayah']}');
+        print('   Status: ${session['status']}');
+      } else {
+        print('⚠️ HOME: No resumable session found');
+      }
+      
       setState(() {
         _latestSession = session;
         _isLoadingSession = false;
       });
     } catch (e) {
-      print('Error loading latest session: $e');
+      print('❌ HOME: Error loading latest session: $e');
       setState(() => _isLoadingSession = false);
     }
   }

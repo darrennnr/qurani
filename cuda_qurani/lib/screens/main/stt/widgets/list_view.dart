@@ -512,7 +512,8 @@ class _CompleteAyahWidget extends StatelessWidget {
                 final hasNumber = RegExp(r'[Ù -Ù©0-9]').hasMatch(word.text);
 
                 // ========== PRIORITAS 1: Background color dari wordStatus ==========
-                if (wordStatus != null && controller.isRecording) {
+                // ✅ FIX: Show colors even when not recording (for resume)
+                if (wordStatus != null) {
                   switch (wordStatus) {
                     case WordStatus.matched:
                       wordBg = correctColor.withOpacity(0.4); // ðŸŸ© HIJAU

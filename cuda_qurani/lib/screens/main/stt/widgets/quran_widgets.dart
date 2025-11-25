@@ -266,15 +266,31 @@ class QuranBottomBar extends StatelessWidget {
                     width: buttonSize,
                     height: buttonSize,
                     decoration: BoxDecoration(
-                      color: controller.isRecording ? errorColor : primaryColor,
                       shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          controller.isRecording
+                              ? const Color(0xFFD32F2F)  // Red - Stop
+                              : (controller.hasResumableSession
+                                  ? const Color(0xFFFF9800)  // Orange - Resume
+                                  : primaryColor),  // Blue - Start New
+                          controller.isRecording
+                              ? const Color(0xFFB71C1C)
+                              : (controller.hasResumableSession
+                                  ? const Color(0xFFF57C00)
+                                  : primaryColor.withOpacity(0.8)),
+                        ],
+                      ),
                       boxShadow: [
                         BoxShadow(
-                          color:
-                              (controller.isRecording
-                                      ? errorColor
-                                      : primaryColor)
-                                  .withOpacity(0.3),
+                          color: (controller.isRecording
+                                  ? const Color(0xFFD32F2F)
+                                  : (controller.hasResumableSession
+                                      ? const Color(0xFFFF9800)
+                                      : primaryColor))
+                              .withOpacity(0.3),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),
@@ -285,14 +301,23 @@ class QuranBottomBar extends StatelessWidget {
                       child: InkWell(
                         borderRadius: BorderRadius.circular(buttonSize / 2),
                         onTap: () async {
-                          print('🎤 BUTTON: Record button pressed (isRecording: ${controller.isRecording})');
+                          print('🎤 BUTTON: Record button pressed');
+                          print('   isRecording: ${controller.isRecording}');
+                          print('   hasResumableSession: ${controller.hasResumableSession}');
                           
                           if (controller.isRecording) {
+                            // Stop recording
                             print('🛑 BUTTON: Stopping recording...');
                             await controller.stopRecording();
                             print('✅ BUTTON: Recording stopped');
+                          } else if (controller.hasResumableSession) {
+                            // Resume session
+                            print('▶️ BUTTON: Resuming session...');
+                            await controller.resumeLastSession();
+                            print('✅ BUTTON: Session resumed');
                           } else {
-                            print('▶️ BUTTON: Starting recording...');
+                            // Start new recording
+                            print('▶️ BUTTON: Starting new recording...');
                             await controller.startRecording();
                             print('✅ BUTTON: Recording started');
                           }
@@ -301,8 +326,12 @@ class QuranBottomBar extends StatelessWidget {
                           child: AnimatedSwitcher(
                             duration: const Duration(milliseconds: 200),
                             child: Icon(
-                              controller.isRecording ? Icons.stop : Icons.mic,
-                              key: ValueKey(controller.isRecording),
+                              controller.isRecording
+                                  ? Icons.stop
+                                  : (controller.hasResumableSession
+                                      ? Icons.play_arrow  // Play icon for resume
+                                      : Icons.mic),  // Mic icon for new
+                              key: ValueKey('${controller.isRecording}_${controller.hasResumableSession}'),
                               color: Colors.white,
                               size: iconSize,
                             ),
