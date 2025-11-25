@@ -24,102 +24,103 @@ class SttPage extends StatelessWidget {
       ),
       super(key: key);
 
-@override
-Widget build(BuildContext context) {
-  return MultiProvider(
-    providers: [
-      ChangeNotifierProvider(
-        create: (_) {
-          final controller = SttController(
-            suratId: suratId,
-            pageId: pageId,
-            juzId: juzId,
-          );
-          Future.microtask(() => controller.initializeApp());
-          return controller;
-        },
-      ),
-      Provider(create: (_) => QuranService()),
-    ],
-    child: Consumer<SttController>(
-      builder: (context, controller, child) {
-        return Scaffold(
-          backgroundColor: backgroundColor,
-          extendBodyBehindAppBar: true, // ✅ Key: Body extends behind AppBar
-          appBar: const QuranAppBar(),
-          body: controller.isLoading
-              ? const SizedBox.shrink()
-              : controller.errorMessage.isNotEmpty
-              ? Column(
-                  children: [
-                    // Error banner below AppBar
-                    SizedBox(height: kToolbarHeight * 0.86),
-                    Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: MediaQuery.of(context).size.width * 0.04,
-                        vertical: MediaQuery.of(context).size.height * 0.015,
-                      ),
-                      color: errorColor.withOpacity(0.9),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.warning,
-                            color: Colors.white,
-                            size: MediaQuery.of(context).size.width * 0.05,
-                          ),
-                          SizedBox(
-                            width: MediaQuery.of(context).size.width * 0.02,
-                          ),
-                          Expanded(
-                            child: Text(
-                              controller.errorMessage,
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: MediaQuery.of(context).size.width * 0.035,
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            icon: Icon(
-                              Icons.close,
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) {
+            final controller = SttController(
+              suratId: suratId,
+              pageId: pageId,
+              juzId: juzId,
+            );
+            Future.microtask(() => controller.initializeApp());
+            return controller;
+          },
+        ),
+        Provider(create: (_) => QuranService()),
+      ],
+      child: Consumer<SttController>(
+        builder: (context, controller, child) {
+          return Scaffold(
+            backgroundColor: backgroundColor,
+            extendBodyBehindAppBar: true, // ✅ Key: Body extends behind AppBar
+            appBar: const QuranAppBar(),
+            body: controller.isLoading
+                ? const SizedBox.shrink()
+                : (controller.errorMessage?.isNotEmpty ?? false)
+                ? Column(
+                    children: [
+                      // Error banner below AppBar
+                      SizedBox(height: kToolbarHeight * 0.86),
+                      Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: MediaQuery.of(context).size.width * 0.04,
+                          vertical: MediaQuery.of(context).size.height * 0.015,
+                        ),
+                        color: errorColor.withOpacity(0.9),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.warning,
                               color: Colors.white,
                               size: MediaQuery.of(context).size.width * 0.05,
                             ),
-                            onPressed: controller.clearError,
-                          ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: controller.toggleUIVisibility,
-                        child: Column(
-                          children: [
-                            Expanded(child: _buildMainContent()),
-                            if (controller.showLogs && controller.isUIVisible)
-                              const QuranLogsPanel(),
+                            SizedBox(
+                              width: MediaQuery.of(context).size.width * 0.02,
+                            ),
+                            Expanded(
+                              child: Text(
+                                controller.errorMessage ?? 'An error occurred',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize:
+                                      MediaQuery.of(context).size.width * 0.035,
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                Icons.close,
+                                color: Colors.white,
+                                size: MediaQuery.of(context).size.width * 0.05,
+                              ),
+                              onPressed: controller.clearError,
+                            ),
                           ],
                         ),
                       ),
-                    ),
-                  ],
-                )
-              : GestureDetector(
-                  onTap: controller.toggleUIVisibility,
-                  child: Column(
-                    children: [
-                      Expanded(child: _buildMainContent()),
-                      if (controller.showLogs && controller.isUIVisible)
-                        const QuranLogsPanel(),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: controller.toggleUIVisibility,
+                          child: Column(
+                            children: [
+                              Expanded(child: _buildMainContent()),
+                              if (controller.showLogs && controller.isUIVisible)
+                                const QuranLogsPanel(),
+                            ],
+                          ),
+                        ),
+                      ),
                     ],
+                  )
+                : GestureDetector(
+                    onTap: controller.toggleUIVisibility,
+                    child: Column(
+                      children: [
+                        Expanded(child: _buildMainContent()),
+                        if (controller.showLogs && controller.isUIVisible)
+                          const QuranLogsPanel(),
+                      ],
+                    ),
                   ),
-                ),
-        );
-      },
-    ),
-  );
-}
+          );
+        },
+      ),
+    );
+  }
 
   Widget _buildMainContent() {
     return Consumer<SttController>(
@@ -140,34 +141,35 @@ Widget build(BuildContext context) {
   }
 
   Widget _buildQuranText(BuildContext context, SttController controller) {
-  final screenWidth = MediaQuery.of(context).size.width;
-  final margin = screenWidth * 0.01;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final margin = screenWidth * 0.01;
 
-  return Container(
-    margin: EdgeInsets.fromLTRB(margin, 0, margin, 0),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(8),
-    ),
-    child: AnimatedSwitcher(
-      duration: const Duration(milliseconds: 200), // ✅ ADD: Smooth transition
-      switchInCurve: Curves.easeInOut,
-      switchOutCurve: Curves.easeInOut,
-      transitionBuilder: (child, animation) {
-        // ✅ ADD: Fade transition for smooth mode switch
-        return FadeTransition(
-          opacity: animation,
-          child: child,
-        );
-      },
-      child: controller.isQuranMode
-          ? MushafDisplay(
-              key: ValueKey('mushaf_${controller.currentPage}'), // ✅ ADD: Unique key
-            )
-          : QuranListView(
-              key: ValueKey('list_${controller.listViewCurrentPage}'), // ✅ ADD: Unique key
-            ),
-    ),
-  );
-}
+    return Container(
+      margin: EdgeInsets.fromLTRB(margin, 0, margin, 0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200), // ✅ ADD: Smooth transition
+        switchInCurve: Curves.easeInOut,
+        switchOutCurve: Curves.easeInOut,
+        transitionBuilder: (child, animation) {
+          // ✅ ADD: Fade transition for smooth mode switch
+          return FadeTransition(opacity: animation, child: child);
+        },
+        child: controller.isQuranMode
+            ? MushafDisplay(
+                key: ValueKey(
+                  'mushaf_${controller.currentPage}',
+                ), // ✅ ADD: Unique key
+              )
+            : QuranListView(
+                key: ValueKey(
+                  'list_${controller.listViewCurrentPage}',
+                ), // ✅ ADD: Unique key
+              ),
+      ),
+    );
+  }
 }

@@ -1,5 +1,7 @@
+import 'package:cuda_qurani/screens/main/stt/controllers/stt_controller.dart';
 import 'package:cuda_qurani/screens/main/stt/database/db_helper.dart';
 import 'package:cuda_qurani/services/local_database_service.dart';
+import 'package:cuda_qurani/services/reciter_database_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/recitation_provider.dart';
@@ -25,8 +27,17 @@ void main() async {
   // ✅ Pre-initialize ALL databases BEFORE app starts
   await _initializeDatabases();
   await JuzService.initialize();
-
+  await _initializeListeningServices();
   runApp(const MainApp());
+}
+
+Future<void> _initializeListeningServices() async {
+  try {
+    await ReciterDatabaseService.initialize();
+    print('✅ Reciter database initialized');
+  } catch (e) {
+    print('⚠️ Failed to initialize reciter database: $e');
+  }
 }
 
 Future<void> _initializeDatabases() async {

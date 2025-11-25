@@ -5,6 +5,7 @@ import 'package:cuda_qurani/screens/main/home/screens/settings/submenu/language.
 import 'package:cuda_qurani/screens/main/home/screens/settings/submenu/listening.dart';
 import 'package:cuda_qurani/screens/main/home/screens/settings/submenu/marking.dart';
 import 'package:cuda_qurani/screens/main/home/screens/settings/submenu/mistake_feedback.dart';
+import 'package:cuda_qurani/screens/main/home/screens/settings/submenu/mushaf_layout.dart';
 import 'package:cuda_qurani/screens/main/home/screens/settings/submenu/recitation.dart';
 import 'package:cuda_qurani/screens/main/home/screens/settings/submenu/reciters_download.dart';
 import 'package:cuda_qurani/screens/main/home/screens/settings/submenu/reminders.dart';
@@ -224,9 +225,50 @@ class _SettingsPageState extends State<SettingsPage> {
                       _buildSettingItem(
                         icon: Icons.menu_book_outlined,
                         label: 'Mushaf Layout',
-                        onTap: () {
+onTap: () {
                           AppHaptics.light();
-                          // TODO: Navigate to mushaf layout settings
+                          Navigator.pushReplacement(
+                            context,
+                            PageRouteBuilder(
+                              pageBuilder:
+                                  (context, animation, secondaryAnimation) =>
+                                      const MushafLayoutPage(),
+                              transitionsBuilder:
+                                  (
+                                    context,
+                                    animation,
+                                    secondaryAnimation,
+                                    child,
+                                  ) {
+                                    const begin = Offset(-0.03, 0.0);
+                                    const end = Offset.zero;
+                                    const curve = Curves.easeInOut;
+                                    var tween = Tween(
+                                      begin: begin,
+                                      end: end,
+                                    ).chain(CurveTween(curve: curve));
+                                    var offsetAnimation = animation.drive(
+                                      tween,
+                                    );
+                                    var fadeAnimation = animation.drive(
+                                      Tween(
+                                        begin: 0.0,
+                                        end: 1.0,
+                                      ).chain(CurveTween(curve: curve)),
+                                    );
+
+                                    return FadeTransition(
+                                      opacity: fadeAnimation,
+                                      child: SlideTransition(
+                                        position: offsetAnimation,
+                                        child: child,
+                                      ),
+                                    );
+                                  },
+                              transitionDuration:
+                                  AppDesignSystem.durationNormal,
+                            ),
+                          );
                         },
                       ),
                       _buildSettingItem(

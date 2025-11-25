@@ -16,9 +16,7 @@ class AudioService {
     return status.isGranted;
   }
 
-  Future<void> startRecording({
-    required Function(String) onAudioChunk,
-  }) async {
+  Future<void> startRecording({required Function(String) onAudioChunk}) async {
     if (_isRecording) return;
 
     final hasPermission = await checkPermission();
@@ -43,18 +41,20 @@ class AudioService {
         // 🎤 Audio streaming started successfully
         print('🎤 Audio recording started: 16kHz, PCM16, Mono');
         int chunkCount = 0;
-        
+
         _audioStreamSubscription = stream.listen(
           (audioData) {
             chunkCount++;
             // Convert audio data to base64
             final base64Audio = base64Encode(audioData);
-            
+
             // 📊 Log audio chunk info (every 10 chunks to avoid spam)
             if (chunkCount % 10 == 1) {
-              print('🎤 Audio chunk #$chunkCount: ${audioData.length} bytes → ${base64Audio.length} chars (base64)');
+              print(
+                '🎤 Audio chunk #$chunkCount: ${audioData.length} bytes → ${base64Audio.length} chars (base64)',
+              );
             }
-            
+
             onAudioChunk(base64Audio);
           },
           onError: (error) {

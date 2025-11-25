@@ -39,7 +39,7 @@ class AuthService {
     // Listen to auth changes
     authStateChanges.listen((AuthState data) {
       print('🔔 AuthService: Auth state event: ${data.event}');
-      
+
       if (data.session?.user != null) {
         _currentUser = UserModel.fromSupabaseUser(data.session!.user);
         print('✅ User logged in: ${_currentUser!.email}');
@@ -48,7 +48,7 @@ class AuthService {
         print('⚠️ User logged out');
       }
     });
-    
+
     print('✅ AuthService initialized');
   }
 

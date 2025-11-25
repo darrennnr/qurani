@@ -1,9 +1,12 @@
 // lib\screens\main\stt\controllers\stt_controller.dart
 
 import 'dart:async';
+import 'package:cuda_qurani/models/playback_settings_model.dart';
 import 'package:cuda_qurani/models/quran_models.dart';
 import 'package:cuda_qurani/screens/main/home/services/juz_service.dart';
+import 'package:cuda_qurani/services/listening_audio_services.dart';
 import 'package:cuda_qurani/services/local_database_service.dart';
+import 'package:cuda_qurani/services/reciter_database_service.dart';
 import 'package:flutter/material.dart';
 import '../data/models.dart' hide TartibStatus;
 import '../services/quran_service.dart';
@@ -44,7 +47,7 @@ class SttController with ChangeNotifier {
 
   // Core State
   bool _isLoading = true;
-  String _errorMessage = '';
+  String? _errorMessage = '';
   List<AyatData> _ayatList = [];
   int _currentAyatIndex = 0;
   String _suratNameSimple = '';
@@ -59,8 +62,8 @@ class SttController with ChangeNotifier {
   bool _showLogs = false;
   int _currentPage = 1;
   int _listViewCurrentPage = 1;
-bool _isDataLoaded = false; // Prevent unnecessary reloads
-List<AyatData> _currentPageAyats = [];
+  bool _isDataLoaded = false; // Prevent unnecessary reloads
+  List<AyatData> _currentPageAyats = [];
   final ScrollController _scrollController = ScrollController();
 
   // Backend Integration - Recording & WebSocket
@@ -98,7 +101,7 @@ List<AyatData> _currentPageAyats = [];
 
   // Getters for UI
   bool get isLoading => _isLoading;
-  String get errorMessage => _errorMessage;
+  String? get errorMessage => _errorMessage;
   List<AyatData> get ayatList => _ayatList;
   int get currentAyatIndex => _currentAyatIndex;
   int get currentAyatNumber =>
@@ -116,6 +119,15 @@ List<AyatData> _currentPageAyats = [];
   ScrollController get scrollController => _scrollController;
   int get listViewCurrentPage => _listViewCurrentPage;
 
+  // Listening
+  bool _isListeningMode = false;
+PlaybackSettings? _playbackSettings;
+ListeningAudioService? _listeningAudioService;
+StreamSubscription? _verseChangeSubscription;
+StreamSubscription? _wordHighlightSubscription;
+bool get isListeningMode => _isListeningMode;
+PlaybackSettings? get playbackSettings => _playbackSettings;
+ListeningAudioService? get listeningAudioService => _listeningAudioService;
   // ===== INITIALIZATION =====
   Future<void> initializeApp() async {
     appLogger.log('APP_INIT', 'Starting OPTIMIZED page-based initialization');
@@ -130,7 +142,7 @@ List<AyatData> _currentPageAyats = [];
       int targetPage = await _determineTargetPage();
       _currentPage = targetPage;
       _listViewCurrentPage = targetPage;
-_isDataLoaded = false;
+      _isDataLoaded = false;
 
       appLogger.log('APP_INIT', 'Target page determined: $targetPage');
 
@@ -164,6 +176,184 @@ _isDataLoaded = false;
       notifyListeners();
     }
   }
+
+  Future<void> _initializeListeningServices() async {
+  try {
+    await ReciterDatabaseService.initialize();
+    print('✅ Reciter database initialized');
+  } catch (e) {
+    print('⚠️ Failed to initialize reciter database: $e');
+  }
+}
+
+Future<void> startListening(PlaybackSettings settings) async {
+  appLogger.log('LISTENING', 'Starting listening mode with settings: $settings');
+  
+  // 🔄 AUTO-RECONNECT: Same as startRecitation
+  final serviceConnected = _webSocketService.isConnected;
+  _isConnected = serviceConnected;
+  
+  if (!_isConnected) {
+    print('🔌 Not connected, attempting to connect...');
+    _errorMessage = 'Connecting to server...';
+    notifyListeners();
+    
+    try {
+      _webSocketService.enableAutoReconnect();
+      await _webSocketService.connect();
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      if (!_webSocketService.isConnected) {
+        throw Exception('Connection failed after retry');
+      }
+      
+      _isConnected = true;
+      _errorMessage = '';
+      print('✅ Connected successfully!');
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = 'Unable to connect to server. Please check your connection.';
+      _isConnected = false;
+      print('❌ Connection failed: $e');
+      notifyListeners();
+      return;
+    }
+  }
+
+  // 🔒 Final connection check
+  if (!_webSocketService.isConnected) {
+    _errorMessage = 'Connection not stable. Please try again.';
+    notifyListeners();
+    return;
+  }
+
+  try {
+    // 🧹 Clear previous state
+    _tartibStatus.clear();
+    _wordStatusMap.clear();
+    _expectedAyah = settings.startVerse;
+    _sessionId = null;
+    _errorMessage = '';
+    
+    // 🎵 Initialize listening audio service
+    _listeningAudioService = ListeningAudioService();
+    await _listeningAudioService!.initialize(settings);
+    
+    _playbackSettings = settings;
+    _isListeningMode = true;
+    
+    // 📡 Start WebSocket session (same as recite)
+    int recordingSurahId = settings.startSurahId;
+    
+    if (_determinedSurahId != null) {
+      recordingSurahId = _determinedSurahId!;
+    } else if (_ayatList.isNotEmpty) {
+      recordingSurahId = _ayatList.first.surah_id;
+    }
+    
+    print('🚀 Starting WebSocket session for surah $recordingSurahId');
+    _webSocketService.sendStartRecording(recordingSurahId);
+    
+    // 🎧 Subscribe to verse changes
+    _verseChangeSubscription = _listeningAudioService!.currentVerseStream?.listen((verse) {
+      print('📖 Now playing: ${verse.surahId}:${verse.verseNumber}');
+      
+      // Update current ayat index
+      final ayatIndex = _ayatList.indexWhere(
+        (a) => a.surah_id == verse.surahId && a.ayah == verse.verseNumber,
+      );
+      
+      if (ayatIndex >= 0) {
+        _currentAyatIndex = ayatIndex;
+        notifyListeners();
+      }
+    });
+    
+    // 🎨 Subscribe to word highlights (optional - for UI animation)
+    _wordHighlightSubscription = _listeningAudioService!.wordHighlightStream?.listen((wordIndex) {
+      // You can use this to add extra animations
+      print('✨ Highlight word: $wordIndex');
+    });
+    
+    // ▶️ Start playback + streaming to backend
+    await _listeningAudioService!.startPlayback(
+      onAudioChunk: (base64Audio) {
+        if (_webSocketService.isConnected) {
+          _webSocketService.sendAudioChunk(base64Audio);
+        } else {
+          print('⚠️ Warning: Audio chunk lost - WebSocket disconnected');
+        }
+      },
+    );
+    
+    _isRecording = true; // Treat as recording session
+    _hideUnreadAyat = true; // Enable hide unread
+    
+    appLogger.log('LISTENING', 'Listening mode started successfully');
+    notifyListeners();
+    
+  } catch (e) {
+    _errorMessage = 'Failed to start listening: $e';
+    _isListeningMode = false;
+    _isRecording = false;
+    appLogger.log('LISTENING_ERROR', e.toString());
+    print('❌ Start listening failed: $e');
+    notifyListeners();
+  }
+}
+
+/// Stop Listening Mode
+Future<void> stopListening() async {
+  print('🛑 Stopping listening mode...');
+  
+  try {
+    // Stop audio playback
+    await _listeningAudioService?.stopPlayback();
+    
+    // Cancel subscriptions
+    await _verseChangeSubscription?.cancel();
+    await _wordHighlightSubscription?.cancel();
+    
+    // Dispose audio service
+    _listeningAudioService?.dispose();
+    _listeningAudioService = null;
+    
+    // Stop WebSocket session
+    _webSocketService.sendStopRecording();
+    
+    _isListeningMode = false;
+    _isRecording = false;
+    _playbackSettings = null;
+    
+    appLogger.log('LISTENING', 'Stopped');
+    print('✅ Listening mode stopped');
+    notifyListeners();
+    
+  } catch (e) {
+    _errorMessage = 'Failed to stop listening: $e';
+    appLogger.log('LISTENING_ERROR', e.toString());
+    print('❌ Stop listening failed: $e');
+    notifyListeners();
+  }
+}
+
+/// Pause listening (pause audio, but keep WebSocket alive)
+Future<void> pauseListening() async {
+  if (_listeningAudioService != null && _isListeningMode) {
+    await _listeningAudioService!.pausePlayback();
+    print('⏸️ Listening paused');
+    notifyListeners();
+  }
+}
+
+/// Resume listening
+Future<void> resumeListening() async {
+  if (_listeningAudioService != null && _isListeningMode) {
+    await _listeningAudioService!.resumePlayback();
+    print('▶️ Listening resumed');
+    notifyListeners();
+  }
+}
 
   // ADD NEW METHOD: Determine target page from navigation params
   Future<int> _determineTargetPage() async {
@@ -264,7 +454,10 @@ _isDataLoaded = false;
 
   // REPLACE existing _loadSinglePageData method
   Future<void> _loadSinglePageData(int pageNumber) async {
-    appLogger.log('DATA', 'ðŸš€ INSTANT LOAD: Page $pageNumber + adjacent pages');
+    appLogger.log(
+      'DATA',
+      'ðŸš€ INSTANT LOAD: Page $pageNumber + adjacent pages',
+    );
 
     try {
       // âœ… STEP 1: Determine pages to load (main + 2 before + 2 after = 5 pages)
@@ -402,91 +595,115 @@ _isDataLoaded = false;
   }
 
   // ✅ NEW: Optimized data loading that preserves page position
-Future<void> _loadAyatDataOptimized(int targetPage) async {
-  appLogger.log('DATA_OPTIMIZED', 'Loading data with target page: $targetPage');
-  
-  try {
-    // ✅ FIX: Initialize with nullable type, then validate
-    int? surahIdForPage;
-    
-    // Determine surah ID from target page
-    if (suratId != null) {
-      surahIdForPage = suratId!;
-      appLogger.log('DATA_OPTIMIZED', 'Using direct suratId: $surahIdForPage');
-    } else if (_determinedSurahId != null) {
-      surahIdForPage = _determinedSurahId!;
-      appLogger.log('DATA_OPTIMIZED', 'Using determined surahId: $surahIdForPage');
-    } else {
-      // Get surah from cached page data or database
-      if (pageCache.containsKey(targetPage)) {
-        final pageLines = pageCache[targetPage]!;
-        for (final line in pageLines) {
-          if (line.ayahSegments != null && line.ayahSegments!.isNotEmpty) {
-            surahIdForPage = line.ayahSegments!.first.surahId;
-            appLogger.log('DATA_OPTIMIZED', 'Found surahId from cache: $surahIdForPage');
-            break;
+  Future<void> _loadAyatDataOptimized(int targetPage) async {
+    appLogger.log(
+      'DATA_OPTIMIZED',
+      'Loading data with target page: $targetPage',
+    );
+
+    try {
+      // ✅ FIX: Initialize with nullable type, then validate
+      int? surahIdForPage;
+
+      // Determine surah ID from target page
+      if (suratId != null) {
+        surahIdForPage = suratId!;
+        appLogger.log(
+          'DATA_OPTIMIZED',
+          'Using direct suratId: $surahIdForPage',
+        );
+      } else if (_determinedSurahId != null) {
+        surahIdForPage = _determinedSurahId!;
+        appLogger.log(
+          'DATA_OPTIMIZED',
+          'Using determined surahId: $surahIdForPage',
+        );
+      } else {
+        // Get surah from cached page data or database
+        if (pageCache.containsKey(targetPage)) {
+          final pageLines = pageCache[targetPage]!;
+          for (final line in pageLines) {
+            if (line.ayahSegments != null && line.ayahSegments!.isNotEmpty) {
+              surahIdForPage = line.ayahSegments!.first.surahId;
+              appLogger.log(
+                'DATA_OPTIMIZED',
+                'Found surahId from cache: $surahIdForPage',
+              );
+              break;
+            }
+          }
+        }
+
+        // ✅ FIX: Fallback if still null
+        if (surahIdForPage == null) {
+          appLogger.log(
+            'DATA_OPTIMIZED',
+            'Loading from database to find surahId...',
+          );
+          final pageLines = await _sqliteService.getMushafPageLines(targetPage);
+
+          // Find first valid ayah segment
+          for (final line in pageLines) {
+            if (line.ayahSegments != null && line.ayahSegments!.isNotEmpty) {
+              surahIdForPage = line.ayahSegments!.first.surahId;
+              appLogger.log(
+                'DATA_OPTIMIZED',
+                'Found surahId from DB: $surahIdForPage',
+              );
+              break;
+            }
           }
         }
       }
-      
-      // ✅ FIX: Fallback if still null
+
+      // ✅ VALIDATION: Throw error if still null
       if (surahIdForPage == null) {
-        appLogger.log('DATA_OPTIMIZED', 'Loading from database to find surahId...');
-        final pageLines = await _sqliteService.getMushafPageLines(targetPage);
-        
-        // Find first valid ayah segment
-        for (final line in pageLines) {
-          if (line.ayahSegments != null && line.ayahSegments!.isNotEmpty) {
-            surahIdForPage = line.ayahSegments!.first.surahId;
-            appLogger.log('DATA_OPTIMIZED', 'Found surahId from DB: $surahIdForPage');
-            break;
-          }
-        }
+        throw Exception('Cannot determine surah ID for page $targetPage');
       }
-    }
 
-    // ✅ VALIDATION: Throw error if still null
-    if (surahIdForPage == null) {
-      throw Exception('Cannot determine surah ID for page $targetPage');
-    }
+      // Load chapter info
+      final chapter = await _sqliteService.getChapterInfo(surahIdForPage);
+      _suratNameSimple = chapter.nameSimple;
+      _suratVersesCount = chapter.versesCount.toString();
+      _determinedSurahId = surahIdForPage;
 
-    // Load chapter info
-    final chapter = await _sqliteService.getChapterInfo(surahIdForPage);
-    _suratNameSimple = chapter.nameSimple;
-    _suratVersesCount = chapter.versesCount.toString();
-    _determinedSurahId = surahIdForPage;
+      // Load ayat list if not already loaded
+      if (_ayatList.isEmpty) {
+        _ayatList = await _sqliteService.getSurahAyatDataOptimized(
+          surahIdForPage,
+          isQuranMode: _isQuranMode,
+        );
+        appLogger.log('DATA_OPTIMIZED', 'Loaded ${_ayatList.length} ayats');
+      }
 
-    // Load ayat list if not already loaded
-    if (_ayatList.isEmpty) {
-      _ayatList = await _sqliteService.getSurahAyatDataOptimized(
-        surahIdForPage,
-        isQuranMode: _isQuranMode,
+      // ✅ CRITICAL: Set to target page, NOT first page
+      _currentPage = targetPage;
+
+      // Update current ayat index based on target page
+      if (_ayatList.isNotEmpty) {
+        final targetAyat = _ayatList.firstWhere(
+          (a) => a.page == targetPage,
+          orElse: () => _ayatList.first,
+        );
+        _currentAyatIndex = _ayatList.indexOf(targetAyat);
+        appLogger.log(
+          'DATA_OPTIMIZED',
+          'Set current ayat index to: $_currentAyatIndex',
+        );
+      }
+
+      await _loadCurrentPageAyats();
+      _isDataLoaded = true;
+
+      appLogger.log(
+        'DATA_OPTIMIZED',
+        'Data loaded successfully, positioned at page $targetPage',
       );
-      appLogger.log('DATA_OPTIMIZED', 'Loaded ${_ayatList.length} ayats');
+    } catch (e) {
+      appLogger.log('DATA_OPTIMIZED_ERROR', 'Failed to load data: $e');
+      rethrow;
     }
-
-    // ✅ CRITICAL: Set to target page, NOT first page
-    _currentPage = targetPage;
-    
-    // Update current ayat index based on target page
-    if (_ayatList.isNotEmpty) {
-      final targetAyat = _ayatList.firstWhere(
-        (a) => a.page == targetPage,
-        orElse: () => _ayatList.first,
-      );
-      _currentAyatIndex = _ayatList.indexOf(targetAyat);
-      appLogger.log('DATA_OPTIMIZED', 'Set current ayat index to: $_currentAyatIndex');
-    }
-
-    await _loadCurrentPageAyats();
-    _isDataLoaded = true;
-
-    appLogger.log('DATA_OPTIMIZED', 'Data loaded successfully, positioned at page $targetPage');
-  } catch (e) {
-    appLogger.log('DATA_OPTIMIZED_ERROR', 'Failed to load data: $e');
-    rethrow;
   }
-}
 
   Future<void> _loadCurrentPageAyats() async {
     if (!_isQuranMode) {
@@ -775,53 +992,62 @@ Future<void> _loadAyatDataOptimized(int targetPage) async {
     notifyListeners();
   }
 
-Future<void> toggleQuranMode() async {
-  appLogger.log('MODE_TOGGLE', 'Switching from ${_isQuranMode ? "Mushaf" : "List"} to ${!_isQuranMode ? "Mushaf" : "List"}');
-  
-  // ✅ STEP 1: Preserve current position
-  final targetPage = _isQuranMode ? _currentPage : _listViewCurrentPage;
-  appLogger.log('MODE_TOGGLE', 'Target page after toggle: $targetPage');
+  Future<void> toggleQuranMode() async {
+    appLogger.log(
+      'MODE_TOGGLE',
+      'Switching from ${_isQuranMode ? "Mushaf" : "List"} to ${!_isQuranMode ? "Mushaf" : "List"}',
+    );
 
-  // ✅ STEP 2: Toggle mode flag FIRST
-  _isQuranMode = !_isQuranMode;
-  
-  // ✅ IMMEDIATE: Notify UI of mode change (quick feedback)
-  notifyListeners();
+    // ✅ STEP 1: Preserve current position
+    final targetPage = _isQuranMode ? _currentPage : _listViewCurrentPage;
+    appLogger.log('MODE_TOGGLE', 'Target page after toggle: $targetPage');
 
-  // ✅ STEP 3: Smart data loading (skip if already loaded)
-  if (!_isDataLoaded || _ayatList.isEmpty) {
-    appLogger.log('MODE_TOGGLE', 'Loading data (first time or empty)');
-    await _loadAyatDataOptimized(targetPage);
-  } else {
-    appLogger.log('MODE_TOGGLE', 'Skipping reload - data already loaded');
-    
-    // Just update current page without reloading
-    _currentPage = targetPage;
-    
-    // Update surah name for target page
-    await _updateSurahNameForPage(targetPage);
-    
-    // Load page-specific data if switching to mushaf
-    if (_isQuranMode) {
-      await _loadCurrentPageAyats();
-      
-      // ✅ IMPORTANT: Ensure page is in cache before switching
-      if (!pageCache.containsKey(targetPage)) {
-        appLogger.log('MODE_TOGGLE', 'Loading target page $targetPage to cache');
-        final lines = await _sqliteService.getMushafPageLines(targetPage);
-        pageCache[targetPage] = lines;
+    // ✅ STEP 2: Toggle mode flag FIRST
+    _isQuranMode = !_isQuranMode;
+
+    // ✅ IMMEDIATE: Notify UI of mode change (quick feedback)
+    notifyListeners();
+
+    // ✅ STEP 3: Smart data loading (skip if already loaded)
+    if (!_isDataLoaded || _ayatList.isEmpty) {
+      appLogger.log('MODE_TOGGLE', 'Loading data (first time or empty)');
+      await _loadAyatDataOptimized(targetPage);
+    } else {
+      appLogger.log('MODE_TOGGLE', 'Skipping reload - data already loaded');
+
+      // Just update current page without reloading
+      _currentPage = targetPage;
+
+      // Update surah name for target page
+      await _updateSurahNameForPage(targetPage);
+
+      // Load page-specific data if switching to mushaf
+      if (_isQuranMode) {
+        await _loadCurrentPageAyats();
+
+        // ✅ IMPORTANT: Ensure page is in cache before switching
+        if (!pageCache.containsKey(targetPage)) {
+          appLogger.log(
+            'MODE_TOGGLE',
+            'Loading target page $targetPage to cache',
+          );
+          final lines = await _sqliteService.getMushafPageLines(targetPage);
+          pageCache[targetPage] = lines;
+        }
+
+        // Preload adjacent pages
+        Future.microtask(() => _preloadAdjacentPagesAggressively());
       }
-      
-      // Preload adjacent pages
-      Future.microtask(() => _preloadAdjacentPagesAggressively());
     }
-  }
 
-  // ✅ FINAL: Notify UI again after data ready
-  notifyListeners();
-  
-  appLogger.log('MODE_TOGGLE', 'Toggle complete - now at page $_currentPage (${_isQuranMode ? "Mushaf" : "List"})');
-}
+    // ✅ FINAL: Notify UI again after data ready
+    notifyListeners();
+
+    appLogger.log(
+      'MODE_TOGGLE',
+      'Toggle complete - now at page $_currentPage (${_isQuranMode ? "Mushaf" : "List"})',
+    );
+  }
 
   void toggleHideUnread() {
     _hideUnreadAyat = !_hideUnreadAyat;
@@ -920,7 +1146,9 @@ Future<void> toggleQuranMode() async {
 
   static bool isPureArabicNumber(String text) {
     final trimmedText = text.trim();
-    return RegExp(r'^[Ù -Ù©Û°Û±Û²Û³Û´ÛµÛ¶Û·Û¸Û¹ÛºÛ»Ûžï®žï®Ÿ\s]+$').hasMatch(trimmedText) &&
+    return RegExp(
+          r'^[Ù -Ù©Û°Û±Û²Û³Û´ÛµÛ¶Û·Û¸Û¹ÛºÛ»Ûžï®žï®Ÿ\s]+$',
+        ).hasMatch(trimmedText) &&
         containsArabicNumbers(trimmedText);
   }
 
@@ -1040,7 +1268,9 @@ Future<void> toggleQuranMode() async {
         print(
           'ðŸ—ºï¸ STT: Updated wordStatusMap[$ayah][$wordIndex] = ${_mapWordStatus(status)}',
         );
-        print('ðŸ—ºï¸ STT: Full wordStatusMap[$ayah] = ${_wordStatusMap[ayah]}');
+        print(
+          'ðŸ—ºï¸ STT: Full wordStatusMap[$ayah] = ${_wordStatusMap[ayah]}',
+        );
 
         // ðŸ”¥ NEW: Update _currentWords REALTIME
         if (_currentWords.isEmpty || _currentWords.length != totalWords) {
@@ -1300,45 +1530,56 @@ Future<void> toggleQuranMode() async {
 
   // REPLACE method updateVisiblePage dengan:
   void updateVisiblePage(int pageNumber) {
-  if (_currentPage != pageNumber) {
-    appLogger.log('VISIBLE_PAGE', 'Updating visible page: $_currentPage → $pageNumber');
-    
-    _currentPage = pageNumber;
-    
-    // ✅ CRITICAL: Track list view position separately
-    if (!_isQuranMode) {
-      _listViewCurrentPage = pageNumber;
-      appLogger.log('VISIBLE_PAGE', 'List view position saved: $pageNumber');
-    }
-
-    _updateSurahNameForPage(pageNumber);
-
-    // Update current ayat index based on visible page
-    if (_ayatList.isNotEmpty) {
-      final firstAyatOnPage = _ayatList.firstWhere(
-        (a) => a.page == pageNumber,
-        orElse: () => _ayatList.first,
+    if (_currentPage != pageNumber) {
+      appLogger.log(
+        'VISIBLE_PAGE',
+        'Updating visible page: $_currentPage → $pageNumber',
       );
-      final newIndex = _ayatList.indexOf(firstAyatOnPage);
-      if (newIndex >= 0) {
-        _currentAyatIndex = newIndex;
-        appLogger.log('VISIBLE_PAGE', 'Updated ayat index to: $_currentAyatIndex');
+
+      _currentPage = pageNumber;
+
+      // ✅ CRITICAL: Track list view position separately
+      if (!_isQuranMode) {
+        _listViewCurrentPage = pageNumber;
+        appLogger.log('VISIBLE_PAGE', 'List view position saved: $pageNumber');
       }
-    }
 
-    if (!_isQuranMode) {
-      Future.microtask(() => _preloadAdjacentPagesAggressively());
-    }
+      _updateSurahNameForPage(pageNumber);
 
-    notifyListeners();
+      // Update current ayat index based on visible page
+      if (_ayatList.isNotEmpty) {
+        final firstAyatOnPage = _ayatList.firstWhere(
+          (a) => a.page == pageNumber,
+          orElse: () => _ayatList.first,
+        );
+        final newIndex = _ayatList.indexOf(firstAyatOnPage);
+        if (newIndex >= 0) {
+          _currentAyatIndex = newIndex;
+          appLogger.log(
+            'VISIBLE_PAGE',
+            'Updated ayat index to: $_currentAyatIndex',
+          );
+        }
+      }
+
+      if (!_isQuranMode) {
+        Future.microtask(() => _preloadAdjacentPagesAggressively());
+      }
+
+      notifyListeners();
+    }
   }
-}
 
   // ===== DISPOSAL =====
   @override
   void dispose() {
     print('ðŸ’€ SttController: DISPOSE CALLED for surah $suratId');
     appLogger.log('DISPOSAL', 'Starting cleanup process');
+    
+  _verseChangeSubscription?.cancel();
+  _wordHighlightSubscription?.cancel();
+  _listeningAudioService?.dispose();
+  ReciterDatabaseService.dispose();
 
     // âœ… Cancel subscriptions
     _wsSubscription?.cancel();

@@ -1,5 +1,8 @@
 // lib\screens\main\stt\widgets\quran_widgets.dart
+import 'package:cuda_qurani/core/design_system/app_design_system.dart';
+import 'package:cuda_qurani/models/playback_settings_model.dart';
 import 'package:cuda_qurani/screens/main/home/screens/surah_list_page.dart';
+import 'package:cuda_qurani/screens/main/stt/widgets/playback_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../controllers/stt_controller.dart';
@@ -128,32 +131,32 @@ class QuranAppBar extends StatelessWidget implements PreferredSizeWidget {
           titleSpacing: 0,
           actions: [
             // Mode Toggle
-// Mode Toggle
-IconButton(
-  icon: Icon(
-    controller.isQuranMode
-        ? Icons.vertical_split
-        : Icons.auto_stories,
-    size: iconSize * 0.9,
-  ),
-  onPressed: () async {
-    // ✅ FIX: Await toggle completion
-    await controller.toggleQuranMode();
-    
-    // ✅ FORCE: Trigger rebuild immediately
-    if (context.mounted) {
-      // Scroll to correct position after mode change
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        // Trigger any pending navigation
-        controller.notifyListeners();
-      });
-    }
-  },
-  tooltip: controller.isQuranMode
-      ? 'Switch to List Mode'
-      : 'Switch to Mushaf Mode',
-  splashRadius: iconSize * 1.1,
-),
+            // Mode Toggle
+            IconButton(
+              icon: Icon(
+                controller.isQuranMode
+                    ? Icons.vertical_split
+                    : Icons.auto_stories,
+                size: iconSize * 0.9,
+              ),
+              onPressed: () async {
+                // ✅ FIX: Await toggle completion
+                await controller.toggleQuranMode();
+
+                // ✅ FORCE: Trigger rebuild immediately
+                if (context.mounted) {
+                  // Scroll to correct position after mode change
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    // Trigger any pending navigation
+                    controller.notifyListeners();
+                  });
+                }
+              },
+              tooltip: controller.isQuranMode
+                  ? 'Switch to List Mode'
+                  : 'Switch to Mushaf Mode',
+              splashRadius: iconSize * 1.1,
+            ),
             // Visibility Toggle
             IconButton(
               icon: Icon(
@@ -234,8 +237,17 @@ IconButton(
   Size get preferredSize => const Size.fromHeight(kToolbarHeight * 0.86);
 }
 
-class QuranBottomBar extends StatelessWidget {
+class QuranBottomBar extends StatefulWidget {
   const QuranBottomBar({Key? key}) : super(key: key);
+
+  @override
+  State<QuranBottomBar> createState() => _QuranBottomBarState();
+}
+
+class _QuranBottomBarState extends State<QuranBottomBar>
+    with SingleTickerProviderStateMixin {
+  bool _isMenuExpanded = false;
+  String _selectedMode = 'recite';
 
   @override
   Widget build(BuildContext context) {
@@ -243,10 +255,14 @@ class QuranBottomBar extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
-    final containerHeight = screenHeight * 0.15; // ✅ ~120px pada 800px height
-    final buttonSize = screenWidth * 0.1625; // ✅ ~65px pada 400px width
-    final iconSize = screenWidth * 0.065; // ✅ ~26px pada 400px width
-    final bottomOffset = screenHeight * 0.030; // ✅ ~40px pada 800px height
+    final containerHeight = screenHeight * 0.15;
+    final buttonSize = screenWidth * 0.165;
+    final iconSize = screenWidth * 0.07;
+    final bottomOffset = screenHeight * 0.030;
+
+    final activeColor = controller.isRecording || controller.isListeningMode
+        ? errorColor
+        : primaryColor;
 
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 200),
@@ -254,55 +270,215 @@ class QuranBottomBar extends StatelessWidget {
       child: IgnorePointer(
         ignoring: !controller.isUIVisible,
         child: SizedBox(
-          height: containerHeight,
+          height: _isMenuExpanded ? containerHeight * 2.2 : containerHeight,
           child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.bottomCenter,
             children: [
-              Positioned(
-                bottom: bottomOffset,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: Container(
-                    width: buttonSize,
-                    height: buttonSize,
-                    decoration: BoxDecoration(
-                      color: controller.isRecording ? errorColor : primaryColor,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color:
-                              (controller.isRecording
-                                      ? errorColor
-                                      : primaryColor)
-                                  .withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+              // Backdrop untuk menutup menu
+              if (_isMenuExpanded)
+                Positioned.fill(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _isMenuExpanded = false),
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(color: Colors.transparent),
+                  ),
+                ),
+
+              // Menu Expanded (2 Container Terpisah)
+              if (_isMenuExpanded)
+                Positioned(
+                  bottom: bottomOffset,
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 250),
+                    opacity: _isMenuExpanded ? 1.0 : 0.0,
+                    child: AnimatedScale(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOutBack,
+                      scale: _isMenuExpanded ? 1.0 : 0.8,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Container 1: Label Container (Kiri)
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              _buildLabelItem(
+                                label: "Listen",
+                                isActive: _selectedMode == 'listen',
+                                onTap: () =>
+                                    _handleModeSelect(controller, 'listen'),
+                              ),
+                              SizedBox(height: buttonSize * 0.25),
+                              _buildLabelItem(
+                                label: "Recite",
+                                isActive: _selectedMode == 'recite',
+                                onTap: () =>
+                                    _handleModeSelect(controller, 'recite'),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(width: 12),
+
+                          // Container 2: Icon Button Container (Kanan)
+                          Container(
+                            width: buttonSize,
+                            height: buttonSize * 1.9,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(
+                                buttonSize / 1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.15),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                _buildIconButton(
+                                  icon: Icons.play_arrow_rounded,
+                                  isActive: _selectedMode == 'listen',
+                                  iconSize: iconSize,
+                                  onTap: () =>
+                                      _handleModeSelect(controller, 'listen'),
+                                ),
+                                _buildIconButton(
+                                  icon: Icons.mic_none_rounded,
+                                  isActive: _selectedMode == 'recite',
+                                  iconSize: iconSize,
+                                  onTap: () =>
+                                      _handleModeSelect(controller, 'recite'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(buttonSize / 2),
-                        onTap: () async {
-                          print('🎤 BUTTON: Record button pressed (isRecording: ${controller.isRecording})');
-                          
-                          if (controller.isRecording) {
-                            print('🛑 BUTTON: Stopping recording...');
-                            await controller.stopRecording();
-                            print('✅ BUTTON: Recording stopped');
+                  ),
+                ),
+
+              // Main Button (Collapsed State)
+              if (!_isMenuExpanded)
+                Positioned(
+                  bottom: bottomOffset,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(buttonSize / 2),
+                      onTap: () async {
+                        if (_selectedMode == 'listen') {
+                          // ====== LISTENING MODE ======
+                          print('🎵 LISTEN BUTTON: Opening playback settings');
+
+                          // Navigate to playback settings
+                          final settings =
+                              await Navigator.push<PlaybackSettings>(
+                                context,
+                                PageRouteBuilder(
+                                  pageBuilder:
+                                      (
+                                        context,
+                                        animation,
+                                        secondaryAnimation,
+                                      ) => const PlaybackSettingsPage(),
+                                  transitionsBuilder:
+                                      (
+                                        context,
+                                        animation,
+                                        secondaryAnimation,
+                                        child,
+                                      ) {
+                                        const begin = Offset(0.0, 0.3);
+                                        const end = Offset.zero;
+                                        const curve = Curves.easeInOut;
+                                        var tween = Tween(
+                                          begin: begin,
+                                          end: end,
+                                        ).chain(CurveTween(curve: curve));
+                                        var offsetAnimation = animation.drive(
+                                          tween,
+                                        );
+                                        var fadeAnimation = animation.drive(
+                                          Tween(
+                                            begin: 0.0,
+                                            end: 1.0,
+                                          ).chain(CurveTween(curve: curve)),
+                                        );
+
+                                        return FadeTransition(
+                                          opacity: fadeAnimation,
+                                          child: SlideTransition(
+                                            position: offsetAnimation,
+                                            child: child,
+                                          ),
+                                        );
+                                      },
+                                  transitionDuration:
+                                      AppDesignSystem.durationNormal,
+                                ),
+                              );
+
+                          // Check if settings returned
+                          if (settings != null) {
+                            print('✅ Playback settings received: $settings');
+
+                            // Start listening mode
+                            if (controller.isListeningMode) {
+                              // Already listening, stop first
+                              await controller.stopListening();
+                            } else {
+                              // Start new listening session
+                              await controller.startListening(settings);
+                            }
                           } else {
-                            print('▶️ BUTTON: Starting recording...');
-                            await controller.startRecording();
-                            print('✅ BUTTON: Recording started');
+                            print('⚠️ No settings selected, cancelled');
                           }
-                        },
+                        } else {
+                          // ====== RECITE MODE (EXISTING LOGIC) ======
+                          if (controller.isRecording) {
+                            await controller.stopRecording();
+                          } else {
+                            await controller.startRecording();
+                          }
+                        }
+                      },
+                      onLongPress: () {
+                        setState(() {
+                          _isMenuExpanded = true;
+                        });
+                        Feedback.forLongPress(context);
+                      },
+                      child: Container(
+                        width: buttonSize,
+                        height: buttonSize,
+                        decoration: BoxDecoration(
+                          color: activeColor,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: activeColor.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
                         child: Center(
                           child: AnimatedSwitcher(
                             duration: const Duration(milliseconds: 200),
                             child: Icon(
-                              controller.isRecording ? Icons.stop : Icons.mic,
-                              key: ValueKey(controller.isRecording),
+                              _getIconForCurrentState(controller),
+                              key: ValueKey(
+                                '${_selectedMode}_${controller.isRecording}',
+                              ),
                               color: Colors.white,
                               size: iconSize,
                             ),
@@ -312,12 +488,169 @@ class QuranBottomBar extends StatelessWidget {
                     ),
                   ),
                 ),
-              ),
+
+              // Small Arrow Button (Only visible when in Listen mode and not expanded)
+              if (!_isMenuExpanded && _selectedMode == 'listen')
+                Positioned(
+                  bottom: bottomOffset + (buttonSize * 0.1),
+                  right:
+                      (MediaQuery.of(context).size.width / 2) -
+                      (buttonSize * 1.15),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(
+                        (buttonSize * 0.4) / 2,
+                      ),
+                      onTap: () {
+                        AppHaptics.light();
+                        Navigator.push(
+                          context,
+                          PageRouteBuilder(
+                            pageBuilder:
+                                (context, animation, secondaryAnimation) =>
+                                    const PlaybackSettingsPage(),
+                            transitionsBuilder:
+                                (
+                                  context,
+                                  animation,
+                                  secondaryAnimation,
+                                  child,
+                                ) {
+                                  const begin = Offset(0.0, 0.3);
+                                  const end = Offset.zero;
+                                  const curve = Curves.easeInOut;
+                                  var tween = Tween(
+                                    begin: begin,
+                                    end: end,
+                                  ).chain(CurveTween(curve: curve));
+                                  var offsetAnimation = animation.drive(tween);
+                                  var fadeAnimation = animation.drive(
+                                    Tween(
+                                      begin: 0.0,
+                                      end: 1.0,
+                                    ).chain(CurveTween(curve: curve)),
+                                  );
+
+                                  return FadeTransition(
+                                    opacity: fadeAnimation,
+                                    child: SlideTransition(
+                                      position: offsetAnimation,
+                                      child: child,
+                                    ),
+                                  );
+                                },
+                            transitionDuration: AppDesignSystem.durationNormal,
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: buttonSize * 0.5,
+                        height: buttonSize * 0.5,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: primaryColor.withOpacity(0.25),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Icon(
+                            Icons.keyboard_arrow_up,
+                            color: primaryColor,
+                            size: iconSize * 1.1,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildLabelItem({
+    required String label,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color.fromARGB(220, 0, 0, 0),
+          borderRadius: BorderRadius.circular(30),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 0.2,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIconButton({
+    required IconData icon,
+    required bool isActive,
+    required double iconSize,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(100),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isActive ? const Color(0xFFEEEEEE) : Colors.transparent,
+          ),
+          child: Icon(icon, size: iconSize, color: Colors.black87),
+        ),
+      ),
+    );
+  }
+
+  IconData _getIconForCurrentState(SttController controller) {
+    if (_selectedMode == 'recite') {
+      return controller.isRecording ? Icons.stop : Icons.mic;
+    } else {
+      // Listening mode
+      if (controller.isListeningMode) {
+        // Check if playing or paused
+        final audioService = controller.listeningAudioService;
+        if (audioService != null && audioService.isPaused) {
+          return Icons.play_arrow; // Show play when paused
+        }
+        return Icons.stop; // Show stop when playing
+      }
+      return Icons.play_arrow; // Default: play icon
+    }
+  }
+
+  Future<void> _handleModeSelect(SttController controller, String mode) async {
+    if (controller.isRecording && mode != 'recite') {
+      await controller.stopRecording();
+    }
+
+    setState(() {
+      _selectedMode = mode;
+      _isMenuExpanded = false;
+    });
   }
 }
 
@@ -432,7 +765,7 @@ class QuranErrorWidget extends StatelessWidget {
                 border: Border.all(color: Colors.grey.shade300),
               ),
               child: Text(
-                controller.errorMessage,
+                controller.errorMessage ?? 'Unknown error occurred',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: messageSize),
               ),
