@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:cuda_qurani/screens/main/home/widgets/navigation_bar.dart';
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
 import 'package:cuda_qurani/core/widgets/app_components.dart';
+import 'package:cuda_qurani/services/supabase_service.dart';
 
 class AllSessionPage extends StatefulWidget {
   const AllSessionPage({Key? key}) : super(key: key);
@@ -14,8 +15,35 @@ class AllSessionPage extends StatefulWidget {
 
 class _AllSessionPageState extends State<AllSessionPage> {
   // ==================== DATA STRUCTURE ====================
-  // Optimized with better organization & type safety
-  final List<SessionData> _sessions = [
+  final SupabaseService _supabaseService = SupabaseService();
+  List<SessionData> _sessions = [];
+  bool _isLoading = true;
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadSessions();
+  }
+  
+  Future<void> _loadSessions() async {
+    setState(() => _isLoading = true);
+    
+    try {
+      final sessions = await _supabaseService.getAllSessions();
+      setState(() {
+        _sessions = sessions.map((s) => SessionData.fromSupabase(s)).toList();
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading sessions: $e');
+      setState(() => _isLoading = false);
+      // Fallback to dummy data if error
+      _loadDummyData();
+    }
+  }
+  
+  void _loadDummyData() {
+    _sessions = [
     SessionData(
       type: SessionType.reading,
       surah: 'Al-Kafirun 1 - Al-Masad 5',
@@ -107,6 +135,7 @@ class _AllSessionPageState extends State<AllSessionPage> {
       displayTime: '5:12PM - 5:15PM',
     ),
   ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -114,7 +143,9 @@ class _AllSessionPageState extends State<AllSessionPage> {
       backgroundColor: AppColors.backgroundLight,
       appBar: const ProfileAppBar(title: 'Session'),
       body: SafeArea(
-        child: _buildBody(context),
+        child: _isLoading 
+          ? const Center(child: CircularProgressIndicator())
+          : _buildBody(context),
       ),
     );
   }
@@ -440,6 +471,7 @@ class SessionData {
   final DateTime timestamp;
   final String displayDate;
   final String displayTime;
+  final String? sessionId;
 
   SessionData({
     required this.type,
@@ -449,5 +481,43 @@ class SessionData {
     required this.timestamp,
     required this.displayDate,
     required this.displayTime,
+    this.sessionId,
   });
+  
+  factory SessionData.fromSupabase(Map<String, dynamic> data) {
+    final timestamp = DateTime.parse(data['created_at'] ?? DateTime.now().toIso8601String());
+    final surahId = data['surah_id'] ?? 1;
+    final ayah = data['ayah'] ?? 1;
+    
+    return SessionData(
+      type: SessionType.reading,
+      surah: 'Surah $surahId: $ayah',
+      duration: Duration(minutes: 0),
+      verses: ayah,
+      timestamp: timestamp,
+      displayDate: _formatDate(timestamp),
+      displayTime: _formatTime(timestamp),
+      sessionId: data['session_id'],
+    );
+  }
+  
+  static String _formatDate(DateTime dt) {
+    final now = DateTime.now();
+    if (dt.year == now.year && dt.month == now.month && dt.day == now.day) {
+      return 'TODAY';
+    }
+    return '${_monthName(dt.month)} ${dt.day}, ${dt.year}';
+  }
+  
+  static String _formatTime(DateTime dt) {
+    final hour = dt.hour > 12 ? dt.hour - 12 : dt.hour;
+    final period = dt.hour >= 12 ? 'PM' : 'AM';
+    return '${hour}:${dt.minute.toString().padLeft(2, '0')}$period';
+  }
+  
+  static String _monthName(int month) {
+    const months = ['', 'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
+      'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
+    return months[month];
+  }
 }

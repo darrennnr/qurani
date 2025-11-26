@@ -263,7 +263,15 @@ Future<void> startListening(PlaybackSettings settings) async {
     }
     
     print('🚀 Starting WebSocket session for surah $recordingSurahId');
-    _webSocketService.sendStartRecording(recordingSurahId);
+    
+    // ✅ Send with page/juz info if available
+    final firstAyah = _ayatList.isNotEmpty ? _ayatList.first.ayah : 1;
+    _webSocketService.sendStartRecording(
+      recordingSurahId,
+      pageId: pageId,
+      juzId: juzId,
+      ayah: firstAyah,
+    );
     
     // 🎧 Subscribe to verse changes
     _verseChangeSubscription = _listeningAudioService!.currentVerseStream?.listen((verse) {
@@ -1589,11 +1597,13 @@ Future<void> resumeListening() async {
       case 'matched':
       case 'correct':
       case 'close': // âœ… Close = hampir benar = HIJAU
+      case 'benar': // ✅ Backend sends "benar" for correct words
         return WordStatus.matched;
       case 'processing':
         return WordStatus.processing;
       case 'mismatched':
       case 'incorrect':
+      case 'salah': // ✅ Backend sends "salah" for incorrect words
         return WordStatus.mismatched;
       case 'skipped':
         return WordStatus.skipped;
@@ -1761,7 +1771,15 @@ Future<void> resumeListening() async {
       print(
         'ðŸ“¤ startRecording(): Sending START message for surah $recordingSurahId...',
       );
-      _webSocketService.sendStartRecording(recordingSurahId);
+      
+      // ✅ Send with page/juz info if available
+      final firstAyah = _ayatList.isNotEmpty ? _ayatList.first.ayah : 1;
+      _webSocketService.sendStartRecording(
+        recordingSurahId,
+        pageId: pageId,
+        juzId: juzId,
+        ayah: firstAyah,
+      );
 
       print('ðŸŽ™ï¸ startRecording(): Starting audio recording...');
       await _audioService.startRecording(

@@ -227,15 +227,29 @@ class WebSocketService {
     }
   }
 
-  void sendStartRecording(int surahNumber) {
+  void sendStartRecording(int surahNumber, {int? pageId, int? juzId, int? ayah}) {
     if (_isConnected && _channel != null) {
       _audioChunksSent = 0; // Reset counter
       
-      // ✅ Build message with user info if authenticated
+      // ✅ Build message with location info
       final messageData = {
         'type': 'start',
         'surah': surahNumber,
       };
+      
+      // ✅ Add optional location info (page/juz/ayah)
+      if (pageId != null) {
+        messageData['page'] = pageId;
+        print('📄 Including page: $pageId');
+      }
+      if (juzId != null) {
+        messageData['juz'] = juzId;
+        print('📚 Including juz: $juzId');
+      }
+      if (ayah != null) {
+        messageData['ayah'] = ayah;
+        print('📖 Including ayah: $ayah');
+      }
       
       // ✅ Add user info if authenticated
       if (_authService.isAuthenticated) {

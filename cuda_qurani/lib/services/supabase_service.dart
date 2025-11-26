@@ -115,8 +115,8 @@ class SupabaseService {
     List<String>? statuses, // Filter by specific statuses (optional)
   }) async {
     try {
-      // Build query
-      String query = 'user_uuid=eq.$userUuid';
+      // Build query - filter by user_uuid AND surah_id not null
+      String query = 'user_uuid=eq.$userUuid&surah_id=not.is.null';
       
       // Filter by statuses if provided
       if (statuses != null && statuses.isNotEmpty) {
@@ -125,6 +125,8 @@ class SupabaseService {
         query += '&status=in.(${statuses.join(',')})';
       }
       
+      print('🔍 Query: $supabaseUrl/rest/v1/live_sessions?$query&order=updated_at.desc&limit=1');
+      
       final response = await http.get(
         Uri.parse(
           '$supabaseUrl/rest/v1/live_sessions?$query&order=updated_at.desc&limit=1',
@@ -132,21 +134,32 @@ class SupabaseService {
         headers: _headers,
       );
 
+      print('📡 Response status: ${response.statusCode}');
+      print('📡 Response body: ${response.body}');
+
       if (response.statusCode == 200) {
         final sessions = jsonDecode(response.body) as List;
+        print('📦 Sessions count: ${sessions.length}');
+        
         if (sessions.isNotEmpty) {
           final session = sessions[0] as Map<String, dynamic>;
           print('📥 Latest session found:');
           print('   Session ID: ${session['session_id']}');
           print('   Status: ${session['status']}');
           print('   Surah: ${session['surah_id']}, Ayah: ${session['ayah']}, Position: ${session['position']}');
+          print('   User UUID: ${session['user_uuid']}');
           print('   Updated: ${session['updated_at']}');
           return session;
+        } else {
+          print('⚠️ No sessions returned from query');
         }
+      } else {
+        print('❌ HTTP error: ${response.statusCode} - ${response.body}');
       }
       return null;
-    } catch (e) {
-      print('Error fetching latest session: $e');
+    } catch (e, stackTrace) {
+      print('❌ Error fetching latest session: $e');
+      print('Stack trace: $stackTrace');
       return null;
     }
   }
@@ -154,5 +167,10 @@ class SupabaseService {
   /// ✅ NEW: Get resumable session (paused or active only)
   Future<Map<String, dynamic>?> getResumableSession(String userUuid) async {
     return getLatestSession(userUuid, statuses: ['paused', 'active']);
+  }
+  
+  /// Get all sessions (no user filter) for session list page
+  Future<List<Map<String, dynamic>>> getAllSessions({int limit = 50}) async {
+    return getSessions();
   }
 }
