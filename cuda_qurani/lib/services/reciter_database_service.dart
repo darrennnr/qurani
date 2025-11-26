@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'package:cuda_qurani/services/global_ayat_services.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as path;
 import 'package:sqflite/sqflite.dart';
@@ -78,21 +79,27 @@ class ReciterDatabaseService {
     }
   }
 
-  // Get audio data for specific verse
+  // Get audio data for specific verse using GLOBAL AYAT INDEX
   static Future<ReciterAudioData?> getVerseAudio(int surahNumber, int ayahNumber) async {
     if (_database == null) {
       await initialize();
     }
 
     try {
+      // ✅ CRITICAL FIX: Convert (surah, ayah) → global ayat index
+      final globalAyat = GlobalAyatService.toGlobalAyat(surahNumber, ayahNumber);
+      
+      print('🔍 Fetching audio: Surah $surahNumber Ayah $ayahNumber → Global Ayat #$globalAyat');
+
+      // ✅ Query database using ayah_number = GLOBAL INDEX
       final List<Map<String, dynamic>> results = await _database!.query(
         'verses',
-        where: 'surah_number = ? AND ayah_number = ?',
-        whereArgs: [surahNumber, ayahNumber],
+        where: 'ayah_number = ?',  // ✅ ayah_number = global index (1-6236)
+        whereArgs: [globalAyat],
       );
 
       if (results.isEmpty) {
-        print('⚠️ No audio found for ${surahNumber}:${ayahNumber}');
+        print('⚠️ No audio found for Global Ayat #$globalAyat (Surah $surahNumber:$ayahNumber)');
         return null;
       }
 
@@ -111,9 +118,11 @@ class ReciterDatabaseService {
         }
       }
 
+      print('✅ Audio found: ${row['audio_url']}');
+
       return ReciterAudioData(
-        surahNumber: row['surah_number'] as int,
-        ayahNumber: row['ayah_number'] as int,
+        surahNumber: surahNumber,  // ✅ Return original surah number
+        ayahNumber: ayahNumber,    // ✅ Return original ayah number
         audioUrl: row['audio_url'] as String,
         duration: row['duration'] as int?,
         segments: segments,
@@ -142,8 +151,11 @@ class ReciterDatabaseService {
     return results;
   }
 
-  static void dispose() {
-    _database?.close();
-    _database = null;
+  static Future<void> dispose() async {
+    if (_database != null) {
+      await _database!.close();
+      _database = null;
+      print('🗑️ Reciter database disposed');
+    }
   }
 }

@@ -227,6 +227,31 @@ class WebSocketService {
     }
   }
 
+  // ✅ NEW: Send audio chunk with MP3 format marker
+  void sendAudioChunkMP3(String base64Audio) {
+    if (_isConnected && _channel != null) {
+      _audioChunksSent++;
+      final message = jsonEncode({
+        'type': 'audio',
+        'data': base64Audio,
+        'format': 'mp3', // ✅ Mark as MP3 format
+        'sample_rate': 44100,
+        'channels': 2,
+      });
+      _channel!.sink.add(message);
+      
+      // 📤 Log every 10 chunks to avoid spam
+      if (_audioChunksSent % 10 == 1) {
+        print('📤 WebSocket: Sent MP3 audio chunk #$_audioChunksSent (${base64Audio.length} chars)');
+      }
+    } else {
+      print('❌ Cannot send MP3 audio chunk: WebSocket not connected');
+      if (_shouldAutoReconnect && !_isReconnecting) {
+        _scheduleReconnection();
+      }
+    }
+  }
+
   void sendStartRecording(int surahNumber, {int? pageId, int? juzId, int? ayah}) {
     if (_isConnected && _channel != null) {
       _audioChunksSent = 0; // Reset counter

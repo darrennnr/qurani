@@ -14,8 +14,12 @@ class SttPage extends StatelessWidget {
   final int? pageId;
   final int? juzId;
 
-  const SttPage({Key? key, this.suratId, this.pageId, this.juzId})
-    : assert(
+  const SttPage({
+    Key? key,
+    this.suratId,
+    this.pageId,
+    this.juzId,
+  }) : assert(
         (suratId != null ? 1 : 0) +
                 (pageId != null ? 1 : 0) +
                 (juzId != null ? 1 : 0) ==

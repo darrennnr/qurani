@@ -1,4 +1,4 @@
-﻿// lib\screens\main\stt\controllers\stt_controller.dart
+// lib\screens\main\stt\controllers\stt_controller.dart
 
 import 'dart:async';
 import 'package:cuda_qurani/models/playback_settings_model.dart';
@@ -143,7 +143,7 @@ ListeningAudioService? get listeningAudioService => _listeningAudioService;
     _errorMessage = '';
     notifyListeners();
     
-    // ✅ NEW: Check for resumable session
+    // ✅ Check for resumable session (for button display)
     await _checkForResumableSession();
 
     try {

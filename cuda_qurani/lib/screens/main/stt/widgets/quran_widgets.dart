@@ -350,13 +350,27 @@ class _QuranBottomBarState extends State<QuranBottomBar>
                                   onTap: () =>
                                       _handleModeSelect(controller, 'listen'),
                                 ),
-                                _buildIconButton(
-                                  icon: Icons.mic_none_rounded,
-                                  isActive: _selectedMode == 'recite',
-                                  iconSize: iconSize,
-                                  onTap: () =>
-                                      _handleModeSelect(controller, 'recite'),
-                                ),
+                                // ✅ FIX: Add STOP button for listening mode
+                                if (controller.isListeningMode)
+                                  _buildIconButton(
+                                    icon: Icons.stop_rounded,
+                                    isActive: false,
+                                    iconSize: iconSize,
+                                    onTap: () async {
+                                      await controller.stopListening();
+                                      setState(() {
+                                        _isMenuExpanded = false;
+                                      });
+                                    },
+                                  )
+                                else
+                                  _buildIconButton(
+                                    icon: Icons.mic_none_rounded,
+                                    isActive: _selectedMode == 'recite',
+                                    iconSize: iconSize,
+                                    onTap: () =>
+                                        _handleModeSelect(controller, 'recite'),
+                                  ),
                               ],
                             ),
                           ),
@@ -375,9 +389,41 @@ class _QuranBottomBarState extends State<QuranBottomBar>
                     child: InkWell(
                       borderRadius: BorderRadius.circular(buttonSize / 2),
                       onTap: () async {
+                        // ✅ FIX: Haptic feedback immediately
+                        AppHaptics.light();
+
                         if (_selectedMode == 'listen') {
                           // ====== LISTENING MODE ======
-                          print('🎵 LISTEN BUTTON: Opening playback settings');
+                          if (controller.isListeningMode) {
+                            // Already listening - handle pause/resume
+                            final audioService =
+                                controller.listeningAudioService;
+                            if (audioService != null) {
+                              // ✅ FIX: Update UI FIRST, then execute
+                              setState(() {
+                                // Force rebuild to show new icon immediately
+                              });
+
+                              if (audioService.isPaused) {
+                                // Resume playback
+                                print('▶️ RESUME BUTTON: Resuming playback');
+                                await controller.resumeListening();
+                              } else {
+                                // Pause playback
+                                print('⏸️ PAUSE BUTTON: Pausing playback');
+                                await controller.pauseListening();
+                              }
+
+                              // ✅ FIX: Force another rebuild after state change
+                              if (mounted) {
+                                setState(() {});
+                              }
+                            }
+                          } else {
+                            // Not listening, show settings
+                            print(
+                              '🎵 LISTEN BUTTON: Opening playback settings',
+                            );
 
                           // Navigate to playback settings
                           final settings =
@@ -427,20 +473,34 @@ class _QuranBottomBarState extends State<QuranBottomBar>
                                 ),
                               );
 
-                          // Check if settings returned
-                          if (settings != null) {
-                            print('✅ Playback settings received: $settings');
+                            // Check if settings returned
+                            if (settings != null) {
+                              print('✅ Playback settings received: $settings');
 
-                            // Start listening mode
-                            if (controller.isListeningMode) {
-                              // Already listening, stop first
-                              await controller.stopListening();
+                              try {
+                                await controller.startListening(settings);
+                              } catch (e) {
+                                print('❌ Failed to start listening: $e');
+
+                                // ✅ Show error with SnackBar
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Failed to start listening: $e'),
+                                      backgroundColor: Colors.red,
+                                      duration: const Duration(seconds: 5),
+                                      action: SnackBarAction(
+                                        label: 'Dismiss',
+                                        textColor: Colors.white,
+                                        onPressed: () {},
+                                      ),
+                                    ),
+                                  );
+                                }
+                              }
                             } else {
-                              // Start new listening session
-                              await controller.startListening(settings);
+                              print('⚠️ No settings selected, cancelled');
                             }
-                          } else {
-                            print('⚠️ No settings selected, cancelled');
                           }
                         } else {
                           // ====== RECITE MODE (EXISTING LOGIC) ======
@@ -634,11 +694,11 @@ class _QuranBottomBarState extends State<QuranBottomBar>
         // Check if playing or paused
         final audioService = controller.listeningAudioService;
         if (audioService != null && audioService.isPaused) {
-          return Icons.play_arrow; // Show play when paused
+          return Icons.play_arrow; // ✅ Show play when paused
         }
-        return Icons.stop; // Show stop when playing
+        return Icons.pause; // ✅ Show pause when playing
       }
-      return Icons.play_arrow; // Default: play icon
+      return Icons.headphones; // ✅ Default: headphones icon for listen mode
     }
   }
 

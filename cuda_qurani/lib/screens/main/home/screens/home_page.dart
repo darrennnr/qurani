@@ -370,10 +370,11 @@ class _HomePageState extends State<HomePage> {
       print('   Ayah: $ayah');
       print('   Position: $position');
       
-      // ✅ Navigate to STT page with resume session
+      // ✅ Navigate to STT page (user clicks resume button inside)
       await Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => SttPage(
+            suratId: surahId,  // ✅ Pass suratId
           ),
         ),
       );

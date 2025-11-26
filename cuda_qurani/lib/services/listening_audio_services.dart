@@ -24,6 +24,10 @@ class ListeningAudioService {
   int _currentVerseRepeat = 0;
   int _currentRangeRepeat = 0;
 
+  // ✅ NEW: Audio chunk callback
+  Function(String)? _onAudioChunkCallback;
+  String? _currentFilePath; // Track current playing file
+
   // Getters
   bool get isPlaying => _isPlaying;
   bool get isPaused => _isPaused;
@@ -106,7 +110,59 @@ class ListeningAudioService {
     print('✅ Playlist ready: ${_playlist.length} tracks');
   }
 
-  // Start playback
+  // ✅ NEW: Stream MP3 file chunks to backend (better sync)
+  Future<void> _streamMP3ToBackend(String filePath) async {
+    try {
+      print('🎵 Streaming MP3 to backend: $filePath');
+
+      final file = File(filePath);
+      if (!await file.exists()) {
+        print('❌ MP3 file not found: $filePath');
+        return;
+      }
+
+      final bytes = await file.readAsBytes();
+
+      // ✅ Smaller chunks for better streaming (2KB chunks)
+      const chunkSize = 2048; // 2KB per chunk
+      final totalChunks = (bytes.length / chunkSize).ceil();
+
+      print(
+        '📊 MP3 stats: ${bytes.length} bytes, $totalChunks chunks (2KB each)',
+      );
+
+      int chunkCount = 0;
+
+      // ✅ Stream ALL chunks rapidly at start (backend will buffer)
+      for (int i = 0; i < bytes.length; i += chunkSize) {
+        if (!_isPlaying) {
+          print('⏹️ Streaming stopped by user');
+          break;
+        }
+
+        final endIndex = (i + chunkSize).clamp(0, bytes.length);
+        final chunk = bytes.sublist(i, endIndex);
+        final base64Chunk = base64Encode(chunk);
+
+        _onAudioChunkCallback?.call(base64Chunk);
+
+        chunkCount++;
+
+        if (chunkCount % 10 == 1) {
+          print('📤 Sent MP3 chunk #$chunkCount/$totalChunks');
+        }
+
+        // ✅ Small delay to prevent overwhelming WebSocket
+        await Future.delayed(const Duration(milliseconds: 10));
+      }
+
+      print('✅ MP3 streaming complete: $chunkCount chunks sent');
+    } catch (e) {
+      print('❌ Error streaming MP3: $e');
+    }
+  }
+
+  // Start playback with MP3 streaming
   Future<void> startPlayback({required Function(String) onAudioChunk}) async {
     if (_playlist.isEmpty) {
       throw Exception('Playlist is empty');
@@ -114,8 +170,9 @@ class ListeningAudioService {
 
     _isPlaying = true;
     _isPaused = false;
+    _onAudioChunkCallback = onAudioChunk;
 
-    print('▶️ Starting playback...');
+    print('▶️ Starting playback with MP3 streaming...');
     await _playNextTrack(onAudioChunk: onAudioChunk);
   }
 
@@ -133,7 +190,14 @@ class ListeningAudioService {
         await _playNextTrack(onAudioChunk: onAudioChunk);
       } else {
         print('🏁 Playback completed');
+
+        // ✅ Auto-stop and cleanup
         await stopPlayback();
+
+        // ✅ Notify completion via stream
+        _currentVerseController?.add(
+          VerseReference(surahId: -1, verseNumber: -1),
+        );
       }
       return;
     }
@@ -164,16 +228,19 @@ class ListeningAudioService {
     }
 
     try {
+      // ✅ Store current file path
+      _currentFilePath = filePath;
+
       // Load audio file
       await _player.setFilePath(filePath);
 
       // Start word highlight timer
       _startWordHighlightTimer(currentAudio.segments);
 
-      // Stream audio chunks to backend (workaround)
-      _streamAudioFile(filePath, onAudioChunk);
+      // ✅ Start streaming MP3 to backend (synchronized with playback)
+      _streamMP3ToBackend(filePath);
 
-      // Wait for playback to complete
+      // Start playback
       await _player.play();
 
       // Wait for audio to finish
