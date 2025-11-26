@@ -48,7 +48,7 @@ class SttController with ChangeNotifier {
   final AppLogger appLogger = AppLogger();
   final SupabaseService _supabaseService = SupabaseService(); // ✅ NEW
   final AuthService _authService = AuthService(); // ✅ NEW
-  
+
   // ✅ NEW: Resumable session detection
   bool _hasResumableSession = false;
   bool get hasResumableSession => _hasResumableSession;
@@ -129,20 +129,20 @@ class SttController with ChangeNotifier {
 
   // Listening
   bool _isListeningMode = false;
-PlaybackSettings? _playbackSettings;
-ListeningAudioService? _listeningAudioService;
-StreamSubscription? _verseChangeSubscription;
-StreamSubscription? _wordHighlightSubscription;
-bool get isListeningMode => _isListeningMode;
-PlaybackSettings? get playbackSettings => _playbackSettings;
-ListeningAudioService? get listeningAudioService => _listeningAudioService;
+  PlaybackSettings? _playbackSettings;
+  ListeningAudioService? _listeningAudioService;
+  StreamSubscription? _verseChangeSubscription;
+  StreamSubscription? _wordHighlightSubscription;
+  bool get isListeningMode => _isListeningMode;
+  PlaybackSettings? get playbackSettings => _playbackSettings;
+  ListeningAudioService? get listeningAudioService => _listeningAudioService;
   // ===== INITIALIZATION =====
   Future<void> initializeApp() async {
     appLogger.log('APP_INIT', 'Starting OPTIMIZED page-based initialization');
     _isLoading = true;
     _errorMessage = '';
     notifyListeners();
-    
+
     // ✅ NEW: Check for resumable session
     await _checkForResumableSession();
 
@@ -189,182 +189,268 @@ ListeningAudioService? get listeningAudioService => _listeningAudioService;
   }
 
   Future<void> _initializeListeningServices() async {
-  try {
-    await ReciterDatabaseService.initialize();
-    print('✅ Reciter database initialized');
-  } catch (e) {
-    print('⚠️ Failed to initialize reciter database: $e');
-  }
-}
-
-Future<void> startListening(PlaybackSettings settings) async {
-  appLogger.log('LISTENING', 'Starting listening mode with settings: $settings');
-  
-  // 🔄 AUTO-RECONNECT: Same as startRecitation
-  final serviceConnected = _webSocketService.isConnected;
-  _isConnected = serviceConnected;
-  
-  if (!_isConnected) {
-    print('🔌 Not connected, attempting to connect...');
-    _errorMessage = 'Connecting to server...';
-    notifyListeners();
-    
     try {
-      _webSocketService.enableAutoReconnect();
-      await _webSocketService.connect();
-      await Future.delayed(const Duration(milliseconds: 500));
-      
-      if (!_webSocketService.isConnected) {
-        throw Exception('Connection failed after retry');
-      }
-      
-      _isConnected = true;
-      _errorMessage = '';
-      print('✅ Connected successfully!');
-      notifyListeners();
+      await ReciterDatabaseService.initialize();
+      print('✅ Reciter database initialized');
     } catch (e) {
-      _errorMessage = 'Unable to connect to server. Please check your connection.';
-      _isConnected = false;
-      print('❌ Connection failed: $e');
+      print('⚠️ Failed to initialize reciter database: $e');
+    }
+  }
+
+  Future<void> startListening(PlaybackSettings settings) async {
+    appLogger.log(
+      'LISTENING',
+      'Starting listening mode with settings: $settings',
+    );
+
+    // 🔄 AUTO-RECONNECT: Same as startRecitation
+    final serviceConnected = _webSocketService.isConnected;
+    _isConnected = serviceConnected;
+
+    if (!_isConnected) {
+      print('🔌 Not connected, attempting to connect...');
+      _errorMessage = 'Connecting to server...';
+      notifyListeners();
+
+      try {
+        _webSocketService.enableAutoReconnect();
+        await _webSocketService.connect();
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        if (!_webSocketService.isConnected) {
+          throw Exception('Connection failed after retry');
+        }
+
+        _isConnected = true;
+        _errorMessage = '';
+        print('✅ Connected successfully!');
+        notifyListeners();
+      } catch (e) {
+        _errorMessage =
+            'Unable to connect to server. Please check your connection.';
+        _isConnected = false;
+        print('❌ Connection failed: $e');
+        notifyListeners();
+        return;
+      }
+    }
+
+    // 🔒 Final connection check
+    if (!_webSocketService.isConnected) {
+      _errorMessage = 'Connection not stable. Please try again.';
       notifyListeners();
       return;
     }
-  }
 
-  // 🔒 Final connection check
-  if (!_webSocketService.isConnected) {
-    _errorMessage = 'Connection not stable. Please try again.';
-    notifyListeners();
-    return;
-  }
+    try {
+      // 🧹 Clear previous state
+      print('🧹 Clearing all previous state for new listening session...');
+      _tartibStatus.clear();
+      _wordStatusMap.clear();
+      _expectedAyah = settings.startVerse;
+      _sessionId = null;
+      _errorMessage = '';
+      await _navigateToPlaybackRange(settings);
 
-  try {
-    // 🧹 Clear previous state
-    _tartibStatus.clear();
-    _wordStatusMap.clear();
-    _expectedAyah = settings.startVerse;
-    _sessionId = null;
-    _errorMessage = '';
-    
-    // 🎵 Initialize listening audio service
-    _listeningAudioService = ListeningAudioService();
-    await _listeningAudioService!.initialize(settings);
-    
-    _playbackSettings = settings;
-    _isListeningMode = true;
-    
-    // 📡 Start WebSocket session (same as recite)
-    int recordingSurahId = settings.startSurahId;
-    
-    if (_determinedSurahId != null) {
-      recordingSurahId = _determinedSurahId!;
-    } else if (_ayatList.isNotEmpty) {
-      recordingSurahId = _ayatList.first.surah_id;
-    }
-    
-    print('🚀 Starting WebSocket session for surah $recordingSurahId');
-    _webSocketService.sendStartRecording(recordingSurahId);
-    
-    // 🎧 Subscribe to verse changes
-    _verseChangeSubscription = _listeningAudioService!.currentVerseStream?.listen((verse) {
-      print('📖 Now playing: ${verse.surahId}:${verse.verseNumber}');
-      
-      // Update current ayat index
-      final ayatIndex = _ayatList.indexWhere(
-        (a) => a.surah_id == verse.surahId && a.ayah == verse.verseNumber,
+      // 🎵 Initialize listening audio service
+      _listeningAudioService = ListeningAudioService();
+      await _listeningAudioService!.initialize(settings);
+
+      _playbackSettings = settings;
+      _isListeningMode = true;
+
+      // 📡 Start WebSocket session (same as recite)
+      int recordingSurahId = settings.startSurahId;
+
+      if (_determinedSurahId != null) {
+        recordingSurahId = _determinedSurahId!;
+      } else if (_ayatList.isNotEmpty) {
+        recordingSurahId = _ayatList.first.surah_id;
+      }
+
+      print('🚀 Starting WebSocket session for surah $recordingSurahId');
+      _webSocketService.sendStartRecording(recordingSurahId);
+
+      // 🎧 Subscribe to verse changes
+      _verseChangeSubscription = _listeningAudioService!.currentVerseStream
+          ?.listen((verse) {
+            // ✅ NEW: Detect completion signal
+            if (verse.surahId == -1 && verse.verseNumber == -1) {
+              print('🏁 COMPLETION DETECTED: Listening range finished');
+
+              // Auto-stop listening
+              Future.microtask(() async {
+                await stopListening();
+              });
+              return;
+            }
+
+            print('📖 Now playing: ${verse.surahId}:${verse.verseNumber}');
+
+            // Update current ayat index
+            final ayatIndex = _ayatList.indexWhere(
+              (a) => a.surah_id == verse.surahId && a.ayah == verse.verseNumber,
+            );
+
+            if (ayatIndex >= 0) {
+              _currentAyatIndex = ayatIndex;
+              notifyListeners();
+            }
+          });
+
+      // 🎨 Subscribe to word highlights (optional - for UI animation)
+      _wordHighlightSubscription = _listeningAudioService!.wordHighlightStream
+          ?.listen((wordIndex) {
+            // You can use this to add extra animations
+            print('✨ Highlight word: $wordIndex');
+          });
+
+// ▶️ Start playback + streaming to backend
+      await _listeningAudioService!.startPlayback(
+        onAudioChunk: (base64Audio) {
+          if (_webSocketService.isConnected) {
+            // ✅ FIX: Use sendAudioChunkMP3 for listening mode
+            _webSocketService.sendAudioChunkMP3(base64Audio);
+          } else {
+            print('⚠️ Warning: Audio chunk lost - WebSocket disconnected');
+          }
+        },
       );
-      
-      if (ayatIndex >= 0) {
-        _currentAyatIndex = ayatIndex;
+
+      _isRecording = true; // Treat as recording session
+
+      appLogger.log('LISTENING', 'Listening mode started successfully');
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = 'Failed to start listening: $e';
+      _isListeningMode = false;
+      _isRecording = false;
+      appLogger.log('LISTENING_ERROR', e.toString());
+      print('❌ Start listening failed: $e');
+      notifyListeners();
+    }
+  }
+
+  /// ✅ NEW: Navigate to page within playback range
+  Future<void> _navigateToPlaybackRange(PlaybackSettings settings) async {
+    try {
+      // Get target page from start of range
+      final targetPage = await LocalDatabaseService.getPageNumber(
+        settings.startSurahId,
+        settings.startVerse,
+      );
+
+      print('🎯 Target page for playback: $targetPage');
+
+      // Check if current page is within range
+      final startPage = targetPage;
+      final endPage = await LocalDatabaseService.getPageNumber(
+        settings.endSurahId,
+        settings.endVerse,
+      );
+
+      if (_currentPage < startPage || _currentPage > endPage) {
+        print(
+          '📄 Navigating from page $_currentPage to $targetPage (range: $startPage-$endPage)',
+        );
+
+        // Navigate to start page
+        if (_isQuranMode) {
+          navigateToPage(targetPage);
+        } else {
+          _currentPage = targetPage;
+          _listViewCurrentPage = targetPage;
+          await _loadCurrentPageAyats();
+        }
+
+        notifyListeners();
+      } else {
+        print('✅ Already in range ($startPage-$endPage), no navigation needed');
+      }
+    } catch (e) {
+      print('⚠️ Error navigating to range: $e');
+    }
+  }
+
+  /// Stop Listening Mode
+  Future<void> stopListening() async {
+    print('🛑 Stopping listening mode...');
+
+    try {
+      // ✅ FIX: Proper cleanup order
+
+      // 1. Cancel subscriptions first
+      await _verseChangeSubscription?.cancel();
+      await _wordHighlightSubscription?.cancel();
+      _verseChangeSubscription = null;
+      _wordHighlightSubscription = null;
+
+      // 2. Stop audio playback
+      if (_listeningAudioService != null) {
+        await _listeningAudioService!.stopPlayback();
+        _listeningAudioService!.dispose();
+        _listeningAudioService = null;
+      }
+
+      // 3. Stop WebSocket session
+      if (_webSocketService.isConnected) {
+        _webSocketService.sendStopRecording();
+      }
+
+      // 4. Reset state flags
+      _isListeningMode = false;
+      _isRecording = false;
+      _playbackSettings = null;
+
+      // ✅ FIX: Reset hideUnreadAyat to false
+      _hideUnreadAyat = false;
+
+      // 5. Clear error messages
+      _errorMessage = '';
+
+      appLogger.log('LISTENING', 'Stopped and cleaned up');
+      print('✅ Listening mode stopped completely');
+
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = 'Failed to stop listening: $e';
+      appLogger.log('LISTENING_ERROR', e.toString());
+      print('❌ Stop listening failed: $e');
+      notifyListeners();
+    }
+  }
+
+  Future<void> pauseListening() async {
+    if (_listeningAudioService != null && _isListeningMode) {
+      try {
+        await _listeningAudioService!.pausePlayback();
+        print('⏸️ Listening paused');
+
+        // ✅ FIX: Force UI update
+        notifyListeners();
+      } catch (e) {
+        print('❌ Failed to pause: $e');
+        _errorMessage = 'Failed to pause: $e';
         notifyListeners();
       }
-    });
-    
-    // 🎨 Subscribe to word highlights (optional - for UI animation)
-    _wordHighlightSubscription = _listeningAudioService!.wordHighlightStream?.listen((wordIndex) {
-      // You can use this to add extra animations
-      print('✨ Highlight word: $wordIndex');
-    });
-    
-    // ▶️ Start playback + streaming to backend
-    await _listeningAudioService!.startPlayback(
-      onAudioChunk: (base64Audio) {
-        if (_webSocketService.isConnected) {
-          _webSocketService.sendAudioChunk(base64Audio);
-        } else {
-          print('⚠️ Warning: Audio chunk lost - WebSocket disconnected');
-        }
-      },
-    );
-    
-    _isRecording = true; // Treat as recording session
-    _hideUnreadAyat = true; // Enable hide unread
-    
-    appLogger.log('LISTENING', 'Listening mode started successfully');
-    notifyListeners();
-    
-  } catch (e) {
-    _errorMessage = 'Failed to start listening: $e';
-    _isListeningMode = false;
-    _isRecording = false;
-    appLogger.log('LISTENING_ERROR', e.toString());
-    print('❌ Start listening failed: $e');
-    notifyListeners();
+    }
   }
-}
 
-/// Stop Listening Mode
-Future<void> stopListening() async {
-  print('🛑 Stopping listening mode...');
-  
-  try {
-    // Stop audio playback
-    await _listeningAudioService?.stopPlayback();
-    
-    // Cancel subscriptions
-    await _verseChangeSubscription?.cancel();
-    await _wordHighlightSubscription?.cancel();
-    
-    // Dispose audio service
-    _listeningAudioService?.dispose();
-    _listeningAudioService = null;
-    
-    // Stop WebSocket session
-    _webSocketService.sendStopRecording();
-    
-    _isListeningMode = false;
-    _isRecording = false;
-    _playbackSettings = null;
-    
-    appLogger.log('LISTENING', 'Stopped');
-    print('✅ Listening mode stopped');
-    notifyListeners();
-    
-  } catch (e) {
-    _errorMessage = 'Failed to stop listening: $e';
-    appLogger.log('LISTENING_ERROR', e.toString());
-    print('❌ Stop listening failed: $e');
-    notifyListeners();
-  }
-}
+  Future<void> resumeListening() async {
+    if (_listeningAudioService != null && _isListeningMode) {
+      try {
+        await _listeningAudioService!.resumePlayback();
+        print('▶️ Listening resumed');
 
-/// Pause listening (pause audio, but keep WebSocket alive)
-Future<void> pauseListening() async {
-  if (_listeningAudioService != null && _isListeningMode) {
-    await _listeningAudioService!.pausePlayback();
-    print('⏸️ Listening paused');
-    notifyListeners();
+        // ✅ FIX: Force UI update
+        notifyListeners();
+      } catch (e) {
+        print('❌ Failed to resume: $e');
+        _errorMessage = 'Failed to resume: $e';
+        notifyListeners();
+      }
+    }
   }
-}
-
-/// Resume listening
-Future<void> resumeListening() async {
-  if (_listeningAudioService != null && _isListeningMode) {
-    await _listeningAudioService!.resumePlayback();
-    print('▶️ Listening resumed');
-    notifyListeners();
-  }
-}
 
   // ADD NEW METHOD: Determine target page from navigation params
   Future<int> _determineTargetPage() async {
@@ -1402,18 +1488,20 @@ Future<void> resumeListening() async {
         final pausedSurah = message['surah'] ?? 0;
         final pausedAyah = message['ayah'] ?? 0;
         final pausedPosition = message['position'] ?? 0;
-        
+
         print('⏸️ STT: Session PAUSED');
         print('   Session ID: $pausedSessionId');
-        print('   Location: Surah $pausedSurah, Ayah $pausedAyah, Word ${pausedPosition + 1}');
-        
+        print(
+          '   Location: Surah $pausedSurah, Ayah $pausedAyah, Word ${pausedPosition + 1}',
+        );
+
         _sessionId = pausedSessionId;
         _isRecording = false;
-        
+
         // Show pause confirmation message
         _errorMessage = 'Session paused. You can resume anytime.';
         notifyListeners();
-        
+
         // Clear message after 3 seconds
         Future.delayed(const Duration(seconds: 3), () {
           if (_errorMessage == 'Session paused. You can resume anytime.') {
@@ -1428,25 +1516,29 @@ Future<void> resumeListening() async {
         final resumedSurah = message['surah'] ?? 0;
         final resumedAyah = message['ayah'] ?? 0;
         final resumedPosition = message['position'] ?? 0;
-        
+
         print('▶️ STT: Session RESUMED');
-        print('   Location: Surah $resumedSurah, Ayah $resumedAyah, Word ${resumedPosition + 1}');
-        
+        print(
+          '   Location: Surah $resumedSurah, Ayah $resumedAyah, Word ${resumedPosition + 1}',
+        );
+
         // ✅ CRITICAL: Navigate to the correct PAGE for this ayah
         try {
           final targetPage = await LocalDatabaseService.getPageNumber(
-            resumedSurah, 
+            resumedSurah,
             resumedAyah,
           );
-          
-          print('📍 Resume target page: $targetPage (for Surah $resumedSurah, Ayah $resumedAyah)');
-          
+
+          print(
+            '📍 Resume target page: $targetPage (for Surah $resumedSurah, Ayah $resumedAyah)',
+          );
+
           // Update page if different from current
           if (_currentPage != targetPage) {
             print('📄 Navigating from page $_currentPage to page $targetPage');
             _currentPage = targetPage;
             _listViewCurrentPage = targetPage;
-            
+
             // Load ayats for the target page
             await _loadCurrentPageAyats();
           }
@@ -1454,26 +1546,29 @@ Future<void> resumeListening() async {
           print('⚠️ Failed to get page number: $e');
           // Continue anyway with current page
         }
-        
+
         // Update current ayat index
         _currentAyatIndex = _ayatList.indexWhere((a) => a.ayah == resumedAyah);
-        
+
         // If ayat not found in current list, try to find it
         if (_currentAyatIndex == -1) {
           print('⚠️ Ayah $resumedAyah not found in current ayat list');
           // Try to find any ayat from the resumed surah
-          _currentAyatIndex = _ayatList.indexWhere((a) => a.surah_id == resumedSurah);
+          _currentAyatIndex = _ayatList.indexWhere(
+            (a) => a.surah_id == resumedSurah,
+          );
           if (_currentAyatIndex == -1) {
             print('⚠️ Surah $resumedSurah not found, defaulting to index 0');
             _currentAyatIndex = 0;
           }
         }
-        
+
         print('📍 Resume ayat index: $_currentAyatIndex');
-        
+
         // Restore word status map if provided
         if (message['word_status_map'] != null) {
-          final Map<String, dynamic> backendWordMap = message['word_status_map'];
+          final Map<String, dynamic> backendWordMap =
+              message['word_status_map'];
           backendWordMap.forEach((ayahKey, wordMap) {
             final int ayahNum = int.tryParse(ayahKey) ?? -1;
             if (ayahNum > 0 && wordMap is Map) {
@@ -1481,17 +1576,20 @@ Future<void> resumeListening() async {
               (wordMap as Map<String, dynamic>).forEach((wordIndexKey, status) {
                 final int wordIndex = int.tryParse(wordIndexKey) ?? -1;
                 if (wordIndex >= 0) {
-                  _wordStatusMap[ayahNum]![wordIndex] = _mapWordStatus(status.toString());
+                  _wordStatusMap[ayahNum]![wordIndex] = _mapWordStatus(
+                    status.toString(),
+                  );
                 }
               });
             }
           });
           print('✅ Restored word status for ${_wordStatusMap.length} ayahs');
         }
-        
+
         // ✅ Restore verse status (ayah-level colors: matched/mismatched)
         if (message['verse_status_map'] != null) {
-          final Map<String, dynamic> verseStatusMap = message['verse_status_map'] as Map<String, dynamic>;
+          final Map<String, dynamic> verseStatusMap =
+              message['verse_status_map'] as Map<String, dynamic>;
           verseStatusMap.forEach((ayahKey, status) {
             final int ayahNum = int.tryParse(ayahKey) ?? -1;
             if (ayahNum > 0) {
@@ -1502,10 +1600,11 @@ Future<void> resumeListening() async {
             }
           });
         }
-        
+
         // ✅ Restore tartib status
         if (message['tartib_status'] != null) {
-          final Map<String, dynamic> tartibMap = message['tartib_status'] as Map<String, dynamic>;
+          final Map<String, dynamic> tartibMap =
+              message['tartib_status'] as Map<String, dynamic>;
           tartibMap.forEach((ayahKey, status) {
             final int ayahNum = int.tryParse(ayahKey) ?? -1;
             if (ayahNum > 0) {
@@ -1524,13 +1623,15 @@ Future<void> resumeListening() async {
           });
           print('✅ Restored tartib status for ${_tartibStatus.length} ayahs');
         }
-        
-        _errorMessage = 'Session resumed: Surah $resumedSurah, Ayah $resumedAyah, Word ${resumedPosition + 1}';
+
+        _errorMessage =
+            'Session resumed: Surah $resumedSurah, Ayah $resumedAyah, Word ${resumedPosition + 1}';
         notifyListeners();
-        
+
         // Clear message after 3 seconds
         Future.delayed(const Duration(seconds: 3), () {
-          if (_errorMessage == 'Session resumed: Surah $resumedSurah, Ayah $resumedAyah, Word ${resumedPosition + 1}') {
+          if (_errorMessage ==
+              'Session resumed: Surah $resumedSurah, Ayah $resumedAyah, Word ${resumedPosition + 1}') {
             _errorMessage = '';
             notifyListeners();
           }
@@ -1540,27 +1641,27 @@ Future<void> resumeListening() async {
       // ✅ NEW: Handle summary message from backend
       case 'summary':
         print('📊 STT: Received session SUMMARY');
-        
+
         final summaryAyah = message['ayah'] ?? 0;
         final wordResults = message['word_results'] as List?;
         final accuracy = message['accuracy'] as Map<String, dynamic>?;
-        
+
         if (accuracy != null) {
           final benar = accuracy['benar'] ?? 0;
           final salah = accuracy['salah'] ?? 0;
           final total = accuracy['total'] ?? 0;
           final accuracyPct = accuracy['accuracy'] ?? 0.0;
-          
+
           print('   ✅ Benar: $benar');
           print('   ❌ Salah: $salah');
           print('   📈 Total: $total');
           print('   🎯 Accuracy: ${accuracyPct.toStringAsFixed(1)}%');
         }
-        
+
         if (wordResults != null) {
           print('   📝 Word results: ${wordResults.length} words');
         }
-        
+
         _isRecording = false;
         notifyListeners();
         break;
@@ -1568,11 +1669,11 @@ Future<void> resumeListening() async {
       // ✅ NEW: Handle completed message from backend
       case 'completed':
         print('✅ STT: Session COMPLETED');
-        
+
         _isRecording = false;
         _errorMessage = 'Session completed successfully!';
         notifyListeners();
-        
+
         // Clear message after 3 seconds
         Future.delayed(const Duration(seconds: 3), () {
           if (_errorMessage == 'Session completed successfully!') {
@@ -1605,8 +1706,10 @@ Future<void> resumeListening() async {
   /// ✅ NEW: Resume from existing session
   Future<void> resumeFromSession(Map<String, dynamic> session) async {
     print('▶️ Resuming session: ${session['session_id']}');
-    print('   Location: Surah ${session['surah_id']}, Ayah ${session['ayah']}, Word ${(session['position'] ?? 0) + 1}');
-    
+    print(
+      '   Location: Surah ${session['surah_id']}, Ayah ${session['ayah']}, Word ${(session['position'] ?? 0) + 1}',
+    );
+
     try {
       // Connect WebSocket if not connected
       if (!_webSocketService.isConnected) {
@@ -1614,16 +1717,15 @@ Future<void> resumeListening() async {
         await _webSocketService.connect();
         await Future.delayed(const Duration(milliseconds: 500));
       }
-      
+
       // Send resume request
       _webSocketService.sendResumeSession(
         sessionId: session['session_id'],
         surahNumber: session['surah_id'],
         position: session['position'],
       );
-      
+
       print('✅ Resume request sent, waiting for backend response...');
-      
     } catch (e) {
       print('❌ Failed to resume session: $e');
       _errorMessage = 'Failed to resume session: $e';
@@ -1639,26 +1741,30 @@ Future<void> resumeListening() async {
         _hasResumableSession = false;
         return;
       }
-      
+
       final userUuid = _authService.userId;
       if (userUuid == null) {
         print('⚠️ User UUID is null');
         _hasResumableSession = false;
         return;
       }
-      
+
       print('🔍 Checking for resumable session...');
-      final latestSession = await _supabaseService.getResumableSession(userUuid);
-      
+      final latestSession = await _supabaseService.getResumableSession(
+        userUuid,
+      );
+
       if (latestSession != null) {
         print('✅ Found resumable session: ${latestSession['session_id']}');
-        print('   Surah: ${latestSession['surah_id']}, Ayah: ${latestSession['ayah']}');
+        print(
+          '   Surah: ${latestSession['surah_id']}, Ayah: ${latestSession['ayah']}',
+        );
         _hasResumableSession = true;
       } else {
         print('⚠️ No resumable session found');
         _hasResumableSession = false;
       }
-      
+
       notifyListeners();
     } catch (e) {
       print('❌ Error checking for resumable session: $e');
@@ -1666,7 +1772,7 @@ Future<void> resumeListening() async {
       notifyListeners();
     }
   }
-  
+
   /// ✅ NEW: Resume last session (called by button)
   Future<void> resumeLastSession() async {
     try {
@@ -1674,20 +1780,20 @@ Future<void> resumeListening() async {
         print('⚠️ Cannot resume: User not authenticated');
         return;
       }
-      
+
       final userUuid = _authService.userId;
       if (userUuid == null) {
         print('⚠️ Cannot resume: User UUID is null');
         return;
       }
-      
+
       print('📡 Fetching resumable session...');
       final session = await _supabaseService.getResumableSession(userUuid);
-      
+
       if (session != null) {
         print('✅ Resuming session: ${session['session_id']}');
         await resumeFromSession(session);
-        _hasResumableSession = false;  // Clear flag after resume
+        _hasResumableSession = false; // Clear flag after resume
         notifyListeners();
       } else {
         print('⚠️ No session to resume');
@@ -1871,11 +1977,18 @@ Future<void> resumeListening() async {
   void dispose() {
     print('ðŸ’€ SttController: DISPOSE CALLED for surah $suratId');
     appLogger.log('DISPOSAL', 'Starting cleanup process');
-    
-  _verseChangeSubscription?.cancel();
-  _wordHighlightSubscription?.cancel();
-  _listeningAudioService?.dispose();
-  ReciterDatabaseService.dispose();
+
+    _verseChangeSubscription?.cancel();
+    _wordHighlightSubscription?.cancel();
+    _listeningAudioService?.dispose();
+    // ✅ FIX: Async dispose for reciter database
+    ReciterDatabaseService.dispose()
+        .then((_) {
+          print('✅ Reciter database closed');
+        })
+        .catchError((e) {
+          print('⚠️ Error closing reciter database: $e');
+        });
 
     // âœ… Cancel subscriptions
     _wsSubscription?.cancel();

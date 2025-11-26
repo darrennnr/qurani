@@ -350,13 +350,27 @@ class _QuranBottomBarState extends State<QuranBottomBar>
                                   onTap: () =>
                                       _handleModeSelect(controller, 'listen'),
                                 ),
-                                _buildIconButton(
-                                  icon: Icons.mic_none_rounded,
-                                  isActive: _selectedMode == 'recite',
-                                  iconSize: iconSize,
-                                  onTap: () =>
-                                      _handleModeSelect(controller, 'recite'),
-                                ),
+                                // ✅ FIX: Add STOP button for listening mode
+                                if (controller.isListeningMode)
+                                  _buildIconButton(
+                                    icon: Icons.stop_rounded,
+                                    isActive: false,
+                                    iconSize: iconSize,
+                                    onTap: () async {
+                                      await controller.stopListening();
+                                      setState(() {
+                                        _isMenuExpanded = false;
+                                      });
+                                    },
+                                  )
+                                else
+                                  _buildIconButton(
+                                    icon: Icons.mic_none_rounded,
+                                    isActive: _selectedMode == 'recite',
+                                    iconSize: iconSize,
+                                    onTap: () =>
+                                        _handleModeSelect(controller, 'recite'),
+                                  ),
                               ],
                             ),
                           ),
@@ -375,72 +389,110 @@ class _QuranBottomBarState extends State<QuranBottomBar>
                     child: InkWell(
                       borderRadius: BorderRadius.circular(buttonSize / 2),
                       onTap: () async {
+                        // ✅ FIX: Haptic feedback immediately
+                        AppHaptics.light();
+
                         if (_selectedMode == 'listen') {
                           // ====== LISTENING MODE ======
-                          print('🎵 LISTEN BUTTON: Opening playback settings');
+                          if (controller.isListeningMode) {
+                            // Already listening - handle pause/resume
+                            final audioService =
+                                controller.listeningAudioService;
+                            if (audioService != null) {
+                              // ✅ FIX: Update UI FIRST, then execute
+                              setState(() {
+                                // Force rebuild to show new icon immediately
+                              });
 
-                          // Navigate to playback settings
-                          final settings =
-                              await Navigator.push<PlaybackSettings>(
-                                context,
-                                PageRouteBuilder(
-                                  pageBuilder:
-                                      (
-                                        context,
-                                        animation,
-                                        secondaryAnimation,
-                                      ) => const PlaybackSettingsPage(),
-                                  transitionsBuilder:
-                                      (
-                                        context,
-                                        animation,
-                                        secondaryAnimation,
-                                        child,
-                                      ) {
-                                        const begin = Offset(0.0, 0.3);
-                                        const end = Offset.zero;
-                                        const curve = Curves.easeInOut;
-                                        var tween = Tween(
-                                          begin: begin,
-                                          end: end,
-                                        ).chain(CurveTween(curve: curve));
-                                        var offsetAnimation = animation.drive(
-                                          tween,
-                                        );
-                                        var fadeAnimation = animation.drive(
-                                          Tween(
-                                            begin: 0.0,
-                                            end: 1.0,
-                                          ).chain(CurveTween(curve: curve)),
-                                        );
+                              if (audioService.isPaused) {
+                                // Resume playback
+                                print('▶️ RESUME BUTTON: Resuming playback');
+                                await controller.resumeListening();
+                              } else {
+                                // Pause playback
+                                print('⏸️ PAUSE BUTTON: Pausing playback');
+                                await controller.pauseListening();
+                              }
 
-                                        return FadeTransition(
-                                          opacity: fadeAnimation,
-                                          child: SlideTransition(
-                                            position: offsetAnimation,
-                                            child: child,
-                                          ),
-                                        );
-                                      },
-                                  transitionDuration:
-                                      AppDesignSystem.durationNormal,
-                                ),
-                              );
-
-                          // Check if settings returned
-                          if (settings != null) {
-                            print('✅ Playback settings received: $settings');
-
-                            // Start listening mode
-                            if (controller.isListeningMode) {
-                              // Already listening, stop first
-                              await controller.stopListening();
-                            } else {
-                              // Start new listening session
-                              await controller.startListening(settings);
+                              // ✅ FIX: Force another rebuild after state change
+                              if (mounted) {
+                                setState(() {});
+                              }
                             }
                           } else {
-                            print('⚠️ No settings selected, cancelled');
+                            // Not listening, show settings
+                            print(
+                              '🎵 LISTEN BUTTON: Opening playback settings',
+                            );
+
+                            final settings =
+                                await Navigator.push<PlaybackSettings>(
+                                  context,
+                                  PageRouteBuilder(
+                                    pageBuilder:
+                                        (
+                                          context,
+                                          animation,
+                                          secondaryAnimation,
+                                        ) => const PlaybackSettingsPage(),
+                                    transitionsBuilder:
+                                        (
+                                          context,
+                                          animation,
+                                          secondaryAnimation,
+                                          child,
+                                        ) {
+                                          const begin = Offset(0.0, 0.3);
+                                          const end = Offset.zero;
+                                          const curve = Curves.easeInOut;
+                                          var tween = Tween(
+                                            begin: begin,
+                                            end: end,
+                                          ).chain(CurveTween(curve: curve));
+                                          var offsetAnimation = animation.drive(
+                                            tween,
+                                          );
+                                          var fadeAnimation = animation.drive(
+                                            Tween(
+                                              begin: 0.0,
+                                              end: 1.0,
+                                            ).chain(CurveTween(curve: curve)),
+                                          );
+
+                                          return FadeTransition(
+                                            opacity: fadeAnimation,
+                                            child: SlideTransition(
+                                              position: offsetAnimation,
+                                              child: child,
+                                            ),
+                                          );
+                                        },
+                                    transitionDuration:
+                                        AppDesignSystem.durationNormal,
+                                  ),
+                                );
+
+                            if (settings != null) {
+                              print('✅ Playback settings received: $settings');
+
+                              try {
+                                await controller.startListening(settings);
+                              } catch (e) {
+                                print('❌ Failed to start listening: $e');
+
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('$e'),
+                                      backgroundColor: Colors.red,
+                                      duration: Duration(seconds: 5),
+                                    ),
+                                  );
+                                }
+                              }
+                            } else {
+                              print('⚠️ No settings selected, cancelled');
+                            }
                           }
                         } else {
                           // ====== RECITE MODE (EXISTING LOGIC) ======
@@ -544,28 +596,6 @@ class _QuranBottomBarState extends State<QuranBottomBar>
                           ),
                         );
                       },
-                      child: Container(
-                        width: buttonSize * 0.5,
-                        height: buttonSize * 0.5,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: primaryColor.withOpacity(0.25),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Icon(
-                            Icons.keyboard_arrow_up,
-                            color: primaryColor,
-                            size: iconSize * 1.1,
-                          ),
-                        ),
-                      ),
                     ),
                   ),
                 ),
@@ -629,16 +659,25 @@ class _QuranBottomBarState extends State<QuranBottomBar>
     if (_selectedMode == 'recite') {
       return controller.isRecording ? Icons.stop : Icons.mic;
     } else {
-      // Listening mode
+      // ✅ FIX: Listening mode - check actual audio service state
       if (controller.isListeningMode) {
-        // Check if playing or paused
         final audioService = controller.listeningAudioService;
-        if (audioService != null && audioService.isPaused) {
-          return Icons.play_arrow; // Show play when paused
+
+        // ✅ CRITICAL: Check actual playing state from audio service
+        if (audioService != null) {
+          if (audioService.isPaused) {
+            return Icons.play_arrow; // Show play when paused
+          } else if (audioService.isPlaying) {
+            return Icons.pause; // Show pause when playing
+          }
         }
-        return Icons.stop; // Show stop when playing
+
+        // Fallback: if service exists but state unclear
+        return Icons.pause;
       }
-      return Icons.play_arrow; // Default: play icon
+
+      // Default: show play (not listening yet)
+      return Icons.play_arrow;
     }
   }
 

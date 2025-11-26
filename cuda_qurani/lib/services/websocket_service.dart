@@ -227,15 +227,54 @@ class WebSocketService {
     }
   }
 
-  void sendStartRecording(int surahNumber) {
+  // ✅ NEW: Send audio chunk with MP3 format marker
+  void sendAudioChunkMP3(String base64Audio) {
+    if (_isConnected && _channel != null) {
+      _audioChunksSent++;
+      final message = jsonEncode({
+        'type': 'audio',
+        'data': base64Audio,
+        'format': 'mp3', // ✅ Mark as MP3 format
+        'sample_rate': 44100,
+        'channels': 2,
+      });
+      _channel!.sink.add(message);
+      
+      // 📤 Log every 10 chunks to avoid spam
+      if (_audioChunksSent % 10 == 1) {
+        print('📤 WebSocket: Sent MP3 audio chunk #$_audioChunksSent (${base64Audio.length} chars)');
+      }
+    } else {
+      print('❌ Cannot send audio chunk: WebSocket not connected');
+      if (_shouldAutoReconnect && !_isReconnecting) {
+        _scheduleReconnection();
+      }
+    }
+  }
+
+  void sendStartRecording(int surahNumber, {int? pageId, int? juzId, int? ayah}) {
     if (_isConnected && _channel != null) {
       _audioChunksSent = 0; // Reset counter
       
-      // ✅ Build message with user info if authenticated
+      // ✅ Build message with location info
       final messageData = {
         'type': 'start',
         'surah': surahNumber,
       };
+      
+      // ✅ Add optional location info (page/juz/ayah)
+      if (pageId != null) {
+        messageData['page'] = pageId;
+        print('📄 Including page: $pageId');
+      }
+      if (juzId != null) {
+        messageData['juz'] = juzId;
+        print('📚 Including juz: $juzId');
+      }
+      if (ayah != null) {
+        messageData['ayah'] = ayah;
+        print('📖 Including ayah: $ayah');
+      }
       
       // ✅ Add user info if authenticated
       if (_authService.isAuthenticated) {

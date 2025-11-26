@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:cuda_qurani/screens/main/home/widgets/navigation_bar.dart';
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
 import 'package:cuda_qurani/core/widgets/app_components.dart';
+import 'package:cuda_qurani/services/supabase_service.dart';
+import 'package:cuda_qurani/services/auth_service.dart'; // ✅ Import AuthService
 
 class AllSessionPage extends StatefulWidget {
   const AllSessionPage({Key? key}) : super(key: key);
@@ -14,8 +16,58 @@ class AllSessionPage extends StatefulWidget {
 
 class _AllSessionPageState extends State<AllSessionPage> {
   // ==================== DATA STRUCTURE ====================
-  // Optimized with better organization & type safety
-  final List<SessionData> _sessions = [
+  final SupabaseService _supabaseService = SupabaseService();
+  final AuthService _authService = AuthService(); // ✅ Add AuthService
+  List<SessionData> _sessions = [];
+  bool _isLoading = true;
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadSessions();
+  }
+  
+  Future<void> _loadSessions() async {
+    setState(() => _isLoading = true);
+    
+    try {
+      // ✅ Get current user UUID
+      final userUuid = _authService.userId;
+      
+      print('📱 ALL_SESSION: Starting load...');
+      print('👤 ALL_SESSION: User UUID: $userUuid');
+      
+      if (userUuid == null) {
+        print('⚠️ ALL_SESSION: User not authenticated');
+        setState(() => _isLoading = false);
+        _loadDummyData();
+        return;
+      }
+      
+      // ✅ Fetch sessions filtered by user (includes ALL statuses: active, paused, stopped)
+      print('📡 ALL_SESSION: Fetching sessions from database...');
+      final sessions = await _supabaseService.getAllSessions(userUuid: userUuid);
+      
+      print('✅ ALL_SESSION: Loaded ${sessions.length} sessions');
+      if (sessions.isNotEmpty) {
+        print('📋 ALL_SESSION: First session - ID: ${sessions[0]['session_id']}, Status: ${sessions[0]['status']}');
+      }
+      
+      setState(() {
+        _sessions = sessions.map((s) => SessionData.fromSupabase(s)).toList();
+        _isLoading = false;
+      });
+    } catch (e, stackTrace) {
+      print('❌ ALL_SESSION: Error loading sessions: $e');
+      print('Stack trace: $stackTrace');
+      setState(() => _isLoading = false);
+      // Fallback to dummy data if error
+      _loadDummyData();
+    }
+  }
+  
+  void _loadDummyData() {
+    _sessions = [
     SessionData(
       type: SessionType.reading,
       surah: 'Al-Kafirun 1 - Al-Masad 5',
@@ -107,6 +159,7 @@ class _AllSessionPageState extends State<AllSessionPage> {
       displayTime: '5:12PM - 5:15PM',
     ),
   ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -114,7 +167,9 @@ class _AllSessionPageState extends State<AllSessionPage> {
       backgroundColor: AppColors.backgroundLight,
       appBar: const ProfileAppBar(title: 'Session'),
       body: SafeArea(
-        child: _buildBody(context),
+        child: _isLoading 
+          ? const Center(child: CircularProgressIndicator())
+          : _buildBody(context),
       ),
     );
   }
@@ -440,6 +495,7 @@ class SessionData {
   final DateTime timestamp;
   final String displayDate;
   final String displayTime;
+  final String? sessionId;
 
   SessionData({
     required this.type,
@@ -449,5 +505,43 @@ class SessionData {
     required this.timestamp,
     required this.displayDate,
     required this.displayTime,
+    this.sessionId,
   });
+  
+  factory SessionData.fromSupabase(Map<String, dynamic> data) {
+    final timestamp = DateTime.parse(data['created_at'] ?? DateTime.now().toIso8601String());
+    final surahId = data['surah_id'] ?? 1;
+    final ayah = data['ayah'] ?? 1;
+    
+    return SessionData(
+      type: SessionType.reading,
+      surah: 'Surah $surahId: $ayah',
+      duration: Duration(minutes: 0),
+      verses: ayah,
+      timestamp: timestamp,
+      displayDate: _formatDate(timestamp),
+      displayTime: _formatTime(timestamp),
+      sessionId: data['session_id'],
+    );
+  }
+  
+  static String _formatDate(DateTime dt) {
+    final now = DateTime.now();
+    if (dt.year == now.year && dt.month == now.month && dt.day == now.day) {
+      return 'TODAY';
+    }
+    return '${_monthName(dt.month)} ${dt.day}, ${dt.year}';
+  }
+  
+  static String _formatTime(DateTime dt) {
+    final hour = dt.hour > 12 ? dt.hour - 12 : dt.hour;
+    final period = dt.hour >= 12 ? 'PM' : 'AM';
+    return '${hour}:${dt.minute.toString().padLeft(2, '0')}$period';
+  }
+  
+  static String _monthName(int month) {
+    const months = ['', 'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
+      'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
+    return months[month];
+  }
 }

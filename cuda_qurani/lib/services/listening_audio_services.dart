@@ -3,14 +3,14 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
-import 'package:cuda_qurani/services/audio_download_services.dart';
 import 'package:just_audio/just_audio.dart';
 import '../models/playback_settings_model.dart';
 import 'reciter_database_service.dart';
+import 'audio_download_services.dart';
 
 class ListeningAudioService {
   final AudioPlayer _player = AudioPlayer();
+
   bool _isPlaying = false;
   bool _isPaused = false;
 
@@ -23,6 +23,10 @@ class ListeningAudioService {
   int _currentTrackIndex = 0;
   int _currentVerseRepeat = 0;
   int _currentRangeRepeat = 0;
+
+  // Audio chunk callback
+  Function(String)? _onAudioChunkCallback;
+  String? _currentFilePath; // Track current playing file
 
   // Getters
   bool get isPlaying => _isPlaying;
@@ -106,7 +110,59 @@ class ListeningAudioService {
     print('✅ Playlist ready: ${_playlist.length} tracks');
   }
 
-  // Start playback
+  // ✅ FIXED: Stream MP3 file chunks to backend (better sync)
+  Future<void> _streamMP3ToBackend(String filePath) async {
+    try {
+      print('🎵 Streaming MP3 to backend: $filePath');
+
+      final file = File(filePath);
+      if (!await file.exists()) {
+        print('❌ MP3 file not found: $filePath');
+        return;
+      }
+
+      final bytes = await file.readAsBytes();
+
+      // ✅ FIX: Smaller chunks for better streaming (2KB chunks)
+      const chunkSize = 2048; // 2KB per chunk
+      final totalChunks = (bytes.length / chunkSize).ceil();
+
+      print(
+        '📊 MP3 stats: ${bytes.length} bytes, $totalChunks chunks (2KB each)',
+      );
+
+      int chunkCount = 0;
+
+      // ✅ FIX: Stream ALL chunks rapidly at start (backend will buffer)
+      for (int i = 0; i < bytes.length; i += chunkSize) {
+        if (!_isPlaying) {
+          print('⏹️ Streaming stopped by user');
+          break;
+        }
+
+        final endIndex = (i + chunkSize).clamp(0, bytes.length);
+        final chunk = bytes.sublist(i, endIndex);
+        final base64Chunk = base64Encode(chunk);
+
+        _onAudioChunkCallback?.call(base64Chunk);
+
+        chunkCount++;
+
+        if (chunkCount % 10 == 1) {
+          print('📤 Sent MP3 chunk #$chunkCount/$totalChunks');
+        }
+
+        // ✅ Small delay to prevent overwhelming WebSocket
+        await Future.delayed(const Duration(milliseconds: 10));
+      }
+
+      print('✅ MP3 streaming complete: $chunkCount chunks sent');
+    } catch (e) {
+      print('❌ Error streaming MP3: $e');
+    }
+  }
+
+  // Start playback with MP3 streaming
   Future<void> startPlayback({required Function(String) onAudioChunk}) async {
     if (_playlist.isEmpty) {
       throw Exception('Playlist is empty');
@@ -114,8 +170,10 @@ class ListeningAudioService {
 
     _isPlaying = true;
     _isPaused = false;
+    _onAudioChunkCallback = onAudioChunk;
 
-    print('▶️ Starting playback...');
+    print('▶️ Starting playback with MP3 streaming...');
+
     await _playNextTrack(onAudioChunk: onAudioChunk);
   }
 
@@ -133,7 +191,14 @@ class ListeningAudioService {
         await _playNextTrack(onAudioChunk: onAudioChunk);
       } else {
         print('🏁 Playback completed');
+
+        // Auto-stop and cleanup
         await stopPlayback();
+
+        // Notify completion via stream
+        _currentVerseController?.add(
+          VerseReference(surahId: -1, verseNumber: -1),
+        );
       }
       return;
     }
@@ -164,16 +229,19 @@ class ListeningAudioService {
     }
 
     try {
+      // Store current file path
+      _currentFilePath = filePath;
+
       // Load audio file
       await _player.setFilePath(filePath);
 
       // Start word highlight timer
       _startWordHighlightTimer(currentAudio.segments);
 
-      // Stream audio chunks to backend (workaround)
-      _streamAudioFile(filePath, onAudioChunk);
+      // ✅ Start streaming MP3 to backend (synchronized with playback)
+      _streamMP3ToBackend(filePath);
 
-      // Wait for playback to complete
+      // Start playback
       await _player.play();
 
       // Wait for audio to finish
@@ -183,7 +251,6 @@ class ListeningAudioService {
 
       // Stop word highlighting
       _stopWordHighlightTimer();
-
       // Check verse repeat
       if (_shouldRepeatVerse()) {
         _currentVerseRepeat++;
@@ -224,38 +291,6 @@ class ListeningAudioService {
     return _currentRangeRepeat < (repeatCount - 1);
   }
 
-  // Stream audio file to backend (workaround for internal capture)
-  Future<void> _streamAudioFile(
-    String filePath,
-    Function(String) onAudioChunk,
-  ) async {
-    try {
-      final file = File(filePath);
-      final bytes = await file.readAsBytes();
-
-      // Split into chunks (simulate streaming)
-      const chunkSize = 4096; // 4KB chunks
-
-      for (int i = 0; i < bytes.length; i += chunkSize) {
-        if (!_isPlaying) break;
-
-        final end = (i + chunkSize < bytes.length)
-            ? i + chunkSize
-            : bytes.length;
-        final chunk = bytes.sublist(i, end);
-        final base64Chunk = base64Encode(chunk);
-
-        onAudioChunk(base64Chunk);
-
-        // Delay to match real-time streaming (adjusted for speed)
-        final delayMs = (50 / _currentSettings!.speed).round();
-        await Future.delayed(Duration(milliseconds: delayMs));
-      }
-    } catch (e) {
-      print('❌ Error streaming audio file: $e');
-    }
-  }
-
   // Start word-level highlighting based on segments
   void _startWordHighlightTimer(List<WordSegment> segments) {
     if (segments.isEmpty) return;
@@ -290,7 +325,6 @@ class ListeningAudioService {
     _wordHighlightTimer = null;
   }
 
-  // Pause playback
   Future<void> pausePlayback() async {
     if (_isPlaying && !_isPaused) {
       await _player.pause();
@@ -299,7 +333,6 @@ class ListeningAudioService {
     }
   }
 
-  // Resume playback
   Future<void> resumePlayback() async {
     if (_isPlaying && _isPaused) {
       await _player.play();
@@ -308,24 +341,22 @@ class ListeningAudioService {
     }
   }
 
-  // Stop playback
   Future<void> stopPlayback() async {
     _isPlaying = false;
     _isPaused = false;
     _stopWordHighlightTimer();
 
     await _player.stop();
-
-    _currentVerseController?.add(VerseReference(surahId: 0, verseNumber: 0));
-
-    print('⏹️ Playback stopped');
   }
-
-  // Dispose
+  // ✅ FIX: Proper dispose method
   void dispose() {
+    print('🗑️ ListeningAudioService: Disposing...');
     _stopWordHighlightTimer();
     _player.dispose();
     _currentVerseController?.close();
     _wordHighlightController?.close();
+    _onAudioChunkCallback = null;
+    _currentFilePath = null;
+    print('✅ ListeningAudioService disposed');
   }
 }

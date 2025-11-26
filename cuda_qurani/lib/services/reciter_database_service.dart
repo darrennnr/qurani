@@ -1,7 +1,6 @@
-// lib/services/reciter_database_service.dart
-
 import 'dart:convert';
 import 'dart:io';
+import 'package:cuda_qurani/services/global_ayat_services.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as path;
 import 'package:sqflite/sqflite.dart';
@@ -79,50 +78,59 @@ class ReciterDatabaseService {
   }
 
   // Get audio data for specific verse
-  static Future<ReciterAudioData?> getVerseAudio(int surahNumber, int ayahNumber) async {
-    if (_database == null) {
-      await initialize();
-    }
+  /// Get audio data for specific verse using GLOBAL AYAT INDEX
+static Future<ReciterAudioData?> getVerseAudio(int surahNumber, int ayahNumber) async {
+  if (_database == null) {
+    await initialize();
+  }
 
-    try {
-      final List<Map<String, dynamic>> results = await _database!.query(
-        'verses',
-        where: 'surah_number = ? AND ayah_number = ?',
-        whereArgs: [surahNumber, ayahNumber],
-      );
+  try {
+    // ✅ CRITICAL FIX: Convert (surah, ayah) → global ayat index
+    final globalAyat = GlobalAyatService.toGlobalAyat(surahNumber, ayahNumber);
+    
+    print('🔍 Fetching audio: Surah $surahNumber Ayah $ayahNumber → Global Ayat #$globalAyat');
 
-      if (results.isEmpty) {
-        print('⚠️ No audio found for ${surahNumber}:${ayahNumber}');
-        return null;
-      }
+    // ✅ Query database using ayah_number = GLOBAL INDEX
+    final List<Map<String, dynamic>> results = await _database!.query(
+      'verses',
+      where: 'ayah_number = ?',  // ✅ ayah_number = global index (1-6236)
+      whereArgs: [globalAyat],
+    );
 
-      final row = results.first;
-      
-      // Parse segments JSON
-      final segmentsJson = row['segments'] as String?;
-      final List<WordSegment> segments = [];
-      
-      if (segmentsJson != null && segmentsJson.isNotEmpty) {
-        try {
-          final List<dynamic> segmentsList = jsonDecode(segmentsJson);
-          segments.addAll(segmentsList.map((s) => WordSegment.fromJson(s)));
-        } catch (e) {
-          print('⚠️ Error parsing segments: $e');
-        }
-      }
-
-      return ReciterAudioData(
-        surahNumber: row['surah_number'] as int,
-        ayahNumber: row['ayah_number'] as int,
-        audioUrl: row['audio_url'] as String,
-        duration: row['duration'] as int?,
-        segments: segments,
-      );
-    } catch (e) {
-      print('❌ Error fetching verse audio: $e');
+    if (results.isEmpty) {
+      print('⚠️ No audio found for Global Ayat #$globalAyat (Surah $surahNumber:$ayahNumber)');
       return null;
     }
+
+    final row = results.first;
+    
+    // Parse segments JSON
+    final segmentsJson = row['segments'] as String?;
+    final List<WordSegment> segments = [];
+    
+    if (segmentsJson != null && segmentsJson.isNotEmpty) {
+      try {
+        final List<dynamic> segmentsList = jsonDecode(segmentsJson);
+        segments.addAll(segmentsList.map((s) => WordSegment.fromJson(s)));
+      } catch (e) {
+        print('⚠️ Error parsing segments: $e');
+      }
+    }
+
+    print('✅ Audio found: ${row['audio_url']}');
+
+    return ReciterAudioData(
+      surahNumber: surahNumber,  // ✅ Return original surah number
+      ayahNumber: ayahNumber,    // ✅ Return original ayah number
+      audioUrl: row['audio_url'] as String,
+      duration: row['duration'] as int?,
+      segments: segments,
+    );
+  } catch (e) {
+    print('❌ Error fetching verse audio: $e');
+    return null;
   }
+}
 
   // Get multiple verses (batch)
   static Future<List<ReciterAudioData>> getVersesAudio(List<Map<String, int>> verses) async {
@@ -142,8 +150,10 @@ class ReciterDatabaseService {
     return results;
   }
 
-  static void dispose() {
-    _database?.close();
+static Future<void> dispose() async {
+  if (_database != null) {
+    await _database!.close();
     _database = null;
+    print('🗑️ Reciter database disposed');
   }
-}
+}}

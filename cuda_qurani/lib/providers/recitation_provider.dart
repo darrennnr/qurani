@@ -464,8 +464,8 @@ class RecitationProvider extends ChangeNotifier {
         // Handle ayah overflow auto-skip
         final fromAyah = message['from_ayah'] as int?;
         final toAyah = message['to_ayah'] as int?;
-        final skippedWord = message['skipped_word'] as Map<String, dynamic>?;
-        
+        final skippedWord = message['skipped_word'] as Map<String, dynamic>;
+
         if (skippedWord != null) {
           final ayah = skippedWord['ayah'] as int;
           final wordIndex = skippedWord['word_index'] as int;

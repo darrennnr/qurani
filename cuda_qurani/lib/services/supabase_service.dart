@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/app_config.dart';
 
 class SupabaseService {
@@ -10,11 +11,17 @@ class SupabaseService {
       : supabaseUrl = AppConfig.supabaseUrl,
         anonKey = AppConfig.supabaseAnonKey;
 
-  Map<String, String> get _headers => {
-        'apikey': anonKey,
-        'Authorization': 'Bearer $anonKey',
-        'Content-Type': 'application/json',
-      };
+  Map<String, String> get _headers {
+    // ✅ FIX: Use user's access token for RLS to work
+    final session = Supabase.instance.client.auth.currentSession;
+    final accessToken = session?.accessToken ?? anonKey;
+    
+    return {
+      'apikey': anonKey,
+      'Authorization': 'Bearer $accessToken',  // ✅ Use JWT token, not anon key
+      'Content-Type': 'application/json',
+    };
+  }
 
   Future<void> saveSession({
     required String sessionId,
@@ -115,8 +122,8 @@ class SupabaseService {
     List<String>? statuses, // Filter by specific statuses (optional)
   }) async {
     try {
-      // Build query
-      String query = 'user_uuid=eq.$userUuid';
+      // Build query - filter by user_uuid AND surah_id not null
+      String query = 'user_uuid=eq.$userUuid&surah_id=not.is.null';
       
       // Filter by statuses if provided
       if (statuses != null && statuses.isNotEmpty) {
@@ -125,6 +132,8 @@ class SupabaseService {
         query += '&status=in.(${statuses.join(',')})';
       }
       
+      print('🔍 Query: $supabaseUrl/rest/v1/live_sessions?$query&order=updated_at.desc&limit=1');
+      
       final response = await http.get(
         Uri.parse(
           '$supabaseUrl/rest/v1/live_sessions?$query&order=updated_at.desc&limit=1',
@@ -132,21 +141,32 @@ class SupabaseService {
         headers: _headers,
       );
 
+      print('📡 Response status: ${response.statusCode}');
+      print('📡 Response body: ${response.body}');
+
       if (response.statusCode == 200) {
         final sessions = jsonDecode(response.body) as List;
+        print('📦 Sessions count: ${sessions.length}');
+        
         if (sessions.isNotEmpty) {
           final session = sessions[0] as Map<String, dynamic>;
           print('📥 Latest session found:');
           print('   Session ID: ${session['session_id']}');
           print('   Status: ${session['status']}');
           print('   Surah: ${session['surah_id']}, Ayah: ${session['ayah']}, Position: ${session['position']}');
+          print('   User UUID: ${session['user_uuid']}');
           print('   Updated: ${session['updated_at']}');
           return session;
+        } else {
+          print('⚠️ No sessions returned from query');
         }
+      } else {
+        print('❌ HTTP error: ${response.statusCode} - ${response.body}');
       }
       return null;
-    } catch (e) {
-      print('Error fetching latest session: $e');
+    } catch (e, stackTrace) {
+      print('❌ Error fetching latest session: $e');
+      print('Stack trace: $stackTrace');
       return null;
     }
   }
@@ -154,5 +174,14 @@ class SupabaseService {
   /// ✅ NEW: Get resumable session (paused or active only)
   Future<Map<String, dynamic>?> getResumableSession(String userUuid) async {
     return getLatestSession(userUuid, statuses: ['paused', 'active']);
+  }
+  
+  /// Get all sessions for current user (all statuses: active, paused, stopped)
+  Future<List<Map<String, dynamic>>> getAllSessions({
+    String? userUuid,
+    int limit = 50,
+  }) async {
+    print('📡 getAllSessions called with userUuid: $userUuid');
+    return getSessions(userUuid: userUuid);
   }
 }
