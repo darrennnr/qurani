@@ -5,6 +5,7 @@ import 'package:cuda_qurani/screens/main/home/widgets/navigation_bar.dart';
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
 import 'package:cuda_qurani/core/widgets/app_components.dart';
 import 'package:cuda_qurani/services/supabase_service.dart';
+import 'package:cuda_qurani/services/auth_service.dart'; // ✅ Import AuthService
 
 class AllSessionPage extends StatefulWidget {
   const AllSessionPage({Key? key}) : super(key: key);
@@ -16,6 +17,7 @@ class AllSessionPage extends StatefulWidget {
 class _AllSessionPageState extends State<AllSessionPage> {
   // ==================== DATA STRUCTURE ====================
   final SupabaseService _supabaseService = SupabaseService();
+  final AuthService _authService = AuthService(); // ✅ Add AuthService
   List<SessionData> _sessions = [];
   bool _isLoading = true;
   
@@ -29,13 +31,35 @@ class _AllSessionPageState extends State<AllSessionPage> {
     setState(() => _isLoading = true);
     
     try {
-      final sessions = await _supabaseService.getAllSessions();
+      // ✅ Get current user UUID
+      final userUuid = _authService.userId;
+      
+      print('📱 ALL_SESSION: Starting load...');
+      print('👤 ALL_SESSION: User UUID: $userUuid');
+      
+      if (userUuid == null) {
+        print('⚠️ ALL_SESSION: User not authenticated');
+        setState(() => _isLoading = false);
+        _loadDummyData();
+        return;
+      }
+      
+      // ✅ Fetch sessions filtered by user (includes ALL statuses: active, paused, stopped)
+      print('📡 ALL_SESSION: Fetching sessions from database...');
+      final sessions = await _supabaseService.getAllSessions(userUuid: userUuid);
+      
+      print('✅ ALL_SESSION: Loaded ${sessions.length} sessions');
+      if (sessions.isNotEmpty) {
+        print('📋 ALL_SESSION: First session - ID: ${sessions[0]['session_id']}, Status: ${sessions[0]['status']}');
+      }
+      
       setState(() {
         _sessions = sessions.map((s) => SessionData.fromSupabase(s)).toList();
         _isLoading = false;
       });
-    } catch (e) {
-      print('Error loading sessions: $e');
+    } catch (e, stackTrace) {
+      print('❌ ALL_SESSION: Error loading sessions: $e');
+      print('Stack trace: $stackTrace');
       setState(() => _isLoading = false);
       // Fallback to dummy data if error
       _loadDummyData();

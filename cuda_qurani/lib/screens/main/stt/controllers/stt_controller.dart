@@ -1807,7 +1807,7 @@ Future<void> resumeListening() async {
     print('ðŸ›‘ stopRecording(): Called');
     try {
       await _audioService.stopRecording();
-      _webSocketService.sendStopRecording();
+      _webSocketService.sendPauseRecording(); // ✅ Changed: PAUSE (was sendStopRecording)
       _isRecording = false;
       appLogger.log('RECORDING', 'Stopped');
       print('âœ… stopRecording(): Stopped successfully');

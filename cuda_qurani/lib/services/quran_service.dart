@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/app_config.dart';
 import '../models/quran_models.dart';
 
@@ -11,13 +12,19 @@ class QuranService {
       : supabaseUrl = AppConfig.supabaseUrl,
         anonKey = AppConfig.supabaseAnonKey;
 
-  Map<String, String> get _headers => {
-        'apikey': anonKey,
-        'Authorization': 'Bearer $anonKey',
-        'Content-Type': 'application/json',
-        'Prefer': 'count=exact',  // Get exact count
-        'Range-Unit': 'items',     // Specify range unit
-      };
+  Map<String, String> get _headers {
+    // ✅ FIX: Use user's access token for RLS to work
+    final session = Supabase.instance.client.auth.currentSession;
+    final accessToken = session?.accessToken ?? anonKey;
+    
+    return {
+      'apikey': anonKey,
+      'Authorization': 'Bearer $accessToken',  // ✅ Use JWT token, not anon key
+      'Content-Type': 'application/json',
+      'Prefer': 'count=exact',  // Get exact count
+      'Range-Unit': 'items',     // Specify range unit
+    };
+  }
 
   /// Fetch Surah from words table (per word, grouped by ayah)
   Future<Surah> getSurah(int surahId) async {

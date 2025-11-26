@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/app_config.dart';
 
 class SupabaseService {
@@ -10,11 +11,17 @@ class SupabaseService {
       : supabaseUrl = AppConfig.supabaseUrl,
         anonKey = AppConfig.supabaseAnonKey;
 
-  Map<String, String> get _headers => {
-        'apikey': anonKey,
-        'Authorization': 'Bearer $anonKey',
-        'Content-Type': 'application/json',
-      };
+  Map<String, String> get _headers {
+    // ✅ FIX: Use user's access token for RLS to work
+    final session = Supabase.instance.client.auth.currentSession;
+    final accessToken = session?.accessToken ?? anonKey;
+    
+    return {
+      'apikey': anonKey,
+      'Authorization': 'Bearer $accessToken',  // ✅ Use JWT token, not anon key
+      'Content-Type': 'application/json',
+    };
+  }
 
   Future<void> saveSession({
     required String sessionId,
@@ -169,8 +176,12 @@ class SupabaseService {
     return getLatestSession(userUuid, statuses: ['paused', 'active']);
   }
   
-  /// Get all sessions (no user filter) for session list page
-  Future<List<Map<String, dynamic>>> getAllSessions({int limit = 50}) async {
-    return getSessions();
+  /// Get all sessions for current user (all statuses: active, paused, stopped)
+  Future<List<Map<String, dynamic>>> getAllSessions({
+    String? userUuid,
+    int limit = 50,
+  }) async {
+    print('📡 getAllSessions called with userUuid: $userUuid');
+    return getSessions(userUuid: userUuid);
   }
 }
