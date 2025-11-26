@@ -200,43 +200,8 @@ ListeningAudioService? get listeningAudioService => _listeningAudioService;
 Future<void> startListening(PlaybackSettings settings) async {
   appLogger.log('LISTENING', 'Starting listening mode with settings: $settings');
   
-  // 🔄 AUTO-RECONNECT: Same as startRecitation
-  final serviceConnected = _webSocketService.isConnected;
-  _isConnected = serviceConnected;
-  
-  if (!_isConnected) {
-    print('🔌 Not connected, attempting to connect...');
-    _errorMessage = 'Connecting to server...';
-    notifyListeners();
-    
-    try {
-      _webSocketService.enableAutoReconnect();
-      await _webSocketService.connect();
-      await Future.delayed(const Duration(milliseconds: 500));
-      
-      if (!_webSocketService.isConnected) {
-        throw Exception('Connection failed after retry');
-      }
-      
-      _isConnected = true;
-      _errorMessage = '';
-      print('✅ Connected successfully!');
-      notifyListeners();
-    } catch (e) {
-      _errorMessage = 'Unable to connect to server. Please check your connection.';
-      _isConnected = false;
-      print('❌ Connection failed: $e');
-      notifyListeners();
-      return;
-    }
-  }
-
-  // 🔒 Final connection check
-  if (!_webSocketService.isConnected) {
-    _errorMessage = 'Connection not stable. Please try again.';
-    notifyListeners();
-    return;
-  }
+  // ✅ Listening Mode: No backend connection needed (Tarteel-style)
+  print('🎧 Listening Mode: Passive learning (no detection)');
 
   try {
     // 🧹 Clear previous state
@@ -253,25 +218,7 @@ Future<void> startListening(PlaybackSettings settings) async {
     _playbackSettings = settings;
     _isListeningMode = true;
     
-    // 📡 Start WebSocket session (same as recite)
-    int recordingSurahId = settings.startSurahId;
-    
-    if (_determinedSurahId != null) {
-      recordingSurahId = _determinedSurahId!;
-    } else if (_ayatList.isNotEmpty) {
-      recordingSurahId = _ayatList.first.surah_id;
-    }
-    
-    print('🚀 Starting WebSocket session for surah $recordingSurahId');
-    
-    // ✅ Send with page/juz info if available
-    final firstAyah = _ayatList.isNotEmpty ? _ayatList.first.ayah : 1;
-    _webSocketService.sendStartRecording(
-      recordingSurahId,
-      pageId: pageId,
-      juzId: juzId,
-      ayah: firstAyah,
-    );
+    print('🎧 Starting Listening Mode (Passive - No Backend Detection)');
     
     // 🎧 Subscribe to verse changes
     _verseChangeSubscription = _listeningAudioService!.currentVerseStream?.listen((verse) {
@@ -283,30 +230,62 @@ Future<void> startListening(PlaybackSettings settings) async {
       );
       
       if (ayatIndex >= 0) {
+        // ✅ Clear previous ayat's wordStatusMap when moving to next ayat
+        if (_currentAyatIndex >= 0 && _currentAyatIndex < _ayatList.length) {
+          final previousAyah = _ayatList[_currentAyatIndex].ayah;
+          _wordStatusMap[previousAyah]?.clear(); // Clear previous ayat highlights
+          print('🧹 Cleared wordStatusMap for previous ayah: $previousAyah');
+        }
+        
         _currentAyatIndex = ayatIndex;
         notifyListeners();
       }
     });
     
-    // 🎨 Subscribe to word highlights (optional - for UI animation)
+    // 🎨 Subscribe to word highlights (for visual feedback)
     _wordHighlightSubscription = _listeningAudioService!.wordHighlightStream?.listen((wordIndex) {
-      // You can use this to add extra animations
-      print('✨ Highlight word: $wordIndex');
+      print('✨ Highlight word: $wordIndex in listening mode');
+      
+      // ✅ Ignore wordIndex -1 (word transition marker) - don't reset!
+      if (wordIndex == -1) {
+        return; // Skip reset, keep previous highlights
+      }
+      
+      // ✅ Update UI to show current word being highlighted
+      // This allows visual feedback in listening mode (gray color for current word)
+      if (_currentAyatIndex >= 0 && _currentAyatIndex < _ayatList.length) {
+        final currentAyat = _ayatList[_currentAyatIndex];
+        final currentAyah = currentAyat.ayah;
+        final words = currentAyat.words; // Use words from AyatData
+        
+        // ✅ Initialize wordStatusMap for this ayah if not exists
+        if (!_wordStatusMap.containsKey(currentAyah)) {
+          _wordStatusMap[currentAyah] = {};
+        }
+        
+        // ✅ Update all words status in wordStatusMap (used by UI)
+        for (int i = 0; i < words.length; i++) {
+          if (i == wordIndex) {
+            // Current word being played (dark gray)
+            _wordStatusMap[currentAyah]![i] = WordStatus.processing;
+          } else if (i < wordIndex) {
+            // Already played words (light gray - same as pending visually)
+            _wordStatusMap[currentAyah]![i] = WordStatus.pending;
+          } else {
+            // Not yet played (light gray)
+            _wordStatusMap[currentAyah]![i] = WordStatus.pending;
+          }
+        }
+        
+        notifyListeners();
+      }
     });
     
-    // ▶️ Start playback + streaming to backend
-    await _listeningAudioService!.startPlayback(
-      onAudioChunk: (base64Audio) {
-        if (_webSocketService.isConnected) {
-          _webSocketService.sendAudioChunk(base64Audio);
-        } else {
-          print('⚠️ Warning: Audio chunk lost - WebSocket disconnected');
-        }
-      },
-    );
+    // ▶️ Start playback (audio only, no backend streaming)
+    await _listeningAudioService!.startPlayback();
     
     _isRecording = true; // Treat as recording session
-    _hideUnreadAyat = true; // Enable hide unread
+    _hideUnreadAyat = false; // ✅ SHOW all ayat in listening mode (don't hide)
     
     appLogger.log('LISTENING', 'Listening mode started successfully');
     notifyListeners();

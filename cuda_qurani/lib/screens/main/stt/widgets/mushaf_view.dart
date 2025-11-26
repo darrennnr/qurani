@@ -434,6 +434,14 @@ class _JustifiedAyahLine extends StatelessWidget {
               wordBg = errorColor.withOpacity(0.4); // ðŸŸ¥ MERAH - SALAH
               break;
             case WordStatus.processing:
+              // ✅ ONLY in listening mode: DARK GRAY highlight
+              // ✅ In reciting mode: transparent (no highlight)
+              if (controller.isListeningMode) {
+                wordBg = Colors.grey.withOpacity(0.5); // ⬛ Abu-abu gelap (listening)
+              } else {
+                wordBg = Colors.transparent; // Transparent (reciting)
+              }
+              break;
             case WordStatus.pending:
             default:
               wordBg = Colors.transparent;

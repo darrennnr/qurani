@@ -523,7 +523,13 @@ class _CompleteAyahWidget extends StatelessWidget {
                       wordBg = errorColor.withOpacity(0.4); // ðŸŸ¥ MERAH
                       break;
                     case WordStatus.processing:
-                      wordBg = listeningColor.withOpacity(0.3); // ðŸŸ¦ BIRU
+                      // ✅ ONLY in listening mode: DARK GRAY highlight
+                      // ✅ In reciting mode: BLUE highlight
+                      if (controller.isListeningMode) {
+                        wordBg = Colors.grey.withOpacity(0.5); // ⬛ Abu-abu (listening)
+                      } else {
+                        wordBg = listeningColor.withOpacity(0.3); // ðŸŸ¦ Biru (reciting)
+                      }
                       break;
                     default:
                       break;

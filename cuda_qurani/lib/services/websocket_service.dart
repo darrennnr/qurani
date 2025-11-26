@@ -227,29 +227,13 @@ class WebSocketService {
     }
   }
 
-  // ✅ NEW: Send audio chunk with MP3 format marker
+  // ⚠️ DEPRECATED: No longer used in Listening Mode
+  // Listening Mode now uses local word highlighting only (Tarteel-style)
+  @Deprecated('Use backend conversion for MP3 → PCM processing')
   void sendAudioChunkMP3(String base64Audio) {
-    if (_isConnected && _channel != null) {
-      _audioChunksSent++;
-      final message = jsonEncode({
-        'type': 'audio',
-        'data': base64Audio,
-        'format': 'mp3', // ✅ Mark as MP3 format
-        'sample_rate': 44100,
-        'channels': 2,
-      });
-      _channel!.sink.add(message);
-      
-      // 📤 Log every 10 chunks to avoid spam
-      if (_audioChunksSent % 10 == 1) {
-        print('📤 WebSocket: Sent MP3 audio chunk #$_audioChunksSent (${base64Audio.length} chars)');
-      }
-    } else {
-      print('❌ Cannot send MP3 audio chunk: WebSocket not connected');
-      if (_shouldAutoReconnect && !_isReconnecting) {
-        _scheduleReconnection();
-      }
-    }
+    print('⚠️ sendAudioChunkMP3() called but deprecated');
+    print('💡 Listening Mode now uses local word highlighting only');
+    // Method kept for backward compatibility but does nothing
   }
 
   void sendStartRecording(int surahNumber, {int? pageId, int? juzId, int? ayah}) {
