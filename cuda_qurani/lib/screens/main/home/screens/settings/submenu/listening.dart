@@ -1,4 +1,5 @@
 // lib/screens/main/home/screens/settings/submenu/listening.dart
+import 'package:cuda_qurani/screens/main/home/screens/settings/submenu/reciters_download.dart';
 import 'package:flutter/material.dart';
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
 import 'package:cuda_qurani/screens/main/home/screens/settings/widgets/appbar.dart';
@@ -75,8 +76,32 @@ class _ListeningPageState extends State<ListeningPage> {
 
   void _manageDownloads() {
     AppHaptics.selection();
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            RecitersDownloadPage(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(0.03, 0.0);
+          const end = Offset.zero;
+          const curve = Curves.easeInOut;
+          var tween = Tween(
+            begin: begin,
+            end: end,
+          ).chain(CurveTween(curve: curve));
+          var offsetAnimation = animation.drive(tween);
+          var fadeAnimation = animation.drive(
+            Tween(begin: 0.0, end: 1.0).chain(CurveTween(curve: curve)),
+          );
 
-    // TODO: Navigate to manage downloads page
+          return FadeTransition(
+            opacity: fadeAnimation,
+            child: SlideTransition(position: offsetAnimation, child: child),
+          );
+        },
+        transitionDuration: AppDesignSystem.durationNormal,
+      ),
+    );
   }
 
   Widget _buildSpeedButton(String speed) {

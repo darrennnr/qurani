@@ -72,6 +72,7 @@ flutter:
     - assets/data/qpc-v1-ayah-by-ayah-glyphs.db
     - assets/data/quran-metadata-juz.sqlite
     - assets/reciters/ayah-recitation-abdul-basit-abdul-samad-murattal-hafs-950.db
+    - assets/reciters/ayah-recitation-abdur-rahman-as-sudais-recitation.db
 
   fonts:
     - family: UthmanTN

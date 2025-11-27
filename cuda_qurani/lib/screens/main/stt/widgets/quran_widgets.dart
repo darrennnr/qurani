@@ -52,9 +52,8 @@ class QuranAppBar extends StatelessWidget implements PreferredSizeWidget {
           leading: IconButton(
             icon: Icon(Icons.menu, size: iconSize * 120 / 100),
             onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => SurahListPage()),
+              Navigator.pop(
+                context
               );
             },
             tooltip: 'Menu',

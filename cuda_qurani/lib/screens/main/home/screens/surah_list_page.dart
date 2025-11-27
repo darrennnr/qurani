@@ -181,13 +181,13 @@ class _SurahListPageState extends State<SurahListPage> {
   // ==================== NAVIGATION ====================
 
   Future<void> _openSurah(BuildContext context, int surahId) async {
-    await Navigator.of(context).pushReplacement(
+    await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => SttPage(suratId: surahId)),
     );
   }
 
   Future<void> _openPage(BuildContext context, int pageNumber) async {
-    await Navigator.of(context).pushReplacement(
+    await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => SttPage(pageId: pageNumber)),
     );
   }
@@ -200,7 +200,7 @@ class _SurahListPageState extends State<SurahListPage> {
     final page = await LocalDatabaseService.getPageNumber(surahId, ayahNumber);
     await Navigator.of(
       context,
-    ).pushReplacement(MaterialPageRoute(builder: (_) => SttPage(pageId: page)));
+    ).push(MaterialPageRoute(builder: (_) => SttPage(pageId: page)));
   }
 
   Future<void> _openJuz(
@@ -208,7 +208,7 @@ class _SurahListPageState extends State<SurahListPage> {
     int juzNumber,
     String firstVerseKey,
   ) async {
-    await Navigator.of(context).pushReplacement(
+    await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => SttPage(juzId: juzNumber)),
     );
   }

@@ -116,7 +116,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         label: 'Recitation',
                         onTap: () {
                           AppHaptics.light();
-                          Navigator.pushReplacement(
+                          Navigator.push(
                             context,
                             PageRouteBuilder(
                               pageBuilder:
@@ -129,7 +129,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                     secondaryAnimation,
                                     child,
                                   ) {
-                                    const begin = Offset(-0.03, 0.0);
+                                    const begin = Offset(0.03, 0.0);
                                     const end = Offset.zero;
                                     const curve = Curves.easeInOut;
                                     var tween = Tween(
@@ -165,7 +165,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         label: 'Listening',
                         onTap: () {
                           AppHaptics.light();
-                          Navigator.pushReplacement(
+                          Navigator.push(
                             context,
                             PageRouteBuilder(
                               pageBuilder:
@@ -178,7 +178,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                     secondaryAnimation,
                                     child,
                                   ) {
-                                    const begin = Offset(-0.03, 0.0);
+                                    const begin = Offset(0.03, 0.0);
                                     const end = Offset.zero;
                                     const curve = Curves.easeInOut;
                                     var tween = Tween(
@@ -225,9 +225,9 @@ class _SettingsPageState extends State<SettingsPage> {
                       _buildSettingItem(
                         icon: Icons.menu_book_outlined,
                         label: 'Mushaf Layout',
-onTap: () {
+                        onTap: () {
                           AppHaptics.light();
-                          Navigator.pushReplacement(
+                          Navigator.push(
                             context,
                             PageRouteBuilder(
                               pageBuilder:
@@ -240,7 +240,7 @@ onTap: () {
                                     secondaryAnimation,
                                     child,
                                   ) {
-                                    const begin = Offset(-0.03, 0.0);
+                                    const begin = Offset(0.03, 0.0);
                                     const end = Offset.zero;
                                     const curve = Curves.easeInOut;
                                     var tween = Tween(
@@ -276,7 +276,7 @@ onTap: () {
                         label: 'Hidden Verses',
                         onTap: () {
                           AppHaptics.light();
-                          Navigator.pushReplacement(
+                          Navigator.push(
                             context,
                             PageRouteBuilder(
                               pageBuilder:
@@ -289,7 +289,7 @@ onTap: () {
                                     secondaryAnimation,
                                     child,
                                   ) {
-                                    const begin = Offset(-0.03, 0.0);
+                                    const begin = Offset(0.03, 0.0);
                                     const end = Offset.zero;
                                     const curve = Curves.easeInOut;
                                     var tween = Tween(
@@ -325,7 +325,7 @@ onTap: () {
                         label: 'Marking',
                         onTap: () {
                           AppHaptics.light();
-                          Navigator.pushReplacement(
+                          Navigator.push(
                             context,
                             PageRouteBuilder(
                               pageBuilder:
@@ -338,7 +338,7 @@ onTap: () {
                                     secondaryAnimation,
                                     child,
                                   ) {
-                                    const begin = Offset(-0.03, 0.0);
+                                    const begin = Offset(0.03, 0.0);
                                     const end = Offset.zero;
                                     const curve = Curves.easeInOut;
                                     var tween = Tween(
@@ -387,7 +387,7 @@ onTap: () {
                         label: 'Language',
                         onTap: () {
                           AppHaptics.light();
-                          Navigator.pushReplacement(
+                          Navigator.push(
                             context,
                             PageRouteBuilder(
                               pageBuilder:
@@ -400,7 +400,7 @@ onTap: () {
                                     secondaryAnimation,
                                     child,
                                   ) {
-                                    const begin = Offset(-0.03, 0.0);
+                                    const begin = Offset(0.03, 0.0);
                                     const end = Offset.zero;
                                     const curve = Curves.easeInOut;
                                     var tween = Tween(
@@ -436,7 +436,7 @@ onTap: () {
                         label: 'Theme',
                         onTap: () {
                           AppHaptics.light();
-                          Navigator.pushReplacement(
+                          Navigator.push(
                             context,
                             PageRouteBuilder(
                               pageBuilder:
@@ -449,7 +449,7 @@ onTap: () {
                                     secondaryAnimation,
                                     child,
                                   ) {
-                                    const begin = Offset(-0.03, 0.0);
+                                    const begin = Offset(0.03, 0.0);
                                     const end = Offset.zero;
                                     const curve = Curves.easeInOut;
                                     var tween = Tween(
@@ -496,7 +496,7 @@ onTap: () {
                     label: 'Reminders',
                     onTap: () {
                       AppHaptics.light();
-                      Navigator.pushReplacement(
+                      Navigator.push(
                         context,
                         PageRouteBuilder(
                           pageBuilder:
@@ -546,125 +546,149 @@ onTap: () {
                       _buildSettingItem(
                         icon: Icons.error_outline,
                         label: 'Mistake Feedback',
-onTap: () {
-                      AppHaptics.light();
-                      Navigator.pushReplacement(
-                        context,
-                        PageRouteBuilder(
-                          pageBuilder:
-                              (context, animation, secondaryAnimation) =>
-                                  const MistakeFeedbackPage(),
-                          transitionsBuilder:
-                              (context, animation, secondaryAnimation, child) {
-                                const begin = Offset(-0.03, 0.0);
-                                const end = Offset.zero;
-                                const curve = Curves.easeInOut;
-                                var tween = Tween(
-                                  begin: begin,
-                                  end: end,
-                                ).chain(CurveTween(curve: curve));
-                                var offsetAnimation = animation.drive(tween);
-                                var fadeAnimation = animation.drive(
-                                  Tween(
-                                    begin: 0.0,
-                                    end: 1.0,
-                                  ).chain(CurveTween(curve: curve)),
-                                );
+                        onTap: () {
+                          AppHaptics.light();
+                          Navigator.push(
+                            context,
+                            PageRouteBuilder(
+                              pageBuilder:
+                                  (context, animation, secondaryAnimation) =>
+                                      const MistakeFeedbackPage(),
+                              transitionsBuilder:
+                                  (
+                                    context,
+                                    animation,
+                                    secondaryAnimation,
+                                    child,
+                                  ) {
+                                    const begin = Offset(0.03, 0.0);
+                                    const end = Offset.zero;
+                                    const curve = Curves.easeInOut;
+                                    var tween = Tween(
+                                      begin: begin,
+                                      end: end,
+                                    ).chain(CurveTween(curve: curve));
+                                    var offsetAnimation = animation.drive(
+                                      tween,
+                                    );
+                                    var fadeAnimation = animation.drive(
+                                      Tween(
+                                        begin: 0.0,
+                                        end: 1.0,
+                                      ).chain(CurveTween(curve: curve)),
+                                    );
 
-                                return FadeTransition(
-                                  opacity: fadeAnimation,
-                                  child: SlideTransition(
-                                    position: offsetAnimation,
-                                    child: child,
-                                  ),
-                                );
-                              },
-                          transitionDuration: AppDesignSystem.durationNormal,
-                        ),
-                      );
-                    },
+                                    return FadeTransition(
+                                      opacity: fadeAnimation,
+                                      child: SlideTransition(
+                                        position: offsetAnimation,
+                                        child: child,
+                                      ),
+                                    );
+                                  },
+                              transitionDuration:
+                                  AppDesignSystem.durationNormal,
+                            ),
+                          );
+                        },
                       ),
                       _buildSettingItem(
                         icon: Icons.mic_outlined,
                         label: 'Session Start & Stop',
-onTap: () {
-                      AppHaptics.light();
-                      Navigator.pushReplacement(
-                        context,
-                        PageRouteBuilder(
-                          pageBuilder:
-                              (context, animation, secondaryAnimation) =>
-                                  const SessionStartStopPage(),
-                          transitionsBuilder:
-                              (context, animation, secondaryAnimation, child) {
-                                const begin = Offset(-0.03, 0.0);
-                                const end = Offset.zero;
-                                const curve = Curves.easeInOut;
-                                var tween = Tween(
-                                  begin: begin,
-                                  end: end,
-                                ).chain(CurveTween(curve: curve));
-                                var offsetAnimation = animation.drive(tween);
-                                var fadeAnimation = animation.drive(
-                                  Tween(
-                                    begin: 0.0,
-                                    end: 1.0,
-                                  ).chain(CurveTween(curve: curve)),
-                                );
+                        onTap: () {
+                          AppHaptics.light();
+                          Navigator.push(
+                            context,
+                            PageRouteBuilder(
+                              pageBuilder:
+                                  (context, animation, secondaryAnimation) =>
+                                      const SessionStartStopPage(),
+                              transitionsBuilder:
+                                  (
+                                    context,
+                                    animation,
+                                    secondaryAnimation,
+                                    child,
+                                  ) {
+                                    const begin = Offset(0.03, 0.0);
+                                    const end = Offset.zero;
+                                    const curve = Curves.easeInOut;
+                                    var tween = Tween(
+                                      begin: begin,
+                                      end: end,
+                                    ).chain(CurveTween(curve: curve));
+                                    var offsetAnimation = animation.drive(
+                                      tween,
+                                    );
+                                    var fadeAnimation = animation.drive(
+                                      Tween(
+                                        begin: 0.0,
+                                        end: 1.0,
+                                      ).chain(CurveTween(curve: curve)),
+                                    );
 
-                                return FadeTransition(
-                                  opacity: fadeAnimation,
-                                  child: SlideTransition(
-                                    position: offsetAnimation,
-                                    child: child,
-                                  ),
-                                );
-                              },
-                          transitionDuration: AppDesignSystem.durationNormal,
-                        ),
-                      );
-                    },
+                                    return FadeTransition(
+                                      opacity: fadeAnimation,
+                                      child: SlideTransition(
+                                        position: offsetAnimation,
+                                        child: child,
+                                      ),
+                                    );
+                                  },
+                              transitionDuration:
+                                  AppDesignSystem.durationNormal,
+                            ),
+                          );
+                        },
                       ),
                       _buildSettingItem(
                         icon: Icons.wifi_off_outlined,
                         label: 'Dropped Connection',
                         onTap: () {
-                      AppHaptics.light();
-                      Navigator.pushReplacement(
-                        context,
-                        PageRouteBuilder(
-                          pageBuilder:
-                              (context, animation, secondaryAnimation) =>
-                                  const DroppedConnectionPage(),
-                          transitionsBuilder:
-                              (context, animation, secondaryAnimation, child) {
-                                const begin = Offset(-0.03, 0.0);
-                                const end = Offset.zero;
-                                const curve = Curves.easeInOut;
-                                var tween = Tween(
-                                  begin: begin,
-                                  end: end,
-                                ).chain(CurveTween(curve: curve));
-                                var offsetAnimation = animation.drive(tween);
-                                var fadeAnimation = animation.drive(
-                                  Tween(
-                                    begin: 0.0,
-                                    end: 1.0,
-                                  ).chain(CurveTween(curve: curve)),
-                                );
+                          AppHaptics.light();
+                          Navigator.push(
+                            context,
+                            PageRouteBuilder(
+                              pageBuilder:
+                                  (context, animation, secondaryAnimation) =>
+                                      const DroppedConnectionPage(),
+                              transitionsBuilder:
+                                  (
+                                    context,
+                                    animation,
+                                    secondaryAnimation,
+                                    child,
+                                  ) {
+                                    const begin = Offset(0.03, 0.0);
+                                    const end = Offset.zero;
+                                    const curve = Curves.easeInOut;
+                                    var tween = Tween(
+                                      begin: begin,
+                                      end: end,
+                                    ).chain(CurveTween(curve: curve));
+                                    var offsetAnimation = animation.drive(
+                                      tween,
+                                    );
+                                    var fadeAnimation = animation.drive(
+                                      Tween(
+                                        begin: 0.0,
+                                        end: 1.0,
+                                      ).chain(CurveTween(curve: curve)),
+                                    );
 
-                                return FadeTransition(
-                                  opacity: fadeAnimation,
-                                  child: SlideTransition(
-                                    position: offsetAnimation,
-                                    child: child,
-                                  ),
-                                );
-                              },
-                          transitionDuration: AppDesignSystem.durationNormal,
-                        ),
-                      );
-                    },
+                                    return FadeTransition(
+                                      opacity: fadeAnimation,
+                                      child: SlideTransition(
+                                        position: offsetAnimation,
+                                        child: child,
+                                      ),
+                                    );
+                                  },
+                              transitionDuration:
+                                  AppDesignSystem.durationNormal,
+                            ),
+                          );
+                        },
                         showDivider: false,
                       ),
                     ],
@@ -683,124 +707,148 @@ onTap: () {
                         icon: Icons.record_voice_over_outlined,
                         label: 'Reciters',
                         onTap: () {
-                      AppHaptics.light();
-                      Navigator.pushReplacement(
-                        context,
-                        PageRouteBuilder(
-                          pageBuilder:
-                              (context, animation, secondaryAnimation) =>
-                                  const RecitersDownloadPage(),
-                          transitionsBuilder:
-                              (context, animation, secondaryAnimation, child) {
-                                const begin = Offset(-0.03, 0.0);
-                                const end = Offset.zero;
-                                const curve = Curves.easeInOut;
-                                var tween = Tween(
-                                  begin: begin,
-                                  end: end,
-                                ).chain(CurveTween(curve: curve));
-                                var offsetAnimation = animation.drive(tween);
-                                var fadeAnimation = animation.drive(
-                                  Tween(
-                                    begin: 0.0,
-                                    end: 1.0,
-                                  ).chain(CurveTween(curve: curve)),
-                                );
+                          AppHaptics.light();
+                          Navigator.push(
+                            context,
+                            PageRouteBuilder(
+                              pageBuilder:
+                                  (context, animation, secondaryAnimation) =>
+                                      const RecitersDownloadPage(),
+                              transitionsBuilder:
+                                  (
+                                    context,
+                                    animation,
+                                    secondaryAnimation,
+                                    child,
+                                  ) {
+                                    const begin = Offset(0.03, 0.0);
+                                    const end = Offset.zero;
+                                    const curve = Curves.easeInOut;
+                                    var tween = Tween(
+                                      begin: begin,
+                                      end: end,
+                                    ).chain(CurveTween(curve: curve));
+                                    var offsetAnimation = animation.drive(
+                                      tween,
+                                    );
+                                    var fadeAnimation = animation.drive(
+                                      Tween(
+                                        begin: 0.0,
+                                        end: 1.0,
+                                      ).chain(CurveTween(curve: curve)),
+                                    );
 
-                                return FadeTransition(
-                                  opacity: fadeAnimation,
-                                  child: SlideTransition(
-                                    position: offsetAnimation,
-                                    child: child,
-                                  ),
-                                );
-                              },
-                          transitionDuration: AppDesignSystem.durationNormal,
-                        ),
-                      );
-                    },
+                                    return FadeTransition(
+                                      opacity: fadeAnimation,
+                                      child: SlideTransition(
+                                        position: offsetAnimation,
+                                        child: child,
+                                      ),
+                                    );
+                                  },
+                              transitionDuration:
+                                  AppDesignSystem.durationNormal,
+                            ),
+                          );
+                        },
                       ),
                       _buildSettingItem(
                         icon: Icons.translate_outlined,
                         label: 'Translations',
                         onTap: () {
-                      AppHaptics.light();
-                      Navigator.pushReplacement(
-                        context,
-                        PageRouteBuilder(
-                          pageBuilder:
-                              (context, animation, secondaryAnimation) =>
-                                  const TranslationDownloadPage(),
-                          transitionsBuilder:
-                              (context, animation, secondaryAnimation, child) {
-                                const begin = Offset(-0.03, 0.0);
-                                const end = Offset.zero;
-                                const curve = Curves.easeInOut;
-                                var tween = Tween(
-                                  begin: begin,
-                                  end: end,
-                                ).chain(CurveTween(curve: curve));
-                                var offsetAnimation = animation.drive(tween);
-                                var fadeAnimation = animation.drive(
-                                  Tween(
-                                    begin: 0.0,
-                                    end: 1.0,
-                                  ).chain(CurveTween(curve: curve)),
-                                );
+                          AppHaptics.light();
+                          Navigator.push(
+                            context,
+                            PageRouteBuilder(
+                              pageBuilder:
+                                  (context, animation, secondaryAnimation) =>
+                                      const TranslationDownloadPage(),
+                              transitionsBuilder:
+                                  (
+                                    context,
+                                    animation,
+                                    secondaryAnimation,
+                                    child,
+                                  ) {
+                                    const begin = Offset(0.03, 0.0);
+                                    const end = Offset.zero;
+                                    const curve = Curves.easeInOut;
+                                    var tween = Tween(
+                                      begin: begin,
+                                      end: end,
+                                    ).chain(CurveTween(curve: curve));
+                                    var offsetAnimation = animation.drive(
+                                      tween,
+                                    );
+                                    var fadeAnimation = animation.drive(
+                                      Tween(
+                                        begin: 0.0,
+                                        end: 1.0,
+                                      ).chain(CurveTween(curve: curve)),
+                                    );
 
-                                return FadeTransition(
-                                  opacity: fadeAnimation,
-                                  child: SlideTransition(
-                                    position: offsetAnimation,
-                                    child: child,
-                                  ),
-                                );
-                              },
-                          transitionDuration: AppDesignSystem.durationNormal,
-                        ),
-                      );
-                    },
+                                    return FadeTransition(
+                                      opacity: fadeAnimation,
+                                      child: SlideTransition(
+                                        position: offsetAnimation,
+                                        child: child,
+                                      ),
+                                    );
+                                  },
+                              transitionDuration:
+                                  AppDesignSystem.durationNormal,
+                            ),
+                          );
+                        },
                       ),
                       _buildSettingItem(
                         icon: Icons.book_outlined,
                         label: 'Tafsir',
                         onTap: () {
-                      AppHaptics.light();
-                      Navigator.pushReplacement(
-                        context,
-                        PageRouteBuilder(
-                          pageBuilder:
-                              (context, animation, secondaryAnimation) =>
-                                  const TafsirDownloadPage(),
-                          transitionsBuilder:
-                              (context, animation, secondaryAnimation, child) {
-                                const begin = Offset(-0.03, 0.0);
-                                const end = Offset.zero;
-                                const curve = Curves.easeInOut;
-                                var tween = Tween(
-                                  begin: begin,
-                                  end: end,
-                                ).chain(CurveTween(curve: curve));
-                                var offsetAnimation = animation.drive(tween);
-                                var fadeAnimation = animation.drive(
-                                  Tween(
-                                    begin: 0.0,
-                                    end: 1.0,
-                                  ).chain(CurveTween(curve: curve)),
-                                );
+                          AppHaptics.light();
+                          Navigator.push(
+                            context,
+                            PageRouteBuilder(
+                              pageBuilder:
+                                  (context, animation, secondaryAnimation) =>
+                                      const TafsirDownloadPage(),
+                              transitionsBuilder:
+                                  (
+                                    context,
+                                    animation,
+                                    secondaryAnimation,
+                                    child,
+                                  ) {
+                                    const begin = Offset(0.03, 0.0);
+                                    const end = Offset.zero;
+                                    const curve = Curves.easeInOut;
+                                    var tween = Tween(
+                                      begin: begin,
+                                      end: end,
+                                    ).chain(CurveTween(curve: curve));
+                                    var offsetAnimation = animation.drive(
+                                      tween,
+                                    );
+                                    var fadeAnimation = animation.drive(
+                                      Tween(
+                                        begin: 0.0,
+                                        end: 1.0,
+                                      ).chain(CurveTween(curve: curve)),
+                                    );
 
-                                return FadeTransition(
-                                  opacity: fadeAnimation,
-                                  child: SlideTransition(
-                                    position: offsetAnimation,
-                                    child: child,
-                                  ),
-                                );
-                              },
-                          transitionDuration: AppDesignSystem.durationNormal,
-                        ),
-                      );
-                    },
+                                    return FadeTransition(
+                                      opacity: fadeAnimation,
+                                      child: SlideTransition(
+                                        position: offsetAnimation,
+                                        child: child,
+                                      ),
+                                    );
+                                  },
+                              transitionDuration:
+                                  AppDesignSystem.durationNormal,
+                            ),
+                          );
+                        },
                         showDivider: false,
                       ),
                     ],
@@ -819,42 +867,50 @@ onTap: () {
                         icon: Icons.lock_outline,
                         label: 'Data Usage',
                         onTap: () {
-                      AppHaptics.light();
-                      Navigator.pushReplacement(
-                        context,
-                        PageRouteBuilder(
-                          pageBuilder:
-                              (context, animation, secondaryAnimation) =>
-                                  const DataUsagePage(),
-                          transitionsBuilder:
-                              (context, animation, secondaryAnimation, child) {
-                                const begin = Offset(-0.03, 0.0);
-                                const end = Offset.zero;
-                                const curve = Curves.easeInOut;
-                                var tween = Tween(
-                                  begin: begin,
-                                  end: end,
-                                ).chain(CurveTween(curve: curve));
-                                var offsetAnimation = animation.drive(tween);
-                                var fadeAnimation = animation.drive(
-                                  Tween(
-                                    begin: 0.0,
-                                    end: 1.0,
-                                  ).chain(CurveTween(curve: curve)),
-                                );
+                          AppHaptics.light();
+                          Navigator.push(
+                            context,
+                            PageRouteBuilder(
+                              pageBuilder:
+                                  (context, animation, secondaryAnimation) =>
+                                      const DataUsagePage(),
+                              transitionsBuilder:
+                                  (
+                                    context,
+                                    animation,
+                                    secondaryAnimation,
+                                    child,
+                                  ) {
+                                    const begin = Offset(0.03, 0.0);
+                                    const end = Offset.zero;
+                                    const curve = Curves.easeInOut;
+                                    var tween = Tween(
+                                      begin: begin,
+                                      end: end,
+                                    ).chain(CurveTween(curve: curve));
+                                    var offsetAnimation = animation.drive(
+                                      tween,
+                                    );
+                                    var fadeAnimation = animation.drive(
+                                      Tween(
+                                        begin: 0.0,
+                                        end: 1.0,
+                                      ).chain(CurveTween(curve: curve)),
+                                    );
 
-                                return FadeTransition(
-                                  opacity: fadeAnimation,
-                                  child: SlideTransition(
-                                    position: offsetAnimation,
-                                    child: child,
-                                  ),
-                                );
-                              },
-                          transitionDuration: AppDesignSystem.durationNormal,
-                        ),
-                      );
-                    },
+                                    return FadeTransition(
+                                      opacity: fadeAnimation,
+                                      child: SlideTransition(
+                                        position: offsetAnimation,
+                                        child: child,
+                                      ),
+                                    );
+                                  },
+                              transitionDuration:
+                                  AppDesignSystem.durationNormal,
+                            ),
+                          );
+                        },
                       ),
                       _buildSettingItem(
                         icon: Icons.delete_outline,

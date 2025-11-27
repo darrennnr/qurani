@@ -141,7 +141,39 @@ class _MenuAppBarState extends State<MenuAppBar>
           _buildTopIconButton(
             context,
             icon: Icons.person_outline_rounded,
-            onTap: () => _navigateToPage(context, 3),
+            onTap: () => Navigator.push(
+              context,
+              PageRouteBuilder(
+                pageBuilder: (context, animation, secondaryAnimation) =>
+                    const ProfilePage(),
+                transitionsBuilder:
+                    (context, animation, secondaryAnimation, child) {
+                      const begin = Offset(0.03, 0.0);
+                      const end = Offset.zero;
+                      const curve = Curves.easeInOut;
+                      var tween = Tween(
+                        begin: begin,
+                        end: end,
+                      ).chain(CurveTween(curve: curve));
+                      var offsetAnimation = animation.drive(tween);
+                      var fadeAnimation = animation.drive(
+                        Tween(
+                          begin: 0.0,
+                          end: 1.0,
+                        ).chain(CurveTween(curve: curve)),
+                      );
+
+                      return FadeTransition(
+                        opacity: fadeAnimation,
+                        child: SlideTransition(
+                          position: offsetAnimation,
+                          child: child,
+                        ),
+                      );
+                    },
+                transitionDuration: AppDesignSystem.durationNormal,
+              ),
+            ),
             isSelected: widget.selectedIndex == 3,
             tooltip: 'Profile',
           ),
@@ -153,7 +185,39 @@ class _MenuAppBarState extends State<MenuAppBar>
             _buildTopIconButton(
               context,
               icon: Icons.settings_outlined,
-              onTap: () => _navigateToPage(context, 5),
+              onTap: () => Navigator.push(
+                context,
+                PageRouteBuilder(
+                  pageBuilder: (context, animation, secondaryAnimation) =>
+                      const SettingsPage(),
+                  transitionsBuilder:
+                      (context, animation, secondaryAnimation, child) {
+                        const begin = Offset(0.03, 0.0);
+                        const end = Offset.zero;
+                        const curve = Curves.easeInOut;
+                        var tween = Tween(
+                          begin: begin,
+                          end: end,
+                        ).chain(CurveTween(curve: curve));
+                        var offsetAnimation = animation.drive(tween);
+                        var fadeAnimation = animation.drive(
+                          Tween(
+                            begin: 0.0,
+                            end: 1.0,
+                          ).chain(CurveTween(curve: curve)),
+                        );
+
+                        return FadeTransition(
+                          opacity: fadeAnimation,
+                          child: SlideTransition(
+                            position: offsetAnimation,
+                            child: child,
+                          ),
+                        );
+                      },
+                  transitionDuration: AppDesignSystem.durationNormal,
+                ),
+              ),
               tooltip: 'Settings',
             ),
         ],
@@ -317,60 +381,79 @@ class _MenuAppBarState extends State<MenuAppBar>
 
   // ==================== NAVIGATION ====================
   void _navigateToPage(BuildContext context, int index) {
-    if (widget.selectedIndex == index) return;
+  if (widget.selectedIndex == index) return;
 
-    Widget targetPage;
-    switch (index) {
-      case 0:
-        targetPage = const HomePage();
-        break;
-      case 1:
-        targetPage = const SurahListPage();
-        break;
-      case 2:
-        targetPage = const CompletionPage();
-        break;
-      case 3:
-        targetPage = const ProfilePage();
-        break;
-      case 4:
-        targetPage = const ActivityPage();
-        break;
-      case 5:
-        targetPage = const SettingsPage();
-        break;
-      case 6:
-        targetPage = const PremiumOfferPage();
-        break;
-      default:
-        return;
-    }
+  Widget targetPage;
+  switch (index) {
+    case 0:
+      targetPage = const HomePage();
+      break;
+    case 1:
+      targetPage = const SurahListPage();
+      break;
+    case 2:
+      targetPage = const CompletionPage();
+      break;
+    case 3:
+      targetPage = const ProfilePage();
+      break;
+    case 4:
+      targetPage = const ActivityPage();
+      break;
+    case 5:
+      targetPage = const SettingsPage();
+      break;
+    case 6:
+      targetPage = const PremiumOfferPage();
+      break;
+    default:
+      return;
+  }
 
-    Navigator.of(context).pushReplacement(
+  // ⭐ KHUSUS PREMIUM — gunakan push biasa
+  if (index == 6 || index == 5) {
+    Navigator.of(context).push(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) => targetPage,
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           const begin = Offset(0.0, 0.03);
           const end = Offset.zero;
           const curve = Curves.easeInOut;
-          var tween = Tween(
-            begin: begin,
-            end: end,
-          ).chain(CurveTween(curve: curve));
-          var offsetAnimation = animation.drive(tween);
-          var fadeAnimation = animation.drive(
-            Tween(begin: 0.0, end: 1.0).chain(CurveTween(curve: curve)),
-          );
+          var tween = Tween(begin: begin, end: end)
+              .chain(CurveTween(curve: curve));
 
           return FadeTransition(
-            opacity: fadeAnimation,
-            child: SlideTransition(position: offsetAnimation, child: child),
+            opacity: animation,
+            child: SlideTransition(position: animation.drive(tween), child: child),
           );
         },
         transitionDuration: AppDesignSystem.durationNormal,
       ),
     );
+    return;
   }
+
+  // ⭐ DEFAULT PAGE — tetap pushReplacement
+  Navigator.of(context).pushReplacement(
+    PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => targetPage,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        const begin = Offset(0.0, 0.03);
+        const end = Offset.zero;
+        const curve = Curves.easeInOut;
+        var tween = Tween(begin: begin, end: end)
+            .chain(CurveTween(curve: curve));
+
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(position: animation.drive(tween), child: child),
+        );
+      },
+      transitionDuration: AppDesignSystem.durationNormal,
+    ),
+  );
+}
+
 } // ==================== IMPROVED PROFILE APP BAR ====================
 
 class ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -405,39 +488,8 @@ class ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
               child: InkWell(
                 onTap: () {
                   AppHaptics.light();
-                  Navigator.pushReplacement(
-                    context,
-                    PageRouteBuilder(
-                      pageBuilder: (context, animation, secondaryAnimation) =>
-                          const HomePage(),
-                      transitionsBuilder:
-                          (context, animation, secondaryAnimation, child) {
-                            const begin = Offset(-0.03, 0.0);
-                            const end = Offset.zero;
-                            const curve = Curves.easeInOut;
-                            var tween = Tween(
-                              begin: begin,
-                              end: end,
-                            ).chain(CurveTween(curve: curve));
-                            var offsetAnimation = animation.drive(tween);
-                            var fadeAnimation = animation.drive(
-                              Tween(
-                                begin: 0.0,
-                                end: 1.0,
-                              ).chain(CurveTween(curve: curve)),
-                            );
-
-                            return FadeTransition(
-                              opacity: fadeAnimation,
-                              child: SlideTransition(
-                                position: offsetAnimation,
-                                child: child,
-                              ),
-                            );
-                          },
-                      transitionDuration: AppDesignSystem.durationNormal,
-                    ),
-                  );
+                  // ✅ PERBAIKAN: Gunakan pop() bukan pushReplacement()
+                  Navigator.pop(context);
                 },
                 borderRadius: BorderRadius.circular(
                   AppDesignSystem.radiusSmall * s,

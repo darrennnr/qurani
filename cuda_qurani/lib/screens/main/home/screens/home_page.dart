@@ -27,42 +27,42 @@ class _HomePageState extends State<HomePage> {
   int _completionPercentage = 2;
   int _memorizedPercentage = 0;
   String _engagementTime = "1:33:26";
-  
+
   // ✅ NEW: Backend integration
   final SupabaseService _supabaseService = SupabaseService();
   final AuthService _authService = AuthService();
   Map<String, dynamic>? _latestSession;
   bool _isLoadingSession = true;
-  
+
   @override
   void initState() {
     super.initState();
     _loadLatestSession(); // ✅ Load session on init
   }
-  
+
   /// ✅ NEW: Load latest resumable session from backend
   Future<void> _loadLatestSession() async {
     print('🔄 HOME: Loading latest session...');
-    
+
     if (!_authService.isAuthenticated) {
       print('⚠️ HOME: User not authenticated');
       setState(() => _isLoadingSession = false);
       return;
     }
-    
+
     final userUuid = _authService.userId;
     print('👤 HOME: User UUID: $userUuid');
-    
+
     if (userUuid == null) {
       print('⚠️ HOME: User UUID is null');
       setState(() => _isLoadingSession = false);
       return;
     }
-    
+
     try {
       print('📡 HOME: Fetching session from database...');
       final session = await _supabaseService.getResumableSession(userUuid);
-      
+
       if (session != null) {
         print('✅ HOME: Session found!');
         print('   Session ID: ${session['session_id']}');
@@ -71,7 +71,7 @@ class _HomePageState extends State<HomePage> {
       } else {
         print('⚠️ HOME: No resumable session found');
       }
-      
+
       setState(() {
         _latestSession = session;
         _isLoadingSession = false;
@@ -143,10 +143,7 @@ class _HomePageState extends State<HomePage> {
           overflow: TextOverflow.ellipsis,
         ),
         AppMargin.gapSmall(context),
-        Text(
-          _getGreeting(),
-          style: AppTypography.caption(context),
-        ),
+        Text(_getGreeting(), style: AppTypography.caption(context)),
       ],
     );
   }
@@ -171,12 +168,10 @@ class _HomePageState extends State<HomePage> {
           borderWidth: AppDesignSystem.borderNormal,
           shadow: true,
         ),
-        child: const Center(
-          child: CircularProgressIndicator(),
-        ),
+        child: const Center(child: CircularProgressIndicator()),
       );
     }
-    
+
     // ✅ No session found
     if (_latestSession == null) {
       return Container(
@@ -190,7 +185,11 @@ class _HomePageState extends State<HomePage> {
         ),
         child: Column(
           children: [
-            const Icon(Icons.book_outlined, size: 48, color: AppColors.textTertiary),
+            const Icon(
+              Icons.book_outlined,
+              size: 48,
+              color: AppColors.textTertiary,
+            ),
             AppMargin.gapSmall(context),
             Text(
               'No recent session',
@@ -205,14 +204,14 @@ class _HomePageState extends State<HomePage> {
         ),
       );
     }
-    
+
     // ✅ Extract session data from backend
     final surahId = _latestSession!['surah_id'] ?? 0;
     final ayah = _latestSession!['ayah'] ?? 0;
     final position = _latestSession!['position'] ?? 0;
     final status = _latestSession!['status'] ?? 'unknown';
     final updatedAt = _latestSession!['updated_at'] ?? '';
-    
+
     // Calculate time ago
     String timeAgo = 'Just now';
     try {
@@ -228,7 +227,7 @@ class _HomePageState extends State<HomePage> {
     } catch (e) {
       // Keep default
     }
-    
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -262,13 +261,17 @@ class _HomePageState extends State<HomePage> {
                         width: AppDesignSystem.space6,
                         height: AppDesignSystem.space6,
                         decoration: BoxDecoration(
-                          color: status == 'paused' ? AppColors.warning : AppColors.primary,
+                          color: status == 'paused'
+                              ? AppColors.warning
+                              : AppColors.primary,
                           shape: BoxShape.circle,
                         ),
                       ),
                       AppMargin.gapHSmall(context),
                       Text(
-                        status == 'paused' ? 'PAUSED SESSION' : 'LATEST SESSION',
+                        status == 'paused'
+                            ? 'PAUSED SESSION'
+                            : 'LATEST SESSION',
                         style: AppTypography.overline(context),
                       ),
                     ],
@@ -289,7 +292,10 @@ class _HomePageState extends State<HomePage> {
                         AppDesignSystem.radiusSmall,
                       ),
                       child: Padding(
-                        padding: AppPadding.all(context, AppDesignSystem.space4),
+                        padding: AppPadding.all(
+                          context,
+                          AppDesignSystem.space4,
+                        ),
                         child: Row(
                           children: [
                             Text(
@@ -299,7 +305,10 @@ class _HomePageState extends State<HomePage> {
                                 weight: AppTypography.semiBold,
                               ),
                             ),
-                            AppMargin.customGapH(context, AppDesignSystem.space4),
+                            AppMargin.customGapH(
+                              context,
+                              AppDesignSystem.space4,
+                            ),
                             Icon(
                               Icons.history_rounded,
                               size: AppDesignSystem.iconSmall,
@@ -356,30 +365,29 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-  
+
   /// ✅ NEW: Resume session action
   Future<void> _resumeSession() async {
     if (_latestSession == null) return;
-    
+
     try {
       final surahId = _latestSession!['surah_id'] as int;
       final ayah = _latestSession!['ayah'] as int?;
       final position = _latestSession!['position'] as int?;
-      
+
       print('▶️ Navigating to resume session:');
       print('   Surah: $surahId');
       print('   Ayah: $ayah');
       print('   Position: $position');
-      
+
       // ✅ Navigate to STT page (user clicks resume button inside)
       await Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => SttPage(
-            suratId: surahId,  // ✅ Pass suratId
+            suratId: surahId, // ✅ Pass suratId
           ),
         ),
       );
-      
     } catch (e) {
       print('❌ Failed to resume session: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -445,10 +453,7 @@ class _HomePageState extends State<HomePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: AppTypography.caption(context),
-          ),
+          Text(label, style: AppTypography.caption(context)),
           AppMargin.gapSmall(context),
           Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -462,10 +467,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               AppMargin.gapHSmall(context),
-              Text(
-                unit,
-                style: AppTypography.caption(context),
-              ),
+              Text(unit, style: AppTypography.caption(context)),
             ],
           ),
         ],
@@ -551,16 +553,10 @@ class _HomePageState extends State<HomePage> {
           Container(
             width: AppDesignSystem.space6,
             height: AppDesignSystem.space6,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           AppMargin.gap(context),
-          Text(
-            label,
-            style: AppTypography.caption(context),
-          ),
+          Text(label, style: AppTypography.caption(context)),
           AppMargin.gapSmall(context),
           Text(
             value,
@@ -650,114 +646,116 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
- // ==================== ACHIEVEMENTS ====================
-Widget _buildAchievements(BuildContext context) {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            'Achievements',
-            style: AppTypography.titleLarge(context, weight: AppTypography.bold),
-          ),
-
-          // 👉 NEW: TextButton di sisi kanan
-          TextButton(
-            onPressed: () {
-Navigator.pushReplacement(
-                    context,
-                    PageRouteBuilder(
-                      pageBuilder: (context, animation, secondaryAnimation) =>
-                          const AchievementPage(),
-                      transitionsBuilder:
-                          (context, animation, secondaryAnimation, child) {
-                            const begin = Offset(-0.03, 0.0);
-                            const end = Offset.zero;
-                            const curve = Curves.easeInOut;
-                            var tween = Tween(
-                              begin: begin,
-                              end: end,
-                            ).chain(CurveTween(curve: curve));
-                            var offsetAnimation = animation.drive(tween);
-                            var fadeAnimation = animation.drive(
-                              Tween(
-                                begin: 0.0,
-                                end: 1.0,
-                              ).chain(CurveTween(curve: curve)),
-                            );
-
-                            return FadeTransition(
-                              opacity: fadeAnimation,
-                              child: SlideTransition(
-                                position: offsetAnimation,
-                                child: child,
-                              ),
-                            );
-                          },
-                      transitionDuration: AppDesignSystem.durationNormal,
-                    ),
-                  );
-            },
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.symmetric(
-                horizontal: AppDesignSystem.space8,
-                vertical: AppDesignSystem.space4,
-              ),
-              minimumSize: Size(0, 0), // biar mepet, tidak melebar
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: Text(
-              'More',
-              style: AppTypography.caption(
-                context,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ),
-        ],
-      ),
-
-      AppMargin.gap(context),
-
-      SizedBox(
-        height: AppDesignSystem.scale(context, 100),
-        child: ListView(
-          scrollDirection: Axis.horizontal,
-          physics: const BouncingScrollPhysics(),
+  // ==================== ACHIEVEMENTS ====================
+  Widget _buildAchievements(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _buildAchievementBadge(
-              context: context,
-              emoji: '🔍',
-              label: 'Explorer',
-              count: 10,
+            Text(
+              'Achievements',
+              style: AppTypography.titleLarge(
+                context,
+                weight: AppTypography.bold,
+              ),
             ),
-            _buildAchievementBadge(
-              context: context,
-              emoji: '📱',
-              label: 'Social',
-              count: null,
-            ),
-            _buildAchievementBadge(
-              context: context,
-              emoji: '🎯',
-              label: 'Reminder',
-              count: 1,
-            ),
-            _buildAchievementBadge(
-              context: context,
-              emoji: '🧠',
-              label: 'Memory',
-              count: null,
+
+            // 👉 NEW: TextButton di sisi kanan
+            TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  PageRouteBuilder(
+                    pageBuilder: (context, animation, secondaryAnimation) =>
+                        const AchievementPage(),
+                    transitionsBuilder:
+                        (context, animation, secondaryAnimation, child) {
+                          const begin = Offset(-0.03, 0.0);
+                          const end = Offset.zero;
+                          const curve = Curves.easeInOut;
+                          var tween = Tween(
+                            begin: begin,
+                            end: end,
+                          ).chain(CurveTween(curve: curve));
+                          var offsetAnimation = animation.drive(tween);
+                          var fadeAnimation = animation.drive(
+                            Tween(
+                              begin: 0.0,
+                              end: 1.0,
+                            ).chain(CurveTween(curve: curve)),
+                          );
+
+                          return FadeTransition(
+                            opacity: fadeAnimation,
+                            child: SlideTransition(
+                              position: offsetAnimation,
+                              child: child,
+                            ),
+                          );
+                        },
+                    transitionDuration: AppDesignSystem.durationNormal,
+                  ),
+                );
+              },
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppDesignSystem.space8,
+                  vertical: AppDesignSystem.space4,
+                ),
+                minimumSize: Size(0, 0), // biar mepet, tidak melebar
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                'More',
+                style: AppTypography.caption(
+                  context,
+                  color: AppColors.textPrimary,
+                ),
+              ),
             ),
           ],
         ),
-      ),
-    ],
-  );
-}
 
+        AppMargin.gap(context),
+
+        SizedBox(
+          height: AppDesignSystem.scale(context, 100),
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            children: [
+              _buildAchievementBadge(
+                context: context,
+                emoji: '🔍',
+                label: 'Explorer',
+                count: 10,
+              ),
+              _buildAchievementBadge(
+                context: context,
+                emoji: '📱',
+                label: 'Social',
+                count: null,
+              ),
+              _buildAchievementBadge(
+                context: context,
+                emoji: '🎯',
+                label: 'Reminder',
+                count: 1,
+              ),
+              _buildAchievementBadge(
+                context: context,
+                emoji: '🧠',
+                label: 'Memory',
+                count: null,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 
   Widget _buildAchievementBadge({
     required BuildContext context,
@@ -786,9 +784,7 @@ Navigator.pushReplacement(
             children: [
               Text(
                 emoji,
-                style: TextStyle(
-                  fontSize: AppDesignSystem.scale(context, 25),
-                ),
+                style: TextStyle(fontSize: AppDesignSystem.scale(context, 25)),
               ),
               if (count != null)
                 Positioned(

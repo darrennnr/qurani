@@ -929,7 +929,7 @@ class _AchievementPageState extends State<AchievementPage> {
                 // Footer Action
                 Container(
                   width: double.infinity,
-                  padding: EdgeInsets.all(AppDesignSystem.space16 * s),
+                  padding: EdgeInsets.all(AppDesignSystem.space12 * s),
                   decoration: BoxDecoration(
                     color: AppColors.surfaceContainerLowest,
                     borderRadius: BorderRadius.only(
@@ -942,44 +942,51 @@ class _AchievementPageState extends State<AchievementPage> {
                     ),
                   ),
                   child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppDesignSystem.space2 * s,
-                        vertical: 0 * s,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'STATUS',
-                                style: AppTypography.captionSmall(
-                                  context,
-                                  weight: AppTypography.bold,
-                                  color: AppColors.textTertiary,
-                                ),
-                              ),
-                              SizedBox(height: 2 * s),
-                              Text(
-                                'EARNED ON ${_latestBadge.earnedDate}',
-                                style: AppTypography.caption(
-                                  context,
-                                  weight: AppTypography.bold,
-                                  color: AppColors.textTertiary,
-                                ),
-                              ),
-                            ],
-                          ),
-                          // Verification Badge
-                          Icon(
-                            Icons.verified_rounded,
-                            color: AppColors.success,
-                            size: 24 * s,
-                          ),
-                        ],
-                      ),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppDesignSystem.space2 * s,
+                      vertical: 0,
                     ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'STATUS',
+                              style: AppTypography.captionSmall(
+                                context,
+                                weight: AppTypography.medium,
+                                color: AppColors.textTertiary,
+                              ),
+                            ),
+                            Text(
+                              'EARNED ON ${_latestBadge.earnedDate}',
+                              style: AppTypography.caption(
+                                context,
+                                weight: AppTypography.medium,
+                                color: AppColors.textTertiary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        // Verification Badge
+                        Container(
+                          padding: EdgeInsets.all(6 * s),
+                          decoration: BoxDecoration(
+                            color: Colors.white, // pale white
+                            borderRadius: BorderRadius.circular(30 * s),
+                          ),
+                          child: Image.asset(
+                            'assets/images/qurani-icon-green.png',
+                            height: 28 * s,
+                            color: AppColors.primary,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
