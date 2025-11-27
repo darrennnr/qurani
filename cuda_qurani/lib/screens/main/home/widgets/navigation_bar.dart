@@ -372,9 +372,6 @@ class _MenuAppBarState extends State<MenuAppBar>
     );
   }
 } // ==================== IMPROVED PROFILE APP BAR ====================
-// ✅ Full Design System Integration
-// ✅ Consistent with MenuAppBar
-// ✅ Enhanced Back Navigation
 
 class ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;

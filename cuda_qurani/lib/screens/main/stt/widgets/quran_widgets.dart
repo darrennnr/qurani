@@ -395,28 +395,16 @@ class _QuranBottomBarState extends State<QuranBottomBar>
                         if (_selectedMode == 'listen') {
                           // ====== LISTENING MODE ======
                           if (controller.isListeningMode) {
-                            // Already listening - handle pause/resume
+                            // Already listening
                             final audioService =
                                 controller.listeningAudioService;
                             if (audioService != null) {
-                              // ✅ FIX: Update UI FIRST, then execute
-                              setState(() {
-                                // Force rebuild to show new icon immediately
-                              });
-
                               if (audioService.isPaused) {
                                 // Resume playback
-                                print('▶️ RESUME BUTTON: Resuming playback');
                                 await controller.resumeListening();
                               } else {
                                 // Pause playback
-                                print('⏸️ PAUSE BUTTON: Pausing playback');
                                 await controller.pauseListening();
-                              }
-
-                              // ✅ FIX: Force another rebuild after state change
-                              if (mounted) {
-                                setState(() {});
                               }
                             }
                           } else {
@@ -425,75 +413,69 @@ class _QuranBottomBarState extends State<QuranBottomBar>
                               '🎵 LISTEN BUTTON: Opening playback settings',
                             );
 
-                          // Navigate to playback settings
-                          final settings =
-                              await Navigator.push<PlaybackSettings>(
-                                context,
-                                PageRouteBuilder(
-                                  pageBuilder:
-                                      (
-                                        context,
-                                        animation,
-                                        secondaryAnimation,
-                                      ) => const PlaybackSettingsPage(),
-                                  transitionsBuilder:
-                                      (
-                                        context,
-                                        animation,
-                                        secondaryAnimation,
-                                        child,
-                                      ) {
-                                        const begin = Offset(0.0, 0.3);
-                                        const end = Offset.zero;
-                                        const curve = Curves.easeInOut;
-                                        var tween = Tween(
-                                          begin: begin,
-                                          end: end,
-                                        ).chain(CurveTween(curve: curve));
-                                        var offsetAnimation = animation.drive(
-                                          tween,
-                                        );
-                                        var fadeAnimation = animation.drive(
-                                          Tween(
-                                            begin: 0.0,
-                                            end: 1.0,
-                                          ).chain(CurveTween(curve: curve)),
-                                        );
+                            final settings =
+                                await Navigator.push<PlaybackSettings>(
+                                  context,
+                                  PageRouteBuilder(
+                                    pageBuilder:
+                                        (
+                                          context,
+                                          animation,
+                                          secondaryAnimation,
+                                        ) => const PlaybackSettingsPage(),
+                                    transitionsBuilder:
+                                        (
+                                          context,
+                                          animation,
+                                          secondaryAnimation,
+                                          child,
+                                        ) {
+                                          const begin = Offset(0.0, 0.3);
+                                          const end = Offset.zero;
+                                          const curve = Curves.easeInOut;
+                                          var tween = Tween(
+                                            begin: begin,
+                                            end: end,
+                                          ).chain(CurveTween(curve: curve));
+                                          var offsetAnimation = animation.drive(
+                                            tween,
+                                          );
+                                          var fadeAnimation = animation.drive(
+                                            Tween(
+                                              begin: 0.0,
+                                              end: 1.0,
+                                            ).chain(CurveTween(curve: curve)),
+                                          );
 
-                                        return FadeTransition(
-                                          opacity: fadeAnimation,
-                                          child: SlideTransition(
-                                            position: offsetAnimation,
-                                            child: child,
-                                          ),
-                                        );
-                                      },
-                                  transitionDuration:
-                                      AppDesignSystem.durationNormal,
-                                ),
-                              );
+                                          return FadeTransition(
+                                            opacity: fadeAnimation,
+                                            child: SlideTransition(
+                                              position: offsetAnimation,
+                                              child: child,
+                                            ),
+                                          );
+                                        },
+                                    transitionDuration:
+                                        AppDesignSystem.durationNormal,
+                                  ),
+                                );
 
-                            // Check if settings returned
                             if (settings != null) {
                               print('✅ Playback settings received: $settings');
 
+                              // ✅ FIX: Try-catch untuk handle empty playlist
                               try {
                                 await controller.startListening(settings);
                               } catch (e) {
                                 print('❌ Failed to start listening: $e');
 
-                                // ✅ Show error with SnackBar
+                                // Show error to user
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: Text('Failed to start listening: $e'),
+                                      content: Text('$e'),
                                       backgroundColor: Colors.red,
-                                      duration: const Duration(seconds: 5),
-                                      action: SnackBarAction(
-                                        label: 'Dismiss',
-                                        textColor: Colors.white,
-                                        onPressed: () {},
-                                      ),
+                                      duration: Duration(seconds: 5),
                                     ),
                                   );
                                 }
@@ -604,28 +586,28 @@ class _QuranBottomBarState extends State<QuranBottomBar>
                           ),
                         );
                       },
-                      child: Container(
-                        width: buttonSize * 0.5,
-                        height: buttonSize * 0.5,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: primaryColor.withOpacity(0.25),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Icon(
-                            Icons.keyboard_arrow_up,
-                            color: primaryColor,
-                            size: iconSize * 1.1,
-                          ),
-                        ),
-                      ),
+                      // child: Container(
+                      //   width: buttonSize * 0.5,
+                      //   height: buttonSize * 0.5,
+                      //   decoration: BoxDecoration(
+                      //     color: Colors.white,
+                      //     shape: BoxShape.circle,
+                      //     boxShadow: [
+                      //       BoxShadow(
+                      //         color: primaryColor.withOpacity(0.25),
+                      //         blurRadius: 6,
+                      //         offset: const Offset(0, 2),
+                      //       ),
+                      //     ],
+                      //   ),
+                      //   child: Center(
+                      //     child: Icon(
+                      //       Icons.keyboard_arrow_up,
+                      //       color: primaryColor,
+                      //       size: iconSize * 1.1,
+                      //     ),
+                      //   ),
+                      // ),
                     ),
                   ),
                 ),
@@ -691,14 +673,13 @@ class _QuranBottomBarState extends State<QuranBottomBar>
     } else {
       // Listening mode
       if (controller.isListeningMode) {
-        // Check if playing or paused
         final audioService = controller.listeningAudioService;
         if (audioService != null && audioService.isPaused) {
-          return Icons.play_arrow; // ✅ Show play when paused
+          return Icons.play_arrow; // Show play when paused
         }
-        return Icons.pause; // ✅ Show pause when playing
+        return Icons.pause; // ✅ FIX: Show PAUSE (not stop) when playing
       }
-      return Icons.headphones; // ✅ Default: headphones icon for listen mode
+      return Icons.play_arrow; // Default: show play
     }
   }
 

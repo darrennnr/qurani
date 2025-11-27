@@ -122,30 +122,37 @@ class ListeningAudioService {
   }
 
   // Play next track in playlist
-  Future<void> _playNextTrack() async {
-    if (!_isPlaying || _currentTrackIndex >= _playlist.length) {
-      // Range completed, check repeat
-      if (_shouldRepeatRange()) {
-        _currentRangeRepeat++;
-        _currentTrackIndex = 0;
-        _currentVerseRepeat = 0;
-        print(
-          '🔁 Repeating range (${_currentRangeRepeat}/${_currentSettings!.rangeRepeat})',
-        );
-        await _playNextTrack();
-      } else {
-        print('🏁 Playback completed');
+ // Play next track in playlist
+Future<void> _playNextTrack() async {
+  if (!_isPlaying || _currentTrackIndex >= _playlist.length) {
+    // Range completed, check repeat
+    if (_shouldRepeatRange()) {
+      _currentRangeRepeat++;
+      _currentTrackIndex = 0;
+      _currentVerseRepeat = 0;
+      print(
+        '🔁 Repeating range (${_currentRangeRepeat}/${_currentSettings!.rangeRepeat})',
+      );
+      await _playNextTrack();
+    } else {
+      print('🏁 Playback completed');
 
-        // ✅ Auto-stop and cleanup
-        await stopPlayback();
-
-        // ✅ Notify completion via stream
-        _currentVerseController?.add(
-          VerseReference(surahId: -1, verseNumber: -1),
-        );
-      }
-      return;
+      // ✅ FIX: Properly stop and notify completion
+      _isPlaying = false;
+      _isPaused = false;
+      
+      await _player.stop();
+      _stopWordHighlightTimer();
+      
+      // ✅ Send completion signal (surahId: -999 indicates full completion)
+      _currentVerseController?.add(
+        VerseReference(surahId: -999, verseNumber: -999),
+      );
+      
+      print('✅ Listening mode fully stopped');
     }
+    return;
+  }
 
     final currentAudio = _playlist[_currentTrackIndex];
 

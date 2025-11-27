@@ -2,6 +2,7 @@
 
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
 import 'package:cuda_qurani/screens/main/home/screens/all_session_page.dart';
+import 'package:cuda_qurani/screens/main/home/screens/achievement_page.dart';
 import 'package:cuda_qurani/screens/main/home/widgets/navigation_bar.dart';
 import 'package:cuda_qurani/providers/auth_provider.dart';
 import 'package:cuda_qurani/services/supabase_service.dart'; // ✅ NEW
@@ -649,52 +650,114 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ==================== ACHIEVEMENTS ====================
-  Widget _buildAchievements(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Achievements',
-          style: AppTypography.titleLarge(context, weight: AppTypography.bold),
-        ),
-        AppMargin.gap(context),
-        SizedBox(
-          height: AppDesignSystem.scale(context, 100),
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            children: [
-              _buildAchievementBadge(
-                context: context,
-                emoji: '🔍',
-                label: 'Explorer',
-                count: 10,
-              ),
-              _buildAchievementBadge(
-                context: context,
-                emoji: '📱',
-                label: 'Social',
-                count: null,
-              ),
-              _buildAchievementBadge(
-                context: context,
-                emoji: '🎯',
-                label: 'Reminder',
-                count: 1,
-              ),
-              _buildAchievementBadge(
-                context: context,
-                emoji: '🧠',
-                label: 'Memory',
-                count: null,
-              ),
-            ],
+ // ==================== ACHIEVEMENTS ====================
+Widget _buildAchievements(BuildContext context) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Achievements',
+            style: AppTypography.titleLarge(context, weight: AppTypography.bold),
           ),
+
+          // 👉 NEW: TextButton di sisi kanan
+          TextButton(
+            onPressed: () {
+Navigator.pushReplacement(
+                    context,
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) =>
+                          const AchievementPage(),
+                      transitionsBuilder:
+                          (context, animation, secondaryAnimation, child) {
+                            const begin = Offset(-0.03, 0.0);
+                            const end = Offset.zero;
+                            const curve = Curves.easeInOut;
+                            var tween = Tween(
+                              begin: begin,
+                              end: end,
+                            ).chain(CurveTween(curve: curve));
+                            var offsetAnimation = animation.drive(tween);
+                            var fadeAnimation = animation.drive(
+                              Tween(
+                                begin: 0.0,
+                                end: 1.0,
+                              ).chain(CurveTween(curve: curve)),
+                            );
+
+                            return FadeTransition(
+                              opacity: fadeAnimation,
+                              child: SlideTransition(
+                                position: offsetAnimation,
+                                child: child,
+                              ),
+                            );
+                          },
+                      transitionDuration: AppDesignSystem.durationNormal,
+                    ),
+                  );
+            },
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.symmetric(
+                horizontal: AppDesignSystem.space8,
+                vertical: AppDesignSystem.space4,
+              ),
+              minimumSize: Size(0, 0), // biar mepet, tidak melebar
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(
+              'More',
+              style: AppTypography.caption(
+                context,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
+
+      AppMargin.gap(context),
+
+      SizedBox(
+        height: AppDesignSystem.scale(context, 100),
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          children: [
+            _buildAchievementBadge(
+              context: context,
+              emoji: '🔍',
+              label: 'Explorer',
+              count: 10,
+            ),
+            _buildAchievementBadge(
+              context: context,
+              emoji: '📱',
+              label: 'Social',
+              count: null,
+            ),
+            _buildAchievementBadge(
+              context: context,
+              emoji: '🎯',
+              label: 'Reminder',
+              count: 1,
+            ),
+            _buildAchievementBadge(
+              context: context,
+              emoji: '🧠',
+              label: 'Memory',
+              count: null,
+            ),
+          ],
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
+
 
   Widget _buildAchievementBadge({
     required BuildContext context,
