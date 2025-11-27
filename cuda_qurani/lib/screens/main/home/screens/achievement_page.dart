@@ -305,7 +305,7 @@ class _AchievementPageState extends State<AchievementPage> {
                                       padding: EdgeInsets.only(left: 4 * s),
                                       child: Text(
                                         _latestBadge.badgeType!,
-                                        style: AppTypography.bodySmall(
+                                        style: AppTypography.bodyLarge(
                                           context,
                                           color: AppColors.textSecondary,
                                         ),
@@ -941,29 +941,45 @@ class _AchievementPageState extends State<AchievementPage> {
                       ),
                     ),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        item.isEarned ? Icons.verified : Icons.lock_clock,
-                        size: 16 * s,
-                        color: item.isEarned
-                            ? AppColors.success
-                            : AppColors.textTertiary,
+                  child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppDesignSystem.space2 * s,
+                        vertical: 0 * s,
                       ),
-                      SizedBox(width: AppDesignSystem.space8 * s),
-                      Text(
-                        item.isEarned ? 'EARNED' : 'LOCKED',
-                        style: AppTypography.label(
-                          context,
-                          weight: AppTypography.bold,
-                          color: item.isEarned
-                              ? AppColors.success
-                              : AppColors.textTertiary,
-                        ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'STATUS',
+                                style: AppTypography.captionSmall(
+                                  context,
+                                  weight: AppTypography.bold,
+                                  color: AppColors.textTertiary,
+                                ),
+                              ),
+                              SizedBox(height: 2 * s),
+                              Text(
+                                'EARNED ON ${_latestBadge.earnedDate}',
+                                style: AppTypography.caption(
+                                  context,
+                                  weight: AppTypography.bold,
+                                  color: AppColors.textTertiary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          // Verification Badge
+                          Icon(
+                            Icons.verified_rounded,
+                            color: AppColors.success,
+                            size: 24 * s,
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
                 ),
               ],
             ),
