@@ -62,6 +62,7 @@ flutter:
 
   assets:
     - assets/images/qurani-white-text.png
+    - assets/images/qurani-icon-green.png
     - assets/data/quran-metadata-surah-name.sqlite
     - assets/data/qpc-v1-15-lines.db
     - assets/data/qpc-v1-glyph-codes-wbw.db

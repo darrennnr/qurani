@@ -766,7 +766,7 @@ Navigator.pushReplacement(
     required int? count,
   }) {
     return Container(
-      width: AppDesignSystem.scale(context, 85),
+      width: AppDesignSystem.scale(context, 90),
       margin: EdgeInsets.only(
         right: AppDesignSystem.scale(context, AppDesignSystem.space12),
       ),
@@ -787,7 +787,7 @@ Navigator.pushReplacement(
               Text(
                 emoji,
                 style: TextStyle(
-                  fontSize: AppDesignSystem.scale(context, 30),
+                  fontSize: AppDesignSystem.scale(context, 25),
                 ),
               ),
               if (count != null)

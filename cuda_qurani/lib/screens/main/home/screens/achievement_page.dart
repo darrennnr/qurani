@@ -44,12 +44,12 @@ class _AchievementPageState extends State<AchievementPage> {
 
   // The "Latest Badge" shown at the top
   final AchievementModel _latestBadge = AchievementModel(
-    title: 'TARTEEL',
+    title: 'Qurani',
     subtitle: 'Start Memorizing',
-    badgeType: 'AI —',
+    badgeType: 'Hafidz',
     description: 'Enable Memorization Mode in the Quran reading experience.',
     emoji: '🧠',
-    color: const Color(0xFF00C853), // Greenish for the glow
+    color: const Color(0xFF00C853), // Specific badge color
     isEarned: true,
     isLocked: false,
     earnedDate: 'NOV 25, 2025',
@@ -58,7 +58,7 @@ class _AchievementPageState extends State<AchievementPage> {
   final List<AchievementModel> _earnedBadges = [
     AchievementModel(
       title: 'Start Memorizing',
-      subtitle: 'Begin your journey',
+      subtitle: 'Begin journey',
       description: 'Start your first memorization session.',
       emoji: '🧠',
       color: Colors.blue,
@@ -221,11 +221,11 @@ class _AchievementPageState extends State<AchievementPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Get scaling factor for responsiveness
     final s = AppDesignSystem.getScaleFactor(context);
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      // Using the ProfileAppBar as requested with matching title
       appBar: const ProfileAppBar(title: 'Achievements', showBackButton: true),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -235,9 +235,9 @@ class _AchievementPageState extends State<AchievementPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildLatestBadgeSection(context, s),
-              SizedBox(height: AppDesignSystem.space24 * s),
+              AppMargin.gapXLarge(context),
               _buildEarnedBadgesSection(context, s),
-              SizedBox(height: AppDesignSystem.space24 * s),
+              AppMargin.gapLarge(context),
               _buildInfoBanner(context, s),
               _buildRemainingBadgesSection(context, s),
             ],
@@ -247,7 +247,7 @@ class _AchievementPageState extends State<AchievementPage> {
     );
   }
 
-  // ==================== LATEST BADGE CARD ====================
+  // ==================== LATEST BADGE CARD (HERO) ====================
   Widget _buildLatestBadgeSection(BuildContext context, double s) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: AppDesignSystem.space20 * s),
@@ -255,187 +255,205 @@ class _AchievementPageState extends State<AchievementPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(height: AppDesignSystem.space16 * s),
-          Text('Latest Badge', style: AppTypography.body(context)),
+          Text(
+            'Latest Badge',
+            style: AppTypography.h3(context, weight: AppTypography.bold),
+          ),
           SizedBox(height: AppDesignSystem.space12 * s),
 
-          // Main Card
+          // Main Hero Card
           Container(
             decoration: AppComponentStyles.card(
               color: AppColors.surface,
               shadow: true,
               borderRadius: AppDesignSystem.radiusLarge * s,
               borderColor: AppColors.borderLight,
-              borderWidth: AppDesignSystem.borderThin * s,
             ),
-            child: Column(
-              children: [
-                // Top Part (Content)
-                Padding(
-                  padding: EdgeInsets.all(AppDesignSystem.space20 * s),
-                  child: Column(
-                    children: [
-                      // Header Row
-                      Row(
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  AppHaptics.light();
+                  _showBadgeDetails(context, _latestBadge, s);
+                },
+                borderRadius: BorderRadius.circular(
+                  AppDesignSystem.radiusLarge * s,
+                ),
+                child: Column(
+                  children: [
+                    // Top Content
+                    Padding(
+                      padding: EdgeInsets.all(AppDesignSystem.space20 * s),
+                      child: Column(
+                        children: [
+                          // Header Row
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Image.asset(
+                                    'assets/images/qurani-white-text.png',
+                                    height: 25 * s,
+                                    color: AppColors.primary,
+                                    fit: BoxFit.contain,
+                                  ),
+                                  if (_latestBadge.badgeType != null)
+                                    Container(
+                                      padding: EdgeInsets.only(left: 4 * s),
+                                      child: Text(
+                                        _latestBadge.badgeType!,
+                                        style: AppTypography.bodySmall(
+                                          context,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              Icon(
+                                Icons.share_outlined,
+                                color: AppColors.textTertiary,
+                                size: AppDesignSystem.iconMedium * s,
+                              ),
+                            ],
+                          ),
+
+                          // Central Avatar with Glow
+                          Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // Glow Effect
+                              Container(
+                                width: 180 * s,
+                                height: 180 * s,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: RadialGradient(
+                                    colors: [
+                                      _latestBadge.color.withOpacity(0.2),
+                                      Colors.transparent,
+                                    ],
+                                    stops: const [0.3, 1.0],
+                                  ),
+                                ),
+                              ),
+                              // Circle Avatar
+                              Container(
+                                width: 125 * s,
+                                height: 125 * s,
+                                decoration: BoxDecoration(
+                                  color: AppColors.surface,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: AppColors.borderLight,
+                                    width: 1 * s,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.shadowLight,
+                                      blurRadius: 15,
+                                      offset: const Offset(0, 8),
+                                    ),
+                                  ],
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  _latestBadge.emoji,
+                                  style: TextStyle(fontSize: 55 * s),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          SizedBox(height: AppDesignSystem.space16 * s),
+
+                          // Badge Label Chip
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: AppDesignSystem.space12 * s,
+                              vertical: AppDesignSystem.space4 * s,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceContainerLowest,
+                              border: Border.all(color: AppColors.borderMedium),
+                              borderRadius: BorderRadius.circular(
+                                AppDesignSystem.radiusSmall * s,
+                              ),
+                            ),
+                            child: Text(
+                              _latestBadge.subtitle,
+                              style: AppTypography.caption(
+                                context,
+                                color: AppColors.textPrimary,
+                                weight: AppTypography.medium,
+                              ),
+                            ),
+                          ),
+
+                          SizedBox(height: AppDesignSystem.space16 * s),
+
+                          // Description
+                          Text(
+                            _latestBadge.description,
+                            textAlign: TextAlign.center,
+                            style: AppTypography.body(
+                              context,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Divider
+                    Divider(height: 1, color: AppColors.borderLight),
+
+                    // Footer
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppDesignSystem.space20 * s,
+                        vertical: AppDesignSystem.space12 * s,
+                      ),
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                _latestBadge.title,
-                                style: AppTypography.titleLarge(
+                                'STATUS',
+                                style: AppTypography.captionSmall(
                                   context,
                                   weight: AppTypography.bold,
+                                  color: AppColors.textTertiary,
                                 ),
                               ),
-                              if (_latestBadge.badgeType != null)
-                                Text(
-                                  _latestBadge.badgeType!,
-                                  style: AppTypography.body(
-                                    context,
-                                    color: AppColors.textSecondary,
-                                  ),
+                              SizedBox(height: 2 * s),
+                              Text(
+                                'EARNED ON ${_latestBadge.earnedDate}',
+                                style: AppTypography.caption(
+                                  context,
+                                  weight: AppTypography.bold,
+                                  color: AppColors.textTertiary,
                                 ),
+                              ),
                             ],
                           ),
+                          // Verification Badge
                           Icon(
-                            Icons.share_outlined,
-                            color: AppColors.textTertiary,
-                            size: AppDesignSystem.iconMedium * s,
+                            Icons.verified_rounded,
+                            color: AppColors.success,
+                            size: 24 * s,
                           ),
                         ],
                       ),
-
-                      SizedBox(height: AppDesignSystem.space24 * s),
-
-                      // Central Avatar with Glow
-                      Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          // Glow Effect
-                          Container(
-                            width: 140 * s,
-                            height: 140 * s,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: RadialGradient(
-                                colors: [
-                                  _latestBadge.color.withOpacity(0.4),
-                                  Colors.transparent,
-                                ],
-                                stops: const [0.3, 1.0],
-                              ),
-                            ),
-                          ),
-                          // Circle Avatar
-                          Container(
-                            width: 100 * s,
-                            height: 100 * s,
-                            decoration: BoxDecoration(
-                              color: AppColors
-                                  .info, // Blue background like screenshot
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              _latestBadge.emoji,
-                              style: TextStyle(fontSize: 50 * s),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      SizedBox(height: AppDesignSystem.space16 * s),
-
-                      // Badge Label
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: AppDesignSystem.space12 * s,
-                          vertical: AppDesignSystem.space4 * s,
-                        ),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: AppColors.borderMedium),
-                          borderRadius: BorderRadius.circular(
-                            AppDesignSystem.radiusSmall * s,
-                          ),
-                        ),
-                        child: Text(
-                          _latestBadge.subtitle,
-                          style: AppTypography.caption(
-                            context,
-                            color: AppColors.textPrimary,
-                            weight: AppTypography.medium,
-                          ),
-                        ),
-                      ),
-
-                      SizedBox(height: AppDesignSystem.space24 * s),
-
-                      // Description
-                      Text(
-                        _latestBadge.description,
-                        textAlign: TextAlign.center,
-                        style: AppTypography.body(
-                          context,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-
-                // Divider
-                Divider(height: 1, color: AppColors.borderLight),
-
-                // Footer
-                Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: AppDesignSystem.space20 * s,
-                    vertical: AppDesignSystem.space16 * s,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Dummy',
-                            style: AppTypography.captionSmall(
-                              context,
-                              weight: AppTypography.bold,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          SizedBox(height: AppDesignSystem.space2 * s),
-                          Text(
-                            'EARNED: ${_latestBadge.earnedDate}',
-                            style: AppTypography.captionSmall(
-                              context,
-                              weight: AppTypography.bold,
-                              color: AppColors.textTertiary, // Uppercase style
-                            ),
-                          ),
-                        ],
-                      ),
-                      // The green logo icon in the corner
-                      Icon(
-                        Icons.verified,
-                        color: const Color(0xFF2ECC71), // Bright green
-                        size: 24 * s,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ],
@@ -443,7 +461,7 @@ class _AchievementPageState extends State<AchievementPage> {
     );
   }
 
-  // ==================== EARNED BADGES ====================
+  // ==================== EARNED BADGES SECTION ====================
   Widget _buildEarnedBadgesSection(BuildContext context, double s) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -452,20 +470,41 @@ class _AchievementPageState extends State<AchievementPage> {
           padding: EdgeInsets.symmetric(
             horizontal: AppDesignSystem.space20 * s,
           ),
-          child: Text(
-            'Earned Badges (${_earnedBadges.length})',
-            style: AppTypography.titleLarge(
-              context,
-              weight: AppTypography.bold,
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Earned Badges',
+                style: AppTypography.h3(context, weight: AppTypography.bold),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppDesignSystem.space8 * s,
+                  vertical: 2 * s,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.successContainer,
+                  borderRadius: BorderRadius.circular(
+                    AppDesignSystem.radiusLarge * s,
+                  ),
+                ),
+                child: Text(
+                  '${_earnedBadges.length}',
+                  style: AppTypography.captionSmall(
+                    context,
+                    color: AppColors.successDark,
+                    weight: AppTypography.bold,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         SizedBox(height: AppDesignSystem.space16 * s),
 
-        // Horizontal Grid/List look
         Padding(
           padding: EdgeInsets.symmetric(
-            horizontal: AppDesignSystem.space12 * s,
+            horizontal: AppDesignSystem.space16 * s,
           ),
           child: GridView.builder(
             shrinkWrap: true,
@@ -473,9 +512,9 @@ class _AchievementPageState extends State<AchievementPage> {
             itemCount: _earnedBadges.length,
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3,
-              childAspectRatio: 0.75, // Adjust for height of text
-              crossAxisSpacing: AppDesignSystem.space4 * s,
-              mainAxisSpacing: AppDesignSystem.space2 * s,
+              childAspectRatio: 0.70, // Optimized for spacing
+              crossAxisSpacing: AppDesignSystem.space8 * s,
+              mainAxisSpacing: AppDesignSystem.space16 * s,
             ),
             itemBuilder: (context, index) {
               return _buildBadgeItem(context, _earnedBadges[index], s);
@@ -494,25 +533,36 @@ class _AchievementPageState extends State<AchievementPage> {
         vertical: AppDesignSystem.space12 * s,
         horizontal: AppDesignSystem.space20 * s,
       ),
-      margin: EdgeInsets.only(bottom: AppDesignSystem.space16 * s),
+      margin: EdgeInsets.only(bottom: AppDesignSystem.space24 * s),
       decoration: BoxDecoration(
         color: AppColors.surfaceContainerLowest,
         border: Border.symmetric(
           horizontal: BorderSide(color: AppColors.borderLight, width: 1.0),
         ),
       ),
-      child: Text(
-        'TAP BADGE TO VIEW REQUIREMENTS',
-        style: AppTypography.captionSmall(
-          context,
-          weight: AppTypography.bold,
-          color: AppColors.textSecondary,
-        ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.touch_app_outlined,
+            size: 14 * s,
+            color: AppColors.textTertiary,
+          ),
+          SizedBox(width: AppDesignSystem.space8 * s),
+          Text(
+            'TAP BADGE TO VIEW REQUIREMENTS',
+            style: AppTypography.captionSmall(
+              context,
+              weight: AppTypography.bold,
+              color: AppColors.textTertiary,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  // ==================== REMAINING BADGES ====================
+  // ==================== REMAINING BADGES SECTION ====================
   Widget _buildRemainingBadgesSection(BuildContext context, double s) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -522,18 +572,15 @@ class _AchievementPageState extends State<AchievementPage> {
             horizontal: AppDesignSystem.space20 * s,
           ),
           child: Text(
-            'Remaining Badges (${_remainingBadges.length})',
-            style: AppTypography.titleLarge(
-              context,
-              weight: AppTypography.bold,
-            ),
+            'Remaining Badges',
+            style: AppTypography.h3(context, weight: AppTypography.bold),
           ),
         ),
         SizedBox(height: AppDesignSystem.space16 * s),
 
         Padding(
           padding: EdgeInsets.symmetric(
-            horizontal: AppDesignSystem.space12 * s,
+            horizontal: AppDesignSystem.space16 * s,
           ),
           child: GridView.builder(
             shrinkWrap: true,
@@ -541,9 +588,9 @@ class _AchievementPageState extends State<AchievementPage> {
             itemCount: _remainingBadges.length,
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3,
-              childAspectRatio: 0.75,
-              crossAxisSpacing: AppDesignSystem.space4 * s,
-              mainAxisSpacing: AppDesignSystem.space24 * s,
+              childAspectRatio: 0.70,
+              crossAxisSpacing: AppDesignSystem.space8 * s,
+              mainAxisSpacing: AppDesignSystem.space16 * s,
             ),
             itemBuilder: (context, index) {
               return _buildBadgeItem(context, _remainingBadges[index], s);
@@ -575,12 +622,14 @@ class _AchievementPageState extends State<AchievementPage> {
             children: [
               // Main Circular Shape
               Container(
-                width: 70 * s,
-                height: 70 * s,
+                width: 72 * s,
+                height: 72 * s,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: item.isLocked ? Colors.transparent : item.color,
-                  // Gradient for unlocked (simulated simple color)
+                  // Color logic: if locked, gray. if earned, item color.
+                  color: item.isLocked
+                      ? AppColors.surfaceContainerHigh
+                      : item.color,
                   gradient: !item.isLocked
                       ? LinearGradient(
                           colors: [item.color, item.color.withOpacity(0.8)],
@@ -588,45 +637,70 @@ class _AchievementPageState extends State<AchievementPage> {
                           end: Alignment.bottomRight,
                         )
                       : null,
+                  boxShadow: !item.isLocked
+                      ? [
+                          BoxShadow(
+                            color: item.color.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                      : null,
                 ),
                 alignment: Alignment.center,
-                child: item.isLocked
-                    ? Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          // Ghost of the emoji
-                          Opacity(
-                            opacity: 0.1,
-                            child: Text(
-                              item.emoji,
-                              style: TextStyle(fontSize: 32 * s),
-                            ),
-                          ),
-                          // Lock Icon
-                          Icon(
-                            Icons.lock_rounded,
-                            color: AppColors.textDisabled,
-                            size: 28 * s,
-                          ),
-                        ],
-                      )
-                    : Text(item.emoji, style: TextStyle(fontSize: 32 * s)),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Emoji
+                    Opacity(
+                      // Locked: 0.5 opacity (visible but muted). Unlocked: 1.0
+                      opacity: item.isLocked ? 0.5 : 1.0,
+                      child: Text(
+                        item.emoji,
+                        style: TextStyle(
+                          fontSize: 32 * s,
+                          // If locked, apply a grayscale filter effect conceptually by mixing color?
+                          // Since it's a string emoji, we just rely on opacity and container background.
+                        ),
+                      ),
+                    ),
+
+                    // Lock Overlay (Small icon in center)
+                    if (item.isLocked)
+                      Container(
+                        padding: EdgeInsets.all(4 * s),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface.withOpacity(0.6),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.lock_rounded,
+                          color: AppColors.textPrimary,
+                          size: 16 * s,
+                        ),
+                      ),
+                  ],
+                ),
               ),
 
-              // Notification Badge (Counter)
+              // Count Badge (Notification style)
               if (item.count != null && !item.isLocked)
                 Positioned(
                   top: 0,
                   right: 0,
                   child: Container(
                     padding: EdgeInsets.all(4 * s),
-                    decoration: const BoxDecoration(
-                      color: AppColors.success,
+                    decoration: BoxDecoration(
+                      color: AppColors.error,
                       shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppColors.surface,
+                        width: 2 * s,
+                      ),
                     ),
                     constraints: BoxConstraints(
-                      minWidth: 20 * s,
-                      minHeight: 20 * s,
+                      minWidth: 22 * s,
+                      minHeight: 22 * s,
                     ),
                     child: Center(
                       child: Text(
@@ -640,17 +714,6 @@ class _AchievementPageState extends State<AchievementPage> {
                     ),
                   ),
                 ),
-
-              // Locked State Background (Ghost shape for layout consistency)
-              if (item.isLocked)
-                Container(
-                  width: 70 * s,
-                  height: 70 * s,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.surfaceContainerMedium.withOpacity(0.5),
-                  ),
-                ),
             ],
           ),
 
@@ -658,18 +721,36 @@ class _AchievementPageState extends State<AchievementPage> {
 
           // Badge Title
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 4.0 * s),
+            padding: EdgeInsets.symmetric(horizontal: 2.0 * s),
             child: Text(
               item.title,
               textAlign: TextAlign.center,
-              maxLines: 2,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: AppTypography.bodySmall(
+              style: AppTypography.label(
                 context,
+                weight: AppTypography.semiBold,
                 color: item.isLocked
                     ? AppColors.textTertiary
-                    : AppColors.textSecondary,
-              ).copyWith(height: 1.2),
+                    : AppColors.textPrimary,
+              ),
+            ),
+          ),
+
+          SizedBox(height: 2 * s),
+
+          // Badge Subtitle
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 2.0 * s),
+            child: Text(
+              item.subtitle,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.captionSmall(
+                context,
+                color: AppColors.textTertiary,
+              ),
             ),
           ),
         ],
@@ -692,8 +773,8 @@ class _AchievementPageState extends State<AchievementPage> {
               AppDesignSystem.radiusLarge * s,
             ),
           ),
-          elevation: 0,
-          backgroundColor: Colors.transparent,
+          elevation: AppDesignSystem.elevationMedium,
+          backgroundColor: AppColors.surface,
           child: Container(
             width: double.infinity,
             decoration: BoxDecoration(
@@ -704,61 +785,28 @@ class _AchievementPageState extends State<AchievementPage> {
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Header (Title + Close)
                 Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    AppDesignSystem.space20 * s,
-                    AppDesignSystem.space20 * s,
-                    AppDesignSystem.space12 * s,
-                    0,
-                  ),
+                  padding: EdgeInsets.all(AppDesignSystem.space20 * s),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
-                        child: Text(
-                          '${item.title} — ${item.subtitle}',
-                          style: AppTypography.title(context),
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () => Navigator.of(context).pop(),
-                        child: Icon(
-                          Icons.close,
-                          size: 24 * s,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                Divider(color: AppColors.borderLight, height: 32 * s),
-
-                // Content
-                Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: AppDesignSystem.space20 * s,
-                  ),
-                  child: Column(
-                    children: [
-                      // Badge "TARTEEL AI" dummy text from screenshot
-                      Align(
-                        alignment: Alignment.centerLeft,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'TARTEEL',
+                              item.title,
                               style: AppTypography.titleLarge(
                                 context,
                                 weight: AppTypography.bold,
                               ),
                             ),
                             Text(
-                              'AI —',
+                              item.subtitle,
                               style: AppTypography.body(
                                 context,
                                 color: AppColors.textSecondary,
@@ -767,68 +815,76 @@ class _AchievementPageState extends State<AchievementPage> {
                           ],
                         ),
                       ),
+                      GestureDetector(
+                        onTap: () => Navigator.of(context).pop(),
+                        child: Container(
+                          padding: EdgeInsets.all(4 * s),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceContainerLow,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.close,
+                            size: 20 * s,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
-                      SizedBox(height: AppDesignSystem.space16 * s),
+                Divider(height: 1, color: AppColors.borderLight),
 
-                      // Center Icon
+                // Content
+                Padding(
+                  padding: EdgeInsets.all(AppDesignSystem.space24 * s),
+                  child: Column(
+                    children: [
+                      // Center Visual
                       Stack(
                         alignment: Alignment.center,
                         children: [
-                          // Background shapes (mimicking the card art)
+                          // Background Card
                           Container(
                             width: 120 * s,
-                            height: 100 * s,
+                            height: 120 * s,
                             decoration: BoxDecoration(
                               color: AppColors.surfaceContainerLowest,
                               borderRadius: BorderRadius.circular(
-                                AppDesignSystem.radiusMedium * s,
+                                AppDesignSystem.radiusXXLarge * s,
+                              ),
+                              border: Border.all(
+                                color: AppColors.borderLight,
+                                width: 1 * s,
                               ),
                             ),
                           ),
-                          // The Lock or Icon
-                          Icon(
-                            item.isLocked
-                                ? Icons.lock_rounded
-                                : Icons.check_circle_rounded,
-                            size: 48 * s,
-                            color: item.isLocked
-                                ? AppColors.textDisabled
-                                : item.color,
+
+                          // Status Icon Top Right
+                          Positioned(
+                            top: 0,
+                            right: 0,
+                            child: Icon(
+                              item.isLocked
+                                  ? Icons.lock_rounded
+                                  : Icons.check_circle_rounded,
+                              size: 28 * s,
+                              color: item.isLocked
+                                  ? AppColors.textDisabled
+                                  : item.color,
+                            ),
                           ),
-                          // Faded emoji behind
+
+                          // Emoji
                           Opacity(
-                            opacity: 0.1,
+                            opacity: item.isLocked ? 0.5 : 1.0,
                             child: Text(
                               item.emoji,
-                              style: TextStyle(fontSize: 80 * s),
+                              style: TextStyle(fontSize: 64 * s),
                             ),
                           ),
                         ],
-                      ),
-
-                      SizedBox(height: AppDesignSystem.space24 * s),
-
-                      // Badge Name Tag
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: AppDesignSystem.space12 * s,
-                          vertical: AppDesignSystem.space6 * s,
-                        ),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: AppColors.borderMedium),
-                          borderRadius: BorderRadius.circular(
-                            AppDesignSystem.radiusSmall * s,
-                          ),
-                        ),
-                        child: Text(
-                          '${item.title} — ${item.subtitle}',
-                          style: AppTypography.caption(
-                            context,
-                            color: AppColors.textPrimary,
-                            weight: AppTypography.semiBold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
                       ),
 
                       SizedBox(height: AppDesignSystem.space24 * s),
@@ -840,15 +896,37 @@ class _AchievementPageState extends State<AchievementPage> {
                         style: AppTypography.body(
                           context,
                           color: AppColors.textSecondary,
-                        ),
+                        ).copyWith(height: 1.5),
                       ),
+
+                      if (item.isLocked) ...[
+                        SizedBox(height: AppDesignSystem.space16 * s),
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            vertical: AppDesignSystem.space8 * s,
+                            horizontal: AppDesignSystem.space12 * s,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceContainerLow,
+                            borderRadius: BorderRadius.circular(
+                              AppDesignSystem.radiusSmall * s,
+                            ),
+                          ),
+                          child: Text(
+                            "Keep going to unlock this badge!",
+                            style: AppTypography.caption(
+                              context,
+                              color: AppColors.textTertiary,
+                              weight: AppTypography.medium,
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
 
-                SizedBox(height: AppDesignSystem.space24 * s),
-
-                // Footer
+                // Footer Action
                 Container(
                   width: double.infinity,
                   padding: EdgeInsets.all(AppDesignSystem.space16 * s),
@@ -864,37 +942,25 @@ class _AchievementPageState extends State<AchievementPage> {
                     ),
                   ),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Dummy',
-                            style: AppTypography.captionSmall(
-                              context,
-                              weight: AppTypography.bold,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          SizedBox(height: 2 * s),
-                          Text(
-                            item.isEarned ? 'EARNED' : 'NOT YET EARNED',
-                            style: AppTypography.captionSmall(
-                              context,
-                              weight: AppTypography.bold,
-                              color: AppColors.textTertiary,
-                            ),
-                          ),
-                        ],
-                      ),
-                      // Decorative Icon
                       Icon(
-                        Icons.auto_awesome,
+                        item.isEarned ? Icons.verified : Icons.lock_clock,
+                        size: 16 * s,
                         color: item.isEarned
-                            ? AppColors.primary
-                            : AppColors.textDisabled,
-                        size: 24 * s,
+                            ? AppColors.success
+                            : AppColors.textTertiary,
+                      ),
+                      SizedBox(width: AppDesignSystem.space8 * s),
+                      Text(
+                        item.isEarned ? 'EARNED' : 'LOCKED',
+                        style: AppTypography.label(
+                          context,
+                          weight: AppTypography.bold,
+                          color: item.isEarned
+                              ? AppColors.success
+                              : AppColors.textTertiary,
+                        ),
                       ),
                     ],
                   ),
