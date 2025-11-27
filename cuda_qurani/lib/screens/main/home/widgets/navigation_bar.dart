@@ -283,21 +283,24 @@ class _MenuAppBarState extends State<MenuAppBar>
   // ==================== MENU BAR ====================
   Widget _buildMenuBar(BuildContext context) {
     final s = AppDesignSystem.getScaleFactor(context);
-
+    final screenWidth = MediaQuery.of(context).size.width;
+    final itemWidth = screenWidth / _menuItems.length;
     return Container(
       height: 56 * s,
-      decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(
-            color: AppColors.borderLight,
-            width: AppDesignSystem.borderNormal,
-          ),
-        ),
-      ),
+
+      //Line pembatas antara topbar/bottombar
+      // decoration: BoxDecoration(
+      //   border: Border(
+      //     top: BorderSide(
+      //       color: AppColors.borderLight,
+      //       width: AppDesignSystem.borderNormal,
+      //     ),
+      //   ),
+      // ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
-        padding: EdgeInsets.symmetric(horizontal: AppDesignSystem.space4 * s),
+        padding: EdgeInsets.symmetric(horizontal: AppDesignSystem.space8 * s),
         child: Row(
           children: _menuItems.map((item) {
             return _buildMenuItem(
@@ -305,6 +308,7 @@ class _MenuAppBarState extends State<MenuAppBar>
               label: item['label'] as String,
               index: item['index'] as int,
               icon: item['icon'] as IconData,
+              itemWidth: itemWidth,
             );
           }).toList(),
         ),
@@ -318,10 +322,10 @@ class _MenuAppBarState extends State<MenuAppBar>
     required String label,
     required int index,
     required IconData icon,
+    required double itemWidth,
   }) {
     final s = AppDesignSystem.getScaleFactor(context);
     final isSelected = widget.selectedIndex == index;
-    final itemWidth = 100 * s;
 
     return Material(
       color: Colors.transparent,
@@ -334,8 +338,10 @@ class _MenuAppBarState extends State<MenuAppBar>
         highlightColor: AppComponentStyles.hoverColor,
         child: AnimatedContainer(
           duration: AppDesignSystem.durationFast,
-          width: itemWidth,
-          padding: EdgeInsets.symmetric(vertical: AppDesignSystem.space8 * s),
+          padding: EdgeInsets.symmetric(
+            vertical: AppDesignSystem.space2 * s,
+            horizontal: AppDesignSystem.space16 * s,
+          ),
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
@@ -381,79 +387,88 @@ class _MenuAppBarState extends State<MenuAppBar>
 
   // ==================== NAVIGATION ====================
   void _navigateToPage(BuildContext context, int index) {
-  if (widget.selectedIndex == index) return;
+    if (widget.selectedIndex == index) return;
 
-  Widget targetPage;
-  switch (index) {
-    case 0:
-      targetPage = const HomePage();
-      break;
-    case 1:
-      targetPage = const SurahListPage();
-      break;
-    case 2:
-      targetPage = const CompletionPage();
-      break;
-    case 3:
-      targetPage = const ProfilePage();
-      break;
-    case 4:
-      targetPage = const ActivityPage();
-      break;
-    case 5:
-      targetPage = const SettingsPage();
-      break;
-    case 6:
-      targetPage = const PremiumOfferPage();
-      break;
-    default:
+    Widget targetPage;
+    switch (index) {
+      case 0:
+        targetPage = const HomePage();
+        break;
+      case 1:
+        targetPage = const SurahListPage();
+        break;
+      case 2:
+        targetPage = const CompletionPage();
+        break;
+      case 3:
+        targetPage = const ProfilePage();
+        break;
+      case 4:
+        targetPage = const ActivityPage();
+        break;
+      case 5:
+        targetPage = const SettingsPage();
+        break;
+      case 6:
+        targetPage = const PremiumOfferPage();
+        break;
+      default:
+        return;
+    }
+
+    // ⭐ KHUSUS PREMIUM — gunakan push biasa
+    if (index == 6 || index == 5) {
+      Navigator.of(context).push(
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) => targetPage,
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            const begin = Offset(0.0, 0.03);
+            const end = Offset.zero;
+            const curve = Curves.easeInOut;
+            var tween = Tween(
+              begin: begin,
+              end: end,
+            ).chain(CurveTween(curve: curve));
+
+            return FadeTransition(
+              opacity: animation,
+              child: SlideTransition(
+                position: animation.drive(tween),
+                child: child,
+              ),
+            );
+          },
+          transitionDuration: AppDesignSystem.durationNormal,
+        ),
+      );
       return;
-  }
+    }
 
-  // ⭐ KHUSUS PREMIUM — gunakan push biasa
-  if (index == 6 || index == 5) {
-    Navigator.of(context).push(
+    // ⭐ DEFAULT PAGE — tetap pushReplacement
+    Navigator.of(context).pushReplacement(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) => targetPage,
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           const begin = Offset(0.0, 0.03);
           const end = Offset.zero;
           const curve = Curves.easeInOut;
-          var tween = Tween(begin: begin, end: end)
-              .chain(CurveTween(curve: curve));
+          var tween = Tween(
+            begin: begin,
+            end: end,
+          ).chain(CurveTween(curve: curve));
 
           return FadeTransition(
             opacity: animation,
-            child: SlideTransition(position: animation.drive(tween), child: child),
+            child: SlideTransition(
+              position: animation.drive(tween),
+              child: child,
+            ),
           );
         },
         transitionDuration: AppDesignSystem.durationNormal,
       ),
     );
-    return;
   }
-
-  // ⭐ DEFAULT PAGE — tetap pushReplacement
-  Navigator.of(context).pushReplacement(
-    PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) => targetPage,
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        const begin = Offset(0.0, 0.03);
-        const end = Offset.zero;
-        const curve = Curves.easeInOut;
-        var tween = Tween(begin: begin, end: end)
-            .chain(CurveTween(curve: curve));
-
-        return FadeTransition(
-          opacity: animation,
-          child: SlideTransition(position: animation.drive(tween), child: child),
-        );
-      },
-      transitionDuration: AppDesignSystem.durationNormal,
-    ),
-  );
-}
-
 } // ==================== IMPROVED PROFILE APP BAR ====================
 
 class ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {

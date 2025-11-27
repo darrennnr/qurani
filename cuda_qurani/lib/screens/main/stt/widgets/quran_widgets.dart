@@ -1,6 +1,7 @@
 // lib\screens\main\stt\widgets\quran_widgets.dart
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
 import 'package:cuda_qurani/models/playback_settings_model.dart';
+import 'package:cuda_qurani/screens/main/home/screens/settings/settings_page.dart';
 import 'package:cuda_qurani/screens/main/home/screens/surah_list_page.dart';
 import 'package:cuda_qurani/screens/main/stt/widgets/playback_settings.dart';
 import 'package:flutter/material.dart';
@@ -52,9 +53,7 @@ class QuranAppBar extends StatelessWidget implements PreferredSizeWidget {
           leading: IconButton(
             icon: Icon(Icons.menu, size: iconSize * 120 / 100),
             onPressed: () {
-              Navigator.pop(
-                context
-              );
+              Navigator.pop(context);
             },
             tooltip: 'Menu',
           ),
@@ -171,59 +170,42 @@ class QuranAppBar extends StatelessWidget implements PreferredSizeWidget {
               splashRadius: iconSize * 1.1,
             ),
             // More Options Menu
-            PopupMenuButton<String>(
-              onSelected: (action) =>
-                  controller.handleMenuAction(context, action),
+            IconButton(
+              onPressed: () => Navigator.push(
+                context,
+                PageRouteBuilder(
+                  pageBuilder: (context, animation, secondaryAnimation) =>
+                      const SettingsPage(),
+                  transitionsBuilder:
+                      (context, animation, secondaryAnimation, child) {
+                        const begin = Offset(0.03, 0.0);
+                        const end = Offset.zero;
+                        const curve = Curves.easeInOut;
+                        var tween = Tween(
+                          begin: begin,
+                          end: end,
+                        ).chain(CurveTween(curve: curve));
+                        var offsetAnimation = animation.drive(tween);
+                        var fadeAnimation = animation.drive(
+                          Tween(
+                            begin: 0.0,
+                            end: 1.0,
+                          ).chain(CurveTween(curve: curve)),
+                        );
+
+                        return FadeTransition(
+                          opacity: fadeAnimation,
+                          child: SlideTransition(
+                            position: offsetAnimation,
+                            child: child,
+                          ),
+                        );
+                      },
+                  transitionDuration: AppDesignSystem.durationNormal,
+                ),
+              ), // dikosongin
               icon: Icon(Icons.settings, size: iconSize * 0.9),
               splashRadius: iconSize * 1.1,
-              offset: Offset(0, screenHeight * 0.05),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              itemBuilder: (BuildContext context) => [
-                PopupMenuItem(
-                  value: 'logs',
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.bug_report_outlined,
-                        size: iconSize * 0.75,
-                        color: primaryColor,
-                      ),
-                      SizedBox(width: screenWidth * 0.03),
-                      Text('Debug Logs'),
-                    ],
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'reset',
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.refresh_outlined,
-                        size: iconSize * 0.75,
-                        color: primaryColor,
-                      ),
-                      SizedBox(width: screenWidth * 0.03),
-                      Text('Reset Session'),
-                    ],
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'export',
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.file_download_outlined,
-                        size: iconSize * 0.75,
-                        color: primaryColor,
-                      ),
-                      SizedBox(width: screenWidth * 0.03),
-                      Text('Export Session'),
-                    ],
-                  ),
-                ),
-              ],
             ),
             SizedBox(width: screenWidth * 0.01),
           ],
