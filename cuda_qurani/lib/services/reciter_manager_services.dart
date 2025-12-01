@@ -1,6 +1,8 @@
 // lib/services/reciter_manager_service.dart
 
 import 'dart:convert';
+import 'package:cuda_qurani/services/global_ayat_services.dart';
+import 'package:cuda_qurani/services/metadata_cache_service.dart';
 import 'package:flutter/services.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart' as path;

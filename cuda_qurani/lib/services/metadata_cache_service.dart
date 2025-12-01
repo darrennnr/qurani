@@ -25,7 +25,6 @@ class MetadataCacheService {
   List<Map<String, dynamic>> get allSurahs => _allSurahs;
   List<Map<String, dynamic>> get allJuz => _allJuz;
 
-  Map<String, dynamic>? getSurah(int id) => _surahMap[id];
   Map<String, dynamic>? getJuz(int number) => _juzMap[number];
 
   /// Get surah names that appear on a specific page
