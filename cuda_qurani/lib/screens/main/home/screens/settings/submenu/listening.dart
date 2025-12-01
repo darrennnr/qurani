@@ -345,31 +345,31 @@ class _ListeningPageState extends State<ListeningPage> {
                 SizedBox(height: AppDesignSystem.space24 * s * 0.9),
 
                 // Play Speed Section
-                Text(
-                  'Play speed',
-                  style: TextStyle(
-                    fontSize: 14 * s * 0.9,
-                    fontWeight: AppTypography.medium,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
+                // Text(
+                //   'Play speed',
+                //   style: TextStyle(
+                //     fontSize: 14 * s * 0.9,
+                //     fontWeight: AppTypography.medium,
+                //     color: AppColors.textSecondary,
+                //   ),
+                // ),
 
-                SizedBox(height: AppDesignSystem.space12 * s * 0.9),
+                // SizedBox(height: AppDesignSystem.space12 * s * 0.9),
 
                 // Play Speed Buttons
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: _playSpeeds.map((speed) {
-                      return Padding(
-                        padding: EdgeInsets.only(
-                          right: AppDesignSystem.space10 * s * 0.8,
-                        ),
-                        child: _buildSpeedButton(speed),
-                      );
-                    }).toList(),
-                  ),
-                ),
+                // SingleChildScrollView(
+                //   scrollDirection: Axis.horizontal,
+                //   child: Row(
+                //     children: _playSpeeds.map((speed) {
+                //       return Padding(
+                //         padding: EdgeInsets.only(
+                //           right: AppDesignSystem.space10 * s * 0.8,
+                //         ),
+                //         child: _buildSpeedButton(speed),
+                //       );
+                //     }).toList(),
+                //   ),
+                // ),
               ],
             ),
           ),

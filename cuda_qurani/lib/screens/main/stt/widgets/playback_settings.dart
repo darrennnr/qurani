@@ -1,6 +1,7 @@
 // lib/screens/main/stt/widgets/playback_settings.dart
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
 import 'package:cuda_qurani/models/playback_settings_model.dart';
+import 'package:cuda_qurani/screens/main/home/screens/settings/submenu/reciters_download.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -411,6 +412,32 @@ class _PlaybackSettingsPageState extends State<PlaybackSettingsPage> {
                 InkWell(
                   onTap: () {
                     AppHaptics.light();
+                     Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            RecitersDownloadPage(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(0.03, 0.0);
+          const end = Offset.zero;
+          const curve = Curves.easeInOut;
+          var tween = Tween(
+            begin: begin,
+            end: end,
+          ).chain(CurveTween(curve: curve));
+          var offsetAnimation = animation.drive(tween);
+          var fadeAnimation = animation.drive(
+            Tween(begin: 0.0, end: 1.0).chain(CurveTween(curve: curve)),
+          );
+
+          return FadeTransition(
+            opacity: fadeAnimation,
+            child: SlideTransition(position: offsetAnimation, child: child),
+          );
+        },
+        transitionDuration: AppDesignSystem.durationNormal,
+      ),
+    );
                     // Add download management logic here
                   },
                   borderRadius: BorderRadius.vertical(
