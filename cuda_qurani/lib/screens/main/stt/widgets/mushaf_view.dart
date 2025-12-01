@@ -17,7 +17,7 @@ class MushafRenderer {
     return MediaQuery.of(context).size.height * 0.050; // ~5.5% screen height
   }
 
-  static const double PAGE_PADDING = 0.0; // Minimal side padding
+  static const double PAGE_PADDING = 0.0; // Reduced side padding for less crowding
   static const double WORD_SPACING_MIN = 0.0; // Minimum gap between words
   static const double WORD_SPACING_MAX =
       0.0; // Maximum gap to prevent huge spaces
@@ -109,26 +109,33 @@ class MushafRenderer {
           )
         : 0;
 
-    // Build justified row
+    // Build justified row with proper centering and tight spacing
     return SizedBox(
-      width: maxWidth,
+      width: maxWidth, // Use full width for proper positioning
       height: lineH,
       child: Row(
         textDirection: TextDirection.rtl,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.center, // Center the text block
         crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          for (int i = 0; i < wordSpans.length; i++) ...[
-            RichText(
-              textDirection: TextDirection.rtl,
-              overflow: TextOverflow.visible,
-              maxLines: 1,
-              text: wordSpans[i] as TextSpan,
-            ),
-            if (i < wordSpans.length - 1) SizedBox(width: spacing),
+          children: [
+            for (int i = 0; i < wordSpans.length; i++) ...[
+              RichText(
+                textDirection: TextDirection.rtl,
+                overflow: TextOverflow.visible,
+                maxLines: 1,
+                text: wordSpans[i] as TextSpan,
+              ),
+              if (i < wordSpans.length - 1) 
+                SizedBox(
+                  width: () {
+                    final nextSpan = wordSpans[i + 1] as TextSpan;
+                    final isNextArabicNumber = nextSpan.text!.contains(RegExp(r'[٠-٩]'));
+                    return 0.0; // No spacing for any words to prevent overflow
+                  }(),
+                ),
+            ],
           ],
-        ],
-      ),
+        ),
     );
   }
 }
@@ -202,15 +209,15 @@ class _MushafDisplayState extends State<MushafDisplay> {
     final pageNumber = controller.currentPage;
     final cachedLines = controller.pageCache[pageNumber];
 
-    // Ã¢Å“â€¦ FAST PATH: If page is cached, render immediately (NO LOADING)
+    // ✅ FAST PATH: If page is cached, render immediately (NO LOADING)
     if (cachedLines != null && cachedLines.isNotEmpty) {
       return MushafPageContent(pageLines: cachedLines, pageNumber: pageNumber);
     }
 
-    // Ã¢Å¡ Ã¯Â¸Â FALLBACK: This should RARELY happen due to aggressive preloading
+    // ⚠️ FALLBACK: This should RARELY happen due to aggressive preloading
     // If it does, show minimal loading and trigger emergency load
     print(
-      'Ã¢Å¡ Ã¯Â¸Â CACHE MISS: Page $pageNumber not cached, emergency loading...',
+      '⚠️ CACHE MISS: Page $pageNumber not cached, emergency loading...',
     );
 
     // Trigger emergency load in controller
@@ -221,7 +228,7 @@ class _MushafDisplayState extends State<MushafDisplay> {
         );
         controller.updatePageCache(pageNumber, lines);
       } catch (e) {
-        print('Ã¢ÂÅ’ Emergency load failed: $e');
+        print('❌ Emergency load failed: $e');
       }
     });
 
@@ -258,7 +265,9 @@ class MushafPageContent extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.only(
         top: appBarHeight,
-      ), // âœ… Push content below AppBar
+        left: 4,  // ✅ CHANGE: Minimal side margin (was 0)
+        right: 4, // ✅ CHANGE: Minimal side margin (was 0)
+      ),
       child: Column(
         children: [
           const MushafPageHeader(), // Will be hidden behind AppBar
@@ -367,14 +376,14 @@ class _JustifiedAyahLine extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
 
-    // âœ… SPECIAL: Slightly larger font for page 1 & 2
+    // SPECIAL: Slightly larger font for page 1 & 2
     final fontSizeMultiplier = (pageNumber == 1 || pageNumber == 2)
-        ? 0.080
-        : 0.066;
+        ? 0.070
+        : 0.058; // Reduced from 0.066 to prevent overflow
     final baseFontSize = screenWidth * fontSizeMultiplier;
 
-    // âœ… OPTIMIZATION: Font size untuk kata terakhir ayat (angka ayat)
-    final lastWordFontMultiplier = 0.85; // 28% reduction
+    // OPTIMIZATION: Font size untuk kata terakhir ayat (angka ayat)
+    final lastWordFontMultiplier = 1.0; // Same size as regular words for consistency
 
     if (line.ayahSegments == null || line.ayahSegments!.isEmpty) {
       return SizedBox(height: MushafRenderer.lineHeight(context));
@@ -395,7 +404,7 @@ class _JustifiedAyahLine extends StatelessWidget {
       for (int i = 0; i < segment.words.length; i++) {
         final word = segment.words[i];
 
-        // Ã¢Å“â€¦ FIX: Use wordNumber - 1 as index (wordNumber is 1-indexed, backend uses 0-indexed)
+        // ✅ FIX: Use wordNumber - 1 as index (wordNumber is 1-indexed, backend uses 0-indexed)
         final wordIndex = word.wordNumber - 1;
 
         // Get word status dari wordStatusMap (key = "surahId:ayahNumber")
@@ -403,11 +412,11 @@ class _JustifiedAyahLine extends StatelessWidget {
         final wordStatus =
             controller.wordStatusMap[wordStatusKey]?[wordIndex];
 
-        // Ã°Å¸â€Â¥ DEBUG: Print word status dan warna yang akan diapply
+        // 🎥 DEBUG: Print word status dan warna yang akan diapply
         if (controller.isRecording &&
             segment.ayahNumber == controller.currentAyatNumber) {
           print(
-            'Ã°Å¸Å½Â¨ UI RENDER: Ayah ${segment.ayahNumber}, Word[$wordIndex] (loop $i) = $wordStatus',
+            '🎨 UI RENDER: Ayah ${segment.ayahNumber}, Word[$wordIndex] (loop $i) = $wordStatus',
           );
           print(
             '   Full wordStatusMap[$wordStatusKey] = ${controller.wordStatusMap[wordStatusKey]}',
@@ -429,11 +438,11 @@ class _JustifiedAyahLine extends StatelessWidget {
         if (wordStatus != null && !hasArabicNumber) {
           switch (wordStatus) {
             case WordStatus.matched:
-              wordBg = correctColor.withOpacity(0.4); // ðŸŸ© HIJAU - BENAR
+              wordBg = correctColor.withOpacity(0.4); // 🟩 HIJAU - BENAR
               break;
             case WordStatus.mismatched:
             case WordStatus.skipped:
-              wordBg = errorColor.withOpacity(0.4); // ðŸŸ¥ MERAH - SALAH
+              wordBg = errorColor.withOpacity(0.4); // 🟥 MERAH - SALAH
               break;
             case WordStatus.processing:
               // ✅ ONLY in listening mode: DARK GRAY highlight
@@ -455,7 +464,7 @@ class _JustifiedAyahLine extends StatelessWidget {
         if (controller.hideUnreadAyat) {
           // CASE 1: Kata yang SUDAH DIPROSES (ada wordStatus & bukan pending)
           if (wordStatus != null && wordStatus != WordStatus.pending) {
-            wordOpacity = 1.0; // âœ… SELALU VISIBLE (ada blok warna)
+            wordOpacity = 1.0; // ✅ SELALU VISIBLE (ada blok warna)
           }
           // CASE 2: Ayat SEDANG DIBACA - sembunyikan kata yang belum diproses
           else if (isCurrentAyat) {
@@ -471,7 +480,7 @@ class _JustifiedAyahLine extends StatelessWidget {
 
         final segments = controller.segmentText(word.text);
 
-        // âœ… OPTIMIZATION: Hitung font size & spacing berdasarkan posisi kata
+        // ✅ OPTIMIZATION: Hitung font size & spacing berdasarkan posisi kata
         final isLastWord = isLastWordInAyah;
         final effectiveFontSize = isLastWord
             ? baseFontSize * lastWordFontMultiplier
@@ -488,7 +497,7 @@ class _JustifiedAyahLine extends StatelessWidget {
                 backgroundColor: wordBg,
                 fontWeight: FontWeight.w400,
 
-                // âœ… Underline tipis (kecuali kata terakhir ayat)
+                // ✅ Underline tipis (kecuali kata terakhir ayat)
                 decoration: (controller.hideUnreadAyat && !isLastWord)
                     ? TextDecoration.underline
                     : null,
@@ -504,9 +513,9 @@ class _JustifiedAyahLine extends StatelessWidget {
     return MushafRenderer.renderJustifiedLine(
       wordSpans: spans,
       isCentered: line.isCentered,
-      availableWidth: MediaQuery.of(context).size.width,
+      availableWidth: MediaQuery.of(context).size.width - 8, // ✅ CHANGE: Account for left+right padding (was full width)
       context: context,
-      allowOverflow: false,
+      allowOverflow: false, // Ensure consistent font sizes
     );
   }
 
@@ -536,8 +545,8 @@ class MushafPageHeader extends StatelessWidget {
 
     return Container(
       height: headerHeight,
-      color: Colors.white, // âœ… ADD: Background to blend when hidden
-      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.02),
+      color: Colors.white, // ✅ ADD: Background to blend when hidden
+      padding: EdgeInsets.symmetric(horizontal: 8), // ✅ CHANGE: Minimal horizontal padding (was screenWidth * 0.005)
       alignment: Alignment.center,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -597,7 +606,7 @@ class MushafPageHeader extends StatelessWidget {
           // Container(
           //   width: 1,
           //   height: screenHeight * 0.016,
-          //   color: const Color.fromARGB(255, 0, 0, 0).withOpacity(0.3),
+          //   color: const Color.fromARGB(255, 0, 0, 0).withOpaque(0.3),
           // ),
           // const SizedBox(width: 3),
           Text(
