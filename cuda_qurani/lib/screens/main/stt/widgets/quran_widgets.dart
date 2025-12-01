@@ -227,8 +227,139 @@ class QuranBottomBar extends StatefulWidget {
 
 class _QuranBottomBarState extends State<QuranBottomBar>
     with SingleTickerProviderStateMixin {
-  bool _isMenuExpanded = false;
-  String _selectedMode = 'recite';
+  late AnimationController _slideController;
+  late Animation<double> _slideAnimation;
+
+  double _dragPosition = 0.0; // -1 (left/listen) to 1 (right/recite)
+  String? _activeMode; // 'listen', 'recite', or null
+  bool _isDragging = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _slideController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _slideAnimation = CurvedAnimation(
+      parent: _slideController,
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  @override
+  void dispose() {
+    _slideController.dispose();
+    super.dispose();
+  }
+
+  void _handleDragUpdate(double delta, double maxWidth) {
+    setState(() {
+      _isDragging = true;
+      _dragPosition = (_dragPosition + delta / maxWidth).clamp(-1.0, 1.0);
+    });
+  }
+
+  Future<void> _handleDragEnd(SttController controller) async {
+    const threshold = 0.90; // 70% slide required to activate
+
+    if (_dragPosition < -threshold) {
+      // Activated LISTEN mode
+      await _activateMode('listen', controller);
+    } else if (_dragPosition > threshold) {
+      // Activated RECITE mode
+      await _activateMode('recite', controller);
+    } else {
+      // Return to center
+      _resetToCenter();
+    }
+
+    setState(() {
+      _isDragging = false;
+    });
+  }
+
+  Future<void> _activateMode(String mode, SttController controller) async {
+    AppHaptics.medium();
+
+    setState(() {
+      _activeMode = mode;
+    });
+
+    if (mode == 'listen') {
+      // Open playback settings
+      final settings = await Navigator.push<PlaybackSettings>(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              const PlaybackSettingsPage(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            const begin = Offset(0.0, 0.3);
+            const end = Offset.zero;
+            const curve = Curves.easeInOut;
+            var tween = Tween(
+              begin: begin,
+              end: end,
+            ).chain(CurveTween(curve: curve));
+            var offsetAnimation = animation.drive(tween);
+            var fadeAnimation = animation.drive(
+              Tween(begin: 0.0, end: 1.0).chain(CurveTween(curve: curve)),
+            );
+            return FadeTransition(
+              opacity: fadeAnimation,
+              child: SlideTransition(position: offsetAnimation, child: child),
+            );
+          },
+          transitionDuration: AppDesignSystem.durationNormal,
+        ),
+      );
+
+      if (settings != null) {
+        try {
+          await controller.startListening(settings);
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('$e'),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 5),
+              ),
+            );
+          }
+        }
+      }
+      _resetToCenter();
+    } else if (mode == 'recite') {
+      await controller.startRecording();
+      _resetToCenter();
+    }
+  }
+
+  void _resetToCenter() {
+    _slideController.reverse(from: 1.0);
+    setState(() {
+      _dragPosition = 0.0;
+      _activeMode = null;
+    });
+  }
+
+  Future<void> _handleCenterButtonTap(SttController controller) async {
+    AppHaptics.light();
+
+    if (controller.isListeningMode) {
+      final audioService = controller.listeningAudioService;
+      if (audioService != null) {
+        if (audioService.isPaused) {
+          await controller.resumeListening();
+        } else {
+          await controller.pauseListening();
+        }
+      }
+    } else if (controller.isRecording) {
+      await controller.stopRecording();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -237,13 +368,15 @@ class _QuranBottomBarState extends State<QuranBottomBar>
     final screenHeight = MediaQuery.of(context).size.height;
 
     final containerHeight = screenHeight * 0.15;
-    final buttonSize = screenWidth * 0.165;
-    final iconSize = screenWidth * 0.07;
-    final bottomOffset = screenHeight * 0.030;
+    final trackWidth = screenWidth * 0.75;
+    final trackHeight = screenHeight * 0.065;
+    final thumbSize = trackHeight * 0.85;
+    final iconSize = screenWidth * 0.065;
+    final labelSize = screenWidth * 0.032;
+    final bottomOffset = screenHeight * 0.060;
 
-    final activeColor = controller.isRecording || controller.isListeningMode
-        ? errorColor
-        : primaryColor;
+    final isListeningActive = controller.isListeningMode;
+    final isRecordingActive = controller.isRecording;
 
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 200),
@@ -251,280 +384,165 @@ class _QuranBottomBarState extends State<QuranBottomBar>
       child: IgnorePointer(
         ignoring: !controller.isUIVisible,
         child: SizedBox(
-          height: _isMenuExpanded ? containerHeight * 2.2 : containerHeight,
+          height: containerHeight,
           child: Stack(
-            clipBehavior: Clip.none,
             alignment: Alignment.bottomCenter,
             children: [
-              // Backdrop untuk menutup menu
-              if (_isMenuExpanded)
-                Positioned.fill(
-                  child: GestureDetector(
-                    onTap: () => setState(() => _isMenuExpanded = false),
-                    behavior: HitTestBehavior.opaque,
-                    child: Container(color: Colors.transparent),
-                  ),
-                ),
-
-              // Menu Expanded (2 Container Terpisah)
-              if (_isMenuExpanded)
-                Positioned(
-                  bottom: bottomOffset,
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 250),
-                    opacity: _isMenuExpanded ? 1.0 : 0.0,
-                    child: AnimatedScale(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeOutBack,
-                      scale: _isMenuExpanded ? 1.0 : 0.8,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          // Container 1: Label Container (Kiri)
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              _buildLabelItem(
-                                label: "Listen",
-                                isActive: _selectedMode == 'listen',
-                                onTap: () =>
-                                    _handleModeSelect(controller, 'listen'),
-                              ),
-                              SizedBox(height: buttonSize * 0.25),
-                              _buildLabelItem(
-                                label: "Recite",
-                                isActive: _selectedMode == 'recite',
-                                onTap: () =>
-                                    _handleModeSelect(controller, 'recite'),
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(width: 12),
-
-                          // Container 2: Icon Button Container (Kanan)
-                          Container(
-                            width: buttonSize,
-                            height: buttonSize * 1.9,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(
-                                buttonSize / 1,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.15),
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                _buildIconButton(
-                                  icon: Icons.play_arrow_rounded,
-                                  isActive: _selectedMode == 'listen',
-                                  iconSize: iconSize,
-                                  onTap: () =>
-                                      _handleModeSelect(controller, 'listen'),
-                                ),
-                                // ✅ FIX: Add STOP button for listening mode
-                                if (controller.isListeningMode)
-                                  _buildIconButton(
-                                    icon: Icons.stop_rounded,
-                                    isActive: false,
-                                    iconSize: iconSize,
-                                    onTap: () async {
-                                      await controller.stopListening();
-                                      setState(() {
-                                        _isMenuExpanded = false;
-                                      });
-                                    },
-                                  )
-                                else
-                                  _buildIconButton(
-                                    icon: Icons.mic_none_rounded,
-                                    isActive: _selectedMode == 'recite',
-                                    iconSize: iconSize,
-                                    onTap: () =>
-                                        _handleModeSelect(controller, 'recite'),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-
-              // Main Button (Collapsed State)
-              if (!_isMenuExpanded)
-                Positioned(
-                  bottom: bottomOffset,
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(buttonSize / 2),
-                      onTap: () async {
-                        // ✅ FIX: Haptic feedback immediately
-                        AppHaptics.light();
-
-                        if (_selectedMode == 'listen') {
-                          // ====== LISTENING MODE ======
-                          if (controller.isListeningMode) {
-                            // Already listening
-                            final audioService =
-                                controller.listeningAudioService;
-                            if (audioService != null) {
-                              if (audioService.isPaused) {
-                                // Resume playback
-                                await controller.resumeListening();
-                              } else {
-                                // Pause playback
-                                await controller.pauseListening();
-                              }
-                            }
-                          } else {
-                            // Not listening, show settings
-                            print(
-                              '🎵 LISTEN BUTTON: Opening playback settings',
-                            );
-
-                            final settings =
-                                await Navigator.push<PlaybackSettings>(
-                                  context,
-                                  PageRouteBuilder(
-                                    pageBuilder:
-                                        (
-                                          context,
-                                          animation,
-                                          secondaryAnimation,
-                                        ) => const PlaybackSettingsPage(),
-                                    transitionsBuilder:
-                                        (
-                                          context,
-                                          animation,
-                                          secondaryAnimation,
-                                          child,
-                                        ) {
-                                          const begin = Offset(0.0, 0.3);
-                                          const end = Offset.zero;
-                                          const curve = Curves.easeInOut;
-                                          var tween = Tween(
-                                            begin: begin,
-                                            end: end,
-                                          ).chain(CurveTween(curve: curve));
-                                          var offsetAnimation = animation.drive(
-                                            tween,
-                                          );
-                                          var fadeAnimation = animation.drive(
-                                            Tween(
-                                              begin: 0.0,
-                                              end: 1.0,
-                                            ).chain(CurveTween(curve: curve)),
-                                          );
-
-                                          return FadeTransition(
-                                            opacity: fadeAnimation,
-                                            child: SlideTransition(
-                                              position: offsetAnimation,
-                                              child: child,
-                                            ),
-                                          );
-                                        },
-                                    transitionDuration:
-                                        AppDesignSystem.durationNormal,
-                                  ),
-                                );
-
-                            if (settings != null) {
-                              print('✅ Playback settings received: $settings');
-
-                              // ✅ FIX: Try-catch untuk handle empty playlist
-                              try {
-                                await controller.startListening(settings);
-                              } catch (e) {
-                                print('❌ Failed to start listening: $e');
-
-                                // Show error to user
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('$e'),
-                                      backgroundColor: Colors.red,
-                                      duration: Duration(seconds: 5),
-                                    ),
-                                  );
-                                }
-                              }
-                            } else {
-                              print('⚠️ No settings selected, cancelled');
-                            }
-                          }
-                        } else {
-                          // ====== RECITE MODE (EXISTING LOGIC) ======
-                          if (controller.isRecording) {
-                            await controller.stopRecording();
-                          } else {
-                            await controller.startRecording();
-                          }
-                        }
-                      },
-                      onLongPress: () {
-                        setState(() {
-                          _isMenuExpanded = true;
-                        });
-                        Feedback.forLongPress(context);
-                      },
-                      child: Container(
-                        width: buttonSize,
-                        height: buttonSize,
-                        decoration: BoxDecoration(
-                          color: activeColor,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: activeColor.withOpacity(0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
+              // Main Slider Track
+              Positioned(
+                bottom: bottomOffset,
+                child: GestureDetector(
+                  onHorizontalDragUpdate: (details) {
+                    _handleDragUpdate(details.delta.dx, trackWidth / 2);
+                  },
+                  onHorizontalDragEnd: (details) {
+                    _handleDragEnd(controller);
+                  },
+                  child: Container(
+                    width: trackWidth,
+                    height: trackHeight,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(trackHeight / 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.15),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
                         ),
-                        child: Center(
-                          child: AnimatedSwitcher(
+                      ],
+                    ),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Left Label (Listen)
+                        Positioned(
+                          left: trackWidth * 0.08,
+                          child: AnimatedOpacity(
                             duration: const Duration(milliseconds: 200),
-                            child: Icon(
-                              _getIconForCurrentState(controller),
-                              key: ValueKey(
-                                '${_selectedMode}_${controller.isRecording}',
-                              ),
-                              color: Colors.white,
-                              size: iconSize,
+                            opacity: _dragPosition < -0.3 ? 1.0 : 0.4,
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.play_arrow_rounded,
+                                  size: iconSize * 0.9,
+                                  color: isListeningActive
+                                      ? primaryColor
+                                      : Colors.grey.shade700,
+                                ),
+                                SizedBox(width: 6),
+                                Text(
+                                  'Listen',
+                                  style: TextStyle(
+                                    fontSize: labelSize,
+                                    fontWeight: FontWeight.w600,
+                                    color: isListeningActive
+                                        ? primaryColor
+                                        : Colors.grey.shade700,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
-                      ),
+
+                        // Right Label (Recite)
+                        Positioned(
+                          right: trackWidth * 0.08,
+                          child: AnimatedOpacity(
+                            duration: const Duration(milliseconds: 200),
+                            opacity: _dragPosition > 0.3 ? 1.0 : 0.4,
+                            child: Row(
+                              children: [
+                                Text(
+                                  'Recite',
+                                  style: TextStyle(
+                                    fontSize: labelSize,
+                                    fontWeight: FontWeight.w600,
+                                    color: isRecordingActive
+                                        ? errorColor
+                                        : Colors.grey.shade700,
+                                  ),
+                                ),
+                                SizedBox(width: 6),
+                                Icon(
+                                  Icons.mic_rounded,
+                                  size: iconSize * 0.9,
+                                  color: isRecordingActive
+                                      ? errorColor
+                                      : Colors.grey.shade700,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        // Sliding Thumb Button
+                        AnimatedPositioned(
+                          duration: _isDragging
+                              ? Duration.zero
+                              : const Duration(milliseconds: 400),
+                          curve: Curves.easeOutCubic,
+                          left:
+                              ((trackWidth / 2) - (thumbSize / 2)) +
+                              (_dragPosition *
+                                  (trackWidth / 2 - thumbSize / 2)),
+                          child: GestureDetector(
+                            onTap: () => _handleCenterButtonTap(controller),
+                            child: Container(
+                              width: thumbSize,
+                              height: thumbSize,
+                              decoration: BoxDecoration(
+                                color: _getThumbColor(
+                                  isListeningActive,
+                                  isRecordingActive,
+                                ),
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: _getThumbColor(
+                                      isListeningActive,
+                                      isRecordingActive,
+                                    ).withOpacity(0.4),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Center(
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 200),
+                                  child: Icon(
+                                    _getThumbIcon(
+                                      controller,
+                                      isListeningActive,
+                                      isRecordingActive,
+                                    ),
+                                    key: ValueKey(
+                                      '${isListeningActive}_${isRecordingActive}_${_dragPosition.toStringAsFixed(1)}',
+                                    ),
+                                    color: Colors.white,
+                                    size: iconSize,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
+              ),
 
-              // Small Arrow Button (Only visible when in Listen mode and not expanded)
-              if (!_isMenuExpanded && _selectedMode == 'listen')
+              // Active Mode Indicator (Small Settings Button for Listen Mode)
+              if (isListeningActive && !_isDragging)
                 Positioned(
-                  bottom: bottomOffset + (buttonSize * 0.1),
-                  right:
-                      (MediaQuery.of(context).size.width / 2) -
-                      (buttonSize * 1.15),
+                  bottom: bottomOffset + trackHeight + 8,
                   child: Material(
                     color: Colors.transparent,
                     child: InkWell(
-                      borderRadius: BorderRadius.circular(
-                        (buttonSize * 0.4) / 2,
-                      ),
+                      borderRadius: BorderRadius.circular(20),
                       onTap: () {
                         AppHaptics.light();
                         Navigator.push(
@@ -554,7 +572,6 @@ class _QuranBottomBarState extends State<QuranBottomBar>
                                       end: 1.0,
                                     ).chain(CurveTween(curve: curve)),
                                   );
-
                                   return FadeTransition(
                                     opacity: fadeAnimation,
                                     child: SlideTransition(
@@ -568,25 +585,36 @@ class _QuranBottomBarState extends State<QuranBottomBar>
                         );
                       },
                       // child: Container(
-                      //   width: buttonSize * 0.5,
-                      //   height: buttonSize * 0.5,
+                      //   padding: const EdgeInsets.symmetric(
+                      //     horizontal: 12,
+                      //     vertical: 6,
+                      //   ),
                       //   decoration: BoxDecoration(
-                      //     color: Colors.white,
-                      //     shape: BoxShape.circle,
-                      //     boxShadow: [
-                      //       BoxShadow(
-                      //         color: primaryColor.withOpacity(0.25),
-                      //         blurRadius: 6,
-                      //         offset: const Offset(0, 2),
+                      //     color: primaryColor.withOpacity(0.1),
+                      //     borderRadius: BorderRadius.circular(20),
+                      //     border: Border.all(
+                      //       color: primaryColor.withOpacity(0.3),
+                      //       width: 1,
+                      //     ),
+                      //   ),
+                      //   child: Row(
+                      //     mainAxisSize: MainAxisSize.min,
+                      //     children: [
+                      //       Icon(
+                      //         Icons.tune,
+                      //         size: iconSize * 0.7,
+                      //         color: primaryColor,
+                      //       ),
+                      //       SizedBox(width: 4),
+                      //       Text(
+                      //         'Playback Settings',
+                      //         style: TextStyle(
+                      //           fontSize: labelSize * 0.85,
+                      //           color: primaryColor,
+                      //           fontWeight: FontWeight.w500,
+                      //         ),
                       //       ),
                       //     ],
-                      //   ),
-                      //   child: Center(
-                      //     child: Icon(
-                      //       Icons.keyboard_arrow_up,
-                      //       color: primaryColor,
-                      //       size: iconSize * 1.1,
-                      //     ),
                       //   ),
                       // ),
                     ),
@@ -599,80 +627,43 @@ class _QuranBottomBarState extends State<QuranBottomBar>
     );
   }
 
-  Widget _buildLabelItem({
-    required String label,
-    required bool isActive,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: const Color.fromARGB(220, 0, 0, 0),
-          borderRadius: BorderRadius.circular(30),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-            letterSpacing: 0.2,
-          ),
-        ),
-      ),
-    );
+  Color _getThumbColor(bool isListening, bool isRecording) {
+    if (isListening) return primaryColor;
+    if (isRecording) return errorColor;
+
+    // During drag, show preview color
+    if (_isDragging) {
+      if (_dragPosition < -0.3) return primaryColor.withOpacity(0.7);
+      if (_dragPosition > 0.3) return errorColor.withOpacity(0.7);
+    }
+
+    return Colors.grey.shade800;
   }
 
-  Widget _buildIconButton({
-    required IconData icon,
-    required bool isActive,
-    required double iconSize,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(100),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: isActive ? const Color(0xFFEEEEEE) : Colors.transparent,
-          ),
-          child: Icon(icon, size: iconSize, color: Colors.black87),
-        ),
-      ),
-    );
-  }
-
-  IconData _getIconForCurrentState(SttController controller) {
-    if (_selectedMode == 'recite') {
-      return controller.isRecording ? Icons.stop : Icons.mic;
-    } else {
-      // Listening mode
-      if (controller.isListeningMode) {
-        final audioService = controller.listeningAudioService;
-        if (audioService != null && audioService.isPaused) {
-          return Icons.play_arrow; // Show play when paused
-        }
-        return Icons.pause; // ✅ FIX: Show PAUSE (not stop) when playing
+  IconData _getThumbIcon(
+    SttController controller,
+    bool isListening,
+    bool isRecording,
+  ) {
+    if (isListening) {
+      final audioService = controller.listeningAudioService;
+      if (audioService != null && audioService.isPaused) {
+        return Icons.play_arrow;
       }
-      return Icons.play_arrow; // Default: show play
-    }
-  }
-
-  Future<void> _handleModeSelect(SttController controller, String mode) async {
-    if (controller.isRecording && mode != 'recite') {
-      await controller.stopRecording();
+      return Icons.pause;
     }
 
-    setState(() {
-      _selectedMode = mode;
-      _isMenuExpanded = false;
-    });
+    if (isRecording) {
+      return Icons.stop;
+    }
+
+    // Show preview icons during drag
+    if (_isDragging) {
+      if (_dragPosition < -0.5) return Icons.play_arrow;
+      if (_dragPosition > 0.5) return Icons.mic;
+    }
+
+    return Icons.more_horiz;
   }
 }
 
