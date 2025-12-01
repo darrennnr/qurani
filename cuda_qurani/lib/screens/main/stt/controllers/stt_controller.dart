@@ -82,7 +82,8 @@ class SttController with ChangeNotifier {
   String? _sessionId;
   int _expectedAyah = 1;
   final Map<int, TartibStatus> _tartibStatus = {};
-  final Map<int, Map<int, WordStatus>> _wordStatusMap = {};
+  // ✅ FIX: Key = "surahId:ayahNumber" untuk hindari collision antar surah
+  final Map<String, Map<int, WordStatus>> _wordStatusMap = {};
   List<WordFeedback> _currentWords =
       []; // âœ… ADD: Store current words for realtime updates
   StreamSubscription? _wsSubscription;
@@ -97,7 +98,18 @@ class SttController with ChangeNotifier {
 
   int get expectedAyah => _expectedAyah;
   Map<int, TartibStatus> get tartibStatus => _tartibStatus;
-  Map<int, Map<int, WordStatus>> get wordStatusMap => _wordStatusMap;
+  // ✅ FIX: Key = "surahId:ayahNumber"
+  Map<String, Map<int, WordStatus>> get wordStatusMap => _wordStatusMap;
+  
+  // ✅ Helper: Generate word status key
+  String _wordKey(int surahId, int ayahNumber) => '$surahId:$ayahNumber';
+  
+  // ✅ Helper: Get word status for specific surah:ayah:word
+  WordStatus? getWordStatus(int surahId, int ayahNumber, int wordIndex) {
+    final key = _wordKey(surahId, ayahNumber);
+    return _wordStatusMap[key]?[wordIndex];
+  }
+  
   List<WordFeedback> get currentWords =>
       _currentWords; // âœ… ADD: Getter for currentWords
 
@@ -244,10 +256,11 @@ class SttController with ChangeNotifier {
               // ✅ Clear previous ayat's wordStatusMap when moving to next ayat
               if (_currentAyatIndex >= 0 &&
                   _currentAyatIndex < _ayatList.length) {
-                final previousAyah = _ayatList[_currentAyatIndex].ayah;
-                _wordStatusMap[previousAyah]?.clear();
+                final previousAyat = _ayatList[_currentAyatIndex];
+                final previousKey = _wordKey(previousAyat.surah_id, previousAyat.ayah);
+                _wordStatusMap[previousKey]?.clear();
                 print(
-                  '🧹 Cleared wordStatusMap for previous ayah: $previousAyah',
+                  '🧹 Cleared wordStatusMap for previous ayah: $previousKey',
                 );
               }
 
@@ -271,25 +284,25 @@ class SttController with ChangeNotifier {
             if (_currentAyatIndex >= 0 &&
                 _currentAyatIndex < _ayatList.length) {
               final currentAyat = _ayatList[_currentAyatIndex];
-              final currentAyah = currentAyat.ayah;
+              final currentKey = _wordKey(currentAyat.surah_id, currentAyat.ayah);
               final words = currentAyat.words; // Use words from AyatData
 
               // ✅ Initialize wordStatusMap for this ayah if not exists
-              if (!_wordStatusMap.containsKey(currentAyah)) {
-                _wordStatusMap[currentAyah] = {};
+              if (!_wordStatusMap.containsKey(currentKey)) {
+                _wordStatusMap[currentKey] = {};
               }
 
               // ✅ Update all words status in wordStatusMap (used by UI)
               for (int i = 0; i < words.length; i++) {
                 if (i == wordIndex) {
                   // Current word being played (dark gray)
-                  _wordStatusMap[currentAyah]![i] = WordStatus.processing;
+                  _wordStatusMap[currentKey]![i] = WordStatus.processing;
                 } else if (i < wordIndex) {
                   // Already played words (light gray - same as pending visually)
-                  _wordStatusMap[currentAyah]![i] = WordStatus.pending;
+                  _wordStatusMap[currentKey]![i] = WordStatus.pending;
                 } else {
                   // Not yet played (light gray)
-                  _wordStatusMap[currentAyah]![i] = WordStatus.pending;
+                  _wordStatusMap[currentKey]![i] = WordStatus.pending;
                 }
               }
 
@@ -594,8 +607,23 @@ Future<void> _handleListeningCompletion() async {
             return a.ayah.compareTo(b.ayah);
           });
 
+          // ✅ Simpan semua ayat page untuk UI rendering (layout mushaf)
+          final allPageAyats = List<AyatData>.from(_ayatList);
+          
+          // ✅ CRITICAL FIX: Jika suratId specified, FILTER _ayatList untuk PROCESSING
+          // UI tetap tampilkan semua surah di page, tapi hanya PROSES surah yang dipilih
+          if (suratId != null) {
+            final beforeCount = _ayatList.length;
+            _ayatList = _ayatList.where((a) => a.surah_id == suratId).toList();
+            _determinedSurahId = suratId;
+            print('✅ PROCESSING: $beforeCount → ${_ayatList.length} ayahs (surah $suratId only)');
+            print('   UI will show all ${allPageAyats.length} ayahs on page');
+          }
+
           _currentAyatIndex = 0;
-          _currentPageAyats = _ayatList;
+          
+          // ✅ UI tetap tampilkan SEMUA ayat di page (layout mushaf lengkap)
+          _currentPageAyats = allPageAyats;
 
           appLogger.log(
             'DATA',
@@ -1289,11 +1317,13 @@ Future<void> _handleListeningCompletion() async {
 
     switch (type) {
       case 'word_processing':
-        final int ayah = message['ayah'] ?? 0;
-        final int wordIndex = message['word_index'] ?? 0;
-        _currentAyatIndex = _ayatList.indexWhere((a) => a.ayah == ayah);
-        if (!_wordStatusMap.containsKey(ayah)) _wordStatusMap[ayah] = {};
-        _wordStatusMap[ayah]![wordIndex] = WordStatus.processing;
+        final int processingAyah = message['ayah'] ?? 0;
+        final int processingWordIndex = message['word_index'] ?? 0;
+        final int processingSurah = message['surah'] ?? suratId ?? _determinedSurahId ?? 1;
+        _currentAyatIndex = _ayatList.indexWhere((a) => a.ayah == processingAyah && a.surah_id == processingSurah);
+        final processingKey = _wordKey(processingSurah, processingAyah);
+        if (!_wordStatusMap.containsKey(processingKey)) _wordStatusMap[processingKey] = {};
+        _wordStatusMap[processingKey]![processingWordIndex] = WordStatus.processing;
         notifyListeners();
         break;
 
@@ -1309,29 +1339,31 @@ Future<void> _handleListeningCompletion() async {
         break;
 
       case 'word_feedback':
-        final int ayah = message['ayah'] ?? 0;
-        final int wordIndex = message['word_index'] ?? 0;
+        final int feedbackAyah = message['ayah'] ?? 0;
+        final int feedbackWordIndex = message['word_index'] ?? 0;
         final String status = message['status'] ?? 'pending';
         final String expectedWord = message['expected_word'] ?? '';
         final String transcribedWord = message['transcribed_word'] ?? '';
         final int totalWords = message['total_words'] ?? 0;
+        final int feedbackSurah = message['surah'] ?? suratId ?? _determinedSurahId ?? 1;
 
-        _currentAyatIndex = _ayatList.indexWhere((a) => a.ayah == ayah);
+        _currentAyatIndex = _ayatList.indexWhere((a) => a.ayah == feedbackAyah && a.surah_id == feedbackSurah);
 
-        // âœ… UPDATE _wordStatusMap (existing behavior)
-        if (!_wordStatusMap.containsKey(ayah)) _wordStatusMap[ayah] = {};
-        _wordStatusMap[ayah]![wordIndex] = _mapWordStatus(status);
+        // UPDATE _wordStatusMap dengan key "surahId:ayahNumber"
+        final feedbackKey = _wordKey(feedbackSurah, feedbackAyah);
+        if (!_wordStatusMap.containsKey(feedbackKey)) _wordStatusMap[feedbackKey] = {};
+        _wordStatusMap[feedbackKey]![feedbackWordIndex] = _mapWordStatus(status);
         print(
-          'ðŸ—ºï¸ STT: Updated wordStatusMap[$ayah][$wordIndex] = ${_mapWordStatus(status)}',
+          'ðŸ—ºï¸ STT: Updated wordStatusMap[$feedbackKey][$feedbackWordIndex] = ${_mapWordStatus(status)}',
         );
         print(
-          'ðŸ—ºï¸ STT: Full wordStatusMap[$ayah] = ${_wordStatusMap[ayah]}',
+          'ðŸ—ºï¸ STT: Full wordStatusMap[$feedbackKey] = ${_wordStatusMap[feedbackKey]}',
         );
 
         // ðŸ”¥ NEW: Update _currentWords REALTIME
         if (_currentWords.isEmpty || _currentWords.length != totalWords) {
           print(
-            'ðŸ”¥ STT: Initializing _currentWords for ayah $ayah with $totalWords words',
+            'ðŸ”¥ STT: Initializing _currentWords for ayah $feedbackAyah with $totalWords words',
           );
           _currentWords = List.generate(
             totalWords,
@@ -1344,16 +1376,16 @@ Future<void> _handleListeningCompletion() async {
           );
         }
 
-        if (wordIndex >= 0 && wordIndex < _currentWords.length) {
-          _currentWords[wordIndex] = WordFeedback(
+        if (feedbackWordIndex >= 0 && feedbackWordIndex < _currentWords.length) {
+          _currentWords[feedbackWordIndex] = WordFeedback(
             text: expectedWord,
             status: _mapWordStatus(status),
-            wordIndex: wordIndex,
+            wordIndex: feedbackWordIndex,
             similarity: (message['similarity'] ?? 0.0).toDouble(),
             transcribedWord: transcribedWord,
           );
           print(
-            'ðŸ”¥ STT REALTIME: Updated _currentWords[$wordIndex] = $expectedWord (${_mapWordStatus(status)})',
+            'ðŸ”¥ STT REALTIME: Updated _currentWords[$feedbackWordIndex] = $expectedWord (${_mapWordStatus(status)})',
           );
         }
 
@@ -1420,19 +1452,46 @@ Future<void> _handleListeningCompletion() async {
         break;
 
       case 'ayah_complete':
+        final int completedSurah = message['surah'] ?? suratId ?? _determinedSurahId ?? 1;
         final int completedAyah = message['ayah'] ?? 0;
         final int nextAyah = message['next_ayah'] ?? 0;
         _tartibStatus[completedAyah] = TartibStatus.correct;
-        _currentAyatIndex = _ayatList.indexWhere((a) => a.ayah == nextAyah);
+        // ✅ Cari ayah dengan surah yang benar
+        _currentAyatIndex = _ayatList.indexWhere((a) => a.ayah == nextAyah && a.surah_id == completedSurah);
         notifyListeners();
         break;
 
       case 'started':
         _tartibStatus.clear();
-        _wordStatusMap.clear();
         _expectedAyah = message['expected_ayah'] ?? 1;
         _sessionId = message['session_id'];
-        appLogger.log('SESSION', 'Started: $_sessionId');
+        final int startedSurah = message['surah'] ?? suratId ?? 1;
+        
+        // ✅ RESTORE word_status_map dari backend (jika ada session sebelumnya)
+        // Key format: "surahId:ayahNumber" untuk hindari collision antar surah
+        if (message['word_status_map'] != null && (message['word_status_map'] as Map).isNotEmpty) {
+          final Map<String, dynamic> backendWordMap = message['word_status_map'];
+          _wordStatusMap.clear();
+          backendWordMap.forEach((ayahKey, wordMap) {
+            final int ayahNum = int.tryParse(ayahKey) ?? -1;
+            if (ayahNum > 0 && wordMap is Map) {
+              final key = _wordKey(startedSurah, ayahNum);
+              _wordStatusMap[key] = {};
+              (wordMap as Map<String, dynamic>).forEach((wordIndexKey, status) {
+                final int wordIndex = int.tryParse(wordIndexKey) ?? -1;
+                if (wordIndex >= 0) {
+                  _wordStatusMap[key]![wordIndex] = _mapWordStatus(status.toString());
+                }
+              });
+            }
+          });
+          print('✅ STT: Restored ${_wordStatusMap.length} ayahs with word colors for surah $startedSurah');
+        } else {
+          _wordStatusMap.clear();
+          print('📝 STT: Fresh session, no previous word status');
+        }
+        
+        appLogger.log('SESSION', 'Started: $_sessionId (restored: ${_wordStatusMap.isNotEmpty})');
         notifyListeners();
         break;
 
@@ -1524,25 +1583,26 @@ Future<void> _handleListeningCompletion() async {
 
         print('📍 Resume ayat index: $_currentAyatIndex');
 
-        // Restore word status map if provided
+        // Restore word status map if provided (key = "surahId:ayahNumber")
         if (message['word_status_map'] != null) {
           final Map<String, dynamic> backendWordMap =
               message['word_status_map'];
           backendWordMap.forEach((ayahKey, wordMap) {
             final int ayahNum = int.tryParse(ayahKey) ?? -1;
             if (ayahNum > 0 && wordMap is Map) {
-              _wordStatusMap[ayahNum] = {};
+              final key = _wordKey(resumedSurah, ayahNum);
+              _wordStatusMap[key] = {};
               (wordMap as Map<String, dynamic>).forEach((wordIndexKey, status) {
                 final int wordIndex = int.tryParse(wordIndexKey) ?? -1;
                 if (wordIndex >= 0) {
-                  _wordStatusMap[ayahNum]![wordIndex] = _mapWordStatus(
+                  _wordStatusMap[key]![wordIndex] = _mapWordStatus(
                     status.toString(),
                   );
                 }
               });
             }
           });
-          print('✅ Restored word status for ${_wordStatusMap.length} ayahs');
+          print('✅ Restored word status for ${_wordStatusMap.length} ayahs (surah $resumedSurah)');
         }
 
         // ✅ Restore verse status (ayah-level colors: matched/mismatched)
@@ -1591,6 +1651,84 @@ Future<void> _handleListeningCompletion() async {
         Future.delayed(const Duration(seconds: 3), () {
           if (_errorMessage ==
               'Session resumed: Surah $resumedSurah, Ayah $resumedAyah, Word ${resumedPosition + 1}') {
+            _errorMessage = '';
+            notifyListeners();
+          }
+        });
+        break;
+
+      // ✅ NEW: Handle continued message from backend (restore previous session)
+      case 'continued':
+        final continuedSessionId = message['session_id'];
+        final continuedSurah = message['surah'] ?? 0;
+        final continuedAyah = message['ayah'] ?? 0;
+        final continuedWord = message['word'] ?? 1;
+        final continuedLocation = message['location'] ?? '';
+        final continuedMode = message['mode'] ?? 'surah';
+        final stats = message['stats'] as Map<String, dynamic>?;
+
+        print('🔄 STT: Session CONTINUED');
+        print('   Session ID: $continuedSessionId');
+        print('   Location: $continuedLocation (word: $continuedWord)');
+        print('   Mode: $continuedMode');
+        if (stats != null) {
+          print('   Stats: ${stats['total_words_read']} words, ${stats['accuracy']}% accuracy');
+        }
+
+        _sessionId = continuedSessionId;
+
+        // Navigate to correct page
+        try {
+          final targetPage = await LocalDatabaseService.getPageNumber(
+            continuedSurah,
+            continuedAyah,
+          );
+
+          if (_currentPage != targetPage) {
+            print('📄 Navigating to page $targetPage');
+            _currentPage = targetPage;
+            _listViewCurrentPage = targetPage;
+            await _loadCurrentPageAyats();
+          }
+        } catch (e) {
+          print('⚠️ Failed to get page number: $e');
+        }
+
+        // Update current position
+        _currentAyatIndex = _ayatList.indexWhere((a) => a.ayah == continuedAyah);
+        if (_currentAyatIndex == -1) {
+          _currentAyatIndex = _ayatList.indexWhere((a) => a.surah_id == continuedSurah);
+          if (_currentAyatIndex == -1) _currentAyatIndex = 0;
+        }
+
+        // ✅ CRITICAL: Restore word status map (for word coloring)
+        // Key format: "surahId:ayahNumber"
+        if (message['word_status_map'] != null) {
+          final Map<String, dynamic> backendWordMap = message['word_status_map'];
+          _wordStatusMap.clear();
+          backendWordMap.forEach((ayahKey, wordMap) {
+            final int ayahNum = int.tryParse(ayahKey) ?? -1;
+            if (ayahNum > 0 && wordMap is Map) {
+              final key = _wordKey(continuedSurah, ayahNum);
+              _wordStatusMap[key] = {};
+              (wordMap as Map<String, dynamic>).forEach((wordIndexKey, status) {
+                final int wordIndex = int.tryParse(wordIndexKey) ?? -1;
+                if (wordIndex >= 0) {
+                  _wordStatusMap[key]![wordIndex] = _mapWordStatus(status.toString());
+                }
+              });
+            }
+          });
+          print('✅ Restored word status for ${_wordStatusMap.length} ayahs (surah $continuedSurah)');
+          print('   Word status map: $_wordStatusMap');
+        }
+
+        _errorMessage = 'Session continued from $continuedLocation';
+        notifyListeners();
+
+        // Clear message after 3 seconds
+        Future.delayed(const Duration(seconds: 3), () {
+          if (_errorMessage == 'Session continued from $continuedLocation') {
             _errorMessage = '';
             notifyListeners();
           }
@@ -1690,6 +1828,30 @@ Future<void> _handleListeningCompletion() async {
     } catch (e) {
       print('❌ Failed to resume session: $e');
       _errorMessage = 'Failed to resume session: $e';
+      notifyListeners();
+    }
+  }
+
+  /// ✅ NEW: Continue session (restore word colors from backend)
+  /// This is like Tarteel - loads all previous word status from Redis
+  Future<void> continueSession(String sessionId) async {
+    try {
+      print('🔄 Continuing session: $sessionId');
+      
+      // Connect WebSocket if not connected
+      if (!_webSocketService.isConnected) {
+        print('🔌 Connecting to WebSocket...');
+        await _webSocketService.connect();
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
+
+      // Send continue request - this will load word_status_map from Redis
+      _webSocketService.sendContinueSession(sessionId: sessionId);
+
+      print('✅ Continue request sent, waiting for backend response with word colors...');
+    } catch (e) {
+      print('❌ Failed to continue session: $e');
+      _errorMessage = 'Failed to continue session: $e';
       notifyListeners();
     }
   }

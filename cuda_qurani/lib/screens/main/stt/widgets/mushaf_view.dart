@@ -398,9 +398,10 @@ class _JustifiedAyahLine extends StatelessWidget {
         // Ã¢Å“â€¦ FIX: Use wordNumber - 1 as index (wordNumber is 1-indexed, backend uses 0-indexed)
         final wordIndex = word.wordNumber - 1;
 
-        // Get word status dari wordStatusMap
+        // Get word status dari wordStatusMap (key = "surahId:ayahNumber")
+        final wordStatusKey = '${segment.surahId}:${segment.ayahNumber}';
         final wordStatus =
-            controller.wordStatusMap[segment.ayahNumber]?[wordIndex];
+            controller.wordStatusMap[wordStatusKey]?[wordIndex];
 
         // Ã°Å¸â€Â¥ DEBUG: Print word status dan warna yang akan diapply
         if (controller.isRecording &&
@@ -409,7 +410,7 @@ class _JustifiedAyahLine extends StatelessWidget {
             'Ã°Å¸Å½Â¨ UI RENDER: Ayah ${segment.ayahNumber}, Word[$wordIndex] (loop $i) = $wordStatus',
           );
           print(
-            '   Ã°Å¸â€œÅ  Full wordStatusMap[${segment.ayahNumber}] = ${controller.wordStatusMap[segment.ayahNumber]}',
+            '   Full wordStatusMap[$wordStatusKey] = ${controller.wordStatusMap[wordStatusKey]}',
           );
         }
 
@@ -424,7 +425,8 @@ class _JustifiedAyahLine extends StatelessWidget {
             segment.isEndOfAyah && i == (segment.words.length - 1);
 
         // ========== PRIORITAS 1: Background color dari wordStatus ==========
-        if (wordStatus != null) {
+        // SKIP highlighting for Arabic numbers (ayah end markers like ١ ٢ ٣)
+        if (wordStatus != null && !hasArabicNumber) {
           switch (wordStatus) {
             case WordStatus.matched:
               wordBg = correctColor.withOpacity(0.4); // ðŸŸ© HIJAU - BENAR

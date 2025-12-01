@@ -497,8 +497,10 @@ class _CompleteAyahWidget extends StatelessWidget {
                 final wordIndex = entry.value.wordNumber - 1;
                 final word = entry.value;
 
+                // Key = "surahId:ayahNumber" untuk hindari collision antar surah
+                final wordStatusKey = '${segment.surahId}:${segment.ayahNumber}';
                 final wordStatus =
-                    controller.wordStatusMap[segment.ayahNumber]?[wordIndex];
+                    controller.wordStatusMap[wordStatusKey]?[wordIndex];
 
                 Color wordBg = Colors.transparent;
                 double opacity = 1.0;

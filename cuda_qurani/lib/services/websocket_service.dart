@@ -342,6 +342,32 @@ class WebSocketService {
     }
   }
   
+  /// ✅ NEW: Continue previous session (restore word colors from Redis)
+  /// This loads the full session state including word_status_map
+  void sendContinueSession({required String sessionId}) {
+    if (_isConnected && _channel != null) {
+      final messageData = {
+        'type': 'continue',
+        'session_id': sessionId,
+      };
+      
+      // Add user info if authenticated
+      if (_authService.isAuthenticated) {
+        messageData['user_uuid'] = _authService.userId ?? '';
+        messageData['user_email'] = _authService.currentUser?.email ?? '';
+      }
+      
+      final message = jsonEncode(messageData);
+      _channel!.sink.add(message);
+      print('🔄 WebSocket: Sent CONTINUE request (session_id: $sessionId)');
+    } else {
+      print('❌ Cannot continue session: WebSocket not connected');
+      if (_shouldAutoReconnect && !_isReconnecting) {
+        _scheduleReconnection();
+      }
+    }
+  }
+  
   /// @deprecated Use sendResumeSession() instead (backward compatibility)
   void sendRecoverSession(String sessionId) {
     print('⚠️ DEPRECATED: sendRecoverSession() is deprecated, use sendResumeSession() instead');
