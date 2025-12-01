@@ -1,6 +1,7 @@
 // lib/services/_listening_audio_service.dart
 
 import 'dart:async';
+import 'dart:convert';
 import 'package:cuda_qurani/services/audio_download_services.dart';
 import 'package:cuda_qurani/services/reciter_manager_services.dart';
 import 'package:just_audio/just_audio.dart';
@@ -111,6 +112,8 @@ class ListeningAudioService {
     await _playNextTrack();
   }
 
+  // REPLACE method _playNextTrack() di listening_audio_services.txt dengan kode ini:
+
   // Play next track
   Future<void> _playNextTrack() async {
     if (!_isPlaying || _currentTrackIndex >= _playlist.length) {
@@ -171,6 +174,55 @@ class ListeningAudioService {
       // Load audio file
       await _player.setFilePath(filePath);
 
+      // ✅ FIX: Parse segments dari database
+      final segmentsJson = currentAudio['segments'] as String?;
+      List<Map<String, dynamic>> segments = [];
+      
+      if (segmentsJson != null && segmentsJson.isNotEmpty) {
+        try {
+          final List<dynamic> segmentsList = jsonDecode(segmentsJson);
+          segments = segmentsList.map((s) => {
+            'word_index': s[0] as int,
+            'start_ms': s[2] as int,
+            'end_ms': s[3] as int,
+          }).toList();
+          
+          print('🎯 Loaded ${segments.length} word segments for ayah $ayahNum');
+        } catch (e) {
+          print('⚠️ Error parsing segments: $e');
+        }
+      }
+
+      // ✅ FIX: Start word highlighting SEBELUM play
+      StreamSubscription? positionSubscription;
+      
+      if (segments.isNotEmpty) {
+        int currentHighlightedWord = -1;
+        
+        positionSubscription = _player.positionStream.listen((position) {
+          final positionMs = position.inMilliseconds;
+          
+          // Find which word is currently playing
+          for (int i = 0; i < segments.length; i++) {
+            final segment = segments[i];
+            final startMs = segment['start_ms'] as int;
+            final endMs = segment['end_ms'] as int;
+            
+            if (positionMs >= startMs && positionMs <= endMs) {
+              final wordIndex = segment['word_index'] as int;
+              
+              // Only emit if word changed (avoid spam)
+              if (wordIndex != currentHighlightedWord) {
+                currentHighlightedWord = wordIndex;
+                _wordHighlightController?.add(wordIndex);
+                print('✨ Highlighting word $wordIndex at ${positionMs}ms');
+              }
+              break;
+            }
+          }
+        });
+      }
+
       // Start playback
       await _player.play();
 
@@ -178,6 +230,13 @@ class ListeningAudioService {
       await _player.playerStateStream.firstWhere(
         (state) => state.processingState == ProcessingState.completed,
       );
+
+      // ✅ Cancel position subscription
+      await positionSubscription?.cancel();
+      
+      // ✅ Reset highlight setelah ayah selesai
+      _wordHighlightController?.add(-1);
+      print('🔄 Reset word highlight after ayah completed');
 
       // Check verse repeat
       if (_shouldRepeatVerse()) {
