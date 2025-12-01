@@ -49,6 +49,8 @@ dependencies:
   supabase: ^2.10.0
   supabase_flutter: ^2.10.3 
 
+  dio: ^5.9.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -71,8 +73,27 @@ flutter:
     - assets/fonts/QPCV1Font/
     - assets/data/qpc-v1-ayah-by-ayah-glyphs.db
     - assets/data/quran-metadata-juz.sqlite
+
+    - assets/reciters/data/reciters_data.json
+    - assets/reciters/data/
+    - assets/reciters/
+
     - assets/reciters/ayah-recitation-abdul-basit-abdul-samad-murattal-hafs-950.db
     - assets/reciters/ayah-recitation-abdur-rahman-as-sudais-recitation.db
+    - assets/reciters/ayah-recitation-abu-bakr-al-shatri-murattal-hafs-952.db
+    - assets/reciters/ayah-recitation-alnufais.db
+    - assets/reciters/ayah-recitation-hani-ar-rifai-recitation-murattal-hafs-68.db
+    - assets/reciters/ayah-recitation-khalifa-al-tunaiji-murattal-hafs-958.db
+    - assets/reciters/ayah-recitation-maher-al-mu-aiqly-murattal-hafs-948.db
+    - assets/reciters/ayah-recitation-mahmoud-khalil-al-husary-mujawwad-hafs-956.db
+    - assets/reciters/ayah-recitation-mahmoud-khalil-al-husary-murattal-hafs-955.db
+    - assets/reciters/ayah-recitation-mahmoud-khalil-al-husary-murattal-hafs-957.db
+    - assets/reciters/ayah-recitation-mishari-rashid-al-afasy-murattal-hafs-953.db
+    - assets/reciters/ayah-recitation-mohamed-al-tablawi-recitation-murattal-hafs-73.db
+    - assets/reciters/ayah-recitation-muhammad-siddiq-al-minshawi-murattal-hafs-959.db
+    - assets/reciters/ayah-recitation-saad-al-ghamdi-murattal-hafs-954.db
+    - assets/reciters/ayah-recitation-saud-al-shuraim-murattal-hafs-960.db
+    - assets/reciters/ayah-recitation-yasser-al-dosari-murattal-hafs-961.db
 
   fonts:
     - family: UthmanTN

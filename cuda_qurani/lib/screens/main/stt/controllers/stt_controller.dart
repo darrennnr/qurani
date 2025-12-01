@@ -227,8 +227,11 @@ class SttController with ChangeNotifier {
       _errorMessage = '';
 
       // 🎵 Initialize listening audio service
-      _listeningAudioService = ListeningAudioService();
-      await _listeningAudioService!.initialize(settings);
+       _listeningAudioService = ListeningAudioService();
+  await _listeningAudioService!.initialize(
+    settings,
+    settings.reciter, // ← Pass reciter identifier
+  );
 
       _playbackSettings = settings;
       _isListeningMode = true;

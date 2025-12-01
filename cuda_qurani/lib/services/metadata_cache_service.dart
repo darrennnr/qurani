@@ -43,6 +43,17 @@ class MetadataCacheService {
     return names.isNotEmpty ? names.first : 'Page $pageNumber';
   }
 
+  Map<String, dynamic>? getSurah(int surahId) {
+  try {
+    return _allSurahs.firstWhere(
+      (s) => s['id'] == surahId,
+      orElse: () => {},
+    );
+  } catch (e) {
+    return null;
+  }
+}
+
   // ==================== INITIALIZATION ====================
 
   Future<void> initialize() async {

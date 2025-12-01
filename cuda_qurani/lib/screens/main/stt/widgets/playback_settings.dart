@@ -2,6 +2,7 @@
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
 import 'package:cuda_qurani/models/playback_settings_model.dart';
 import 'package:cuda_qurani/screens/main/home/screens/settings/submenu/reciters_download.dart';
+import 'package:cuda_qurani/services/reciter_manager_services.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -36,15 +37,10 @@ class _PlaybackSettingsPageState extends State<PlaybackSettingsPage> {
   int _endSurahId = 1;
   int _endVerse = 7;
 
-  // --- Dummy Reciter Data ---
-  final List<String> _reciters = [
-    'Abdul Basit Abd us-Samad (Murattal)',
-    'Abdul Basit Abd us-Samad (Mujawwad)',
-    'Abdul-Rahman Al-Sudais',
-    'Abu Bakr Al-Shatri',
-    'Mishari Al-Afasy',
-  ];
-  String _selectedReciter = 'Abdul Basit Abd us-Samad (Murattal)';
+  List<ReciterInfo> _reciters = [];
+  String _selectedReciter = '';
+  String _selectedReciterId = '';
+
   bool _isReciterExpanded = false;
 
   // --- Playback Options ---
@@ -65,8 +61,29 @@ class _PlaybackSettingsPageState extends State<PlaybackSettingsPage> {
   void initState() {
     super.initState();
     _loadDatabaseData();
+    _loadReciters();
   }
 
+Future<void> _loadReciters() async {
+  print('🔍 Loading reciters...'); // ✅ Debug
+  final reciters = await ReciterManagerService.getAllReciters();
+  print('📊 Loaded ${reciters.length} reciters'); // ✅ Debug
+  
+  if (reciters.isEmpty) {
+    print('❌ No reciters loaded!'); // ✅ Debug
+  }
+  
+  setState(() {
+    _reciters = reciters;
+    if (_reciters.isNotEmpty) {
+      _selectedReciter = _reciters.first.name;
+      _selectedReciterId = _reciters.first.identifier;
+      print('✅ Selected: $_selectedReciter'); // ✅ Debug
+    } else {
+      print('⚠️ Reciters list is empty!'); // ✅ Debug
+    }
+  });
+}
   /// Loads Surah data from SQLite using your LocalDatabaseService
   Future<void> _loadDatabaseData() async {
     try {
@@ -370,16 +387,16 @@ class _PlaybackSettingsPageState extends State<PlaybackSettingsPage> {
                 SizedBox(
                   height: 200 * s,
                   child: ListView.builder(
-                    shrinkWrap: true,
-                    physics: const ClampingScrollPhysics(),
                     itemCount: _reciters.length,
                     itemBuilder: (context, index) {
                       final reciter = _reciters[index];
-                      final isSelected = reciter == _selectedReciter;
+                      final isSelected =
+                          reciter.identifier == _selectedReciterId;
                       return InkWell(
                         onTap: () {
                           setState(() {
-                            _selectedReciter = reciter;
+                            _selectedReciter = reciter.name;
+                            _selectedReciterId = reciter.identifier;
                             _isReciterExpanded = false;
                           });
                           AppHaptics.light();
@@ -393,7 +410,7 @@ class _PlaybackSettingsPageState extends State<PlaybackSettingsPage> {
                             vertical: AppDesignSystem.space12 * s,
                           ),
                           child: Text(
-                            reciter,
+                            reciter.name,
                             style: AppTypography.body(
                               context,
                               weight: isSelected
@@ -412,32 +429,39 @@ class _PlaybackSettingsPageState extends State<PlaybackSettingsPage> {
                 InkWell(
                   onTap: () {
                     AppHaptics.light();
-                     Navigator.push(
-      context,
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            RecitersDownloadPage(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          const begin = Offset(0.03, 0.0);
-          const end = Offset.zero;
-          const curve = Curves.easeInOut;
-          var tween = Tween(
-            begin: begin,
-            end: end,
-          ).chain(CurveTween(curve: curve));
-          var offsetAnimation = animation.drive(tween);
-          var fadeAnimation = animation.drive(
-            Tween(begin: 0.0, end: 1.0).chain(CurveTween(curve: curve)),
-          );
+                    Navigator.push(
+                      context,
+                      PageRouteBuilder(
+                        pageBuilder: (context, animation, secondaryAnimation) =>
+                            RecitersDownloadPage(),
+                        transitionsBuilder:
+                            (context, animation, secondaryAnimation, child) {
+                              const begin = Offset(0.03, 0.0);
+                              const end = Offset.zero;
+                              const curve = Curves.easeInOut;
+                              var tween = Tween(
+                                begin: begin,
+                                end: end,
+                              ).chain(CurveTween(curve: curve));
+                              var offsetAnimation = animation.drive(tween);
+                              var fadeAnimation = animation.drive(
+                                Tween(
+                                  begin: 0.0,
+                                  end: 1.0,
+                                ).chain(CurveTween(curve: curve)),
+                              );
 
-          return FadeTransition(
-            opacity: fadeAnimation,
-            child: SlideTransition(position: offsetAnimation, child: child),
-          );
-        },
-        transitionDuration: AppDesignSystem.durationNormal,
-      ),
-    );
+                              return FadeTransition(
+                                opacity: fadeAnimation,
+                                child: SlideTransition(
+                                  position: offsetAnimation,
+                                  child: child,
+                                ),
+                              );
+                            },
+                        transitionDuration: AppDesignSystem.durationNormal,
+                      ),
+                    );
                     // Add download management logic here
                   },
                   borderRadius: BorderRadius.vertical(
@@ -670,7 +694,7 @@ class _PlaybackSettingsPageState extends State<PlaybackSettingsPage> {
                   startVerse: _startVerse,
                   endSurahId: _endSurahId,
                   endVerse: _endVerse,
-                  reciter: _selectedReciter,
+                  reciter: _selectedReciterId,
                   speed: _parseSpeedValue(_selectedSpeed),
                   eachVerseRepeat: _parseRepeatValue(_eachVerseRepeat),
                   rangeRepeat: _parseRepeatValue(_rangeRepeat),

@@ -1,0 +1,98 @@
+[
+  {
+    "id": 1,
+    "name": "Abdul Basit Abdul Samad (Murattal Hafs)",
+    "db_path": "assets/reciters/ayah-recitation-abdul-basit-abdul-samad-murattal-hafs-950.db",
+    "identifier": "abdul-basit-murattal"
+  },
+  {
+    "id": 2,
+    "name": "Abdur Rahman As-Sudais",
+    "db_path": "assets/reciters/ayah-recitation-abdur-rahman-as-sudais-recitation.db",
+    "identifier": "as-sudais"
+  },
+  {
+    "id": 3,
+    "name": "Abu Bakr Al-Shatri (Murattal Hafs)",
+    "db_path": "assets/reciters/ayah-recitation-abu-bakr-al-shatri-murattal-hafs-952.db",
+    "identifier": "abu-bakr-shatri"
+  },
+  {
+    "id": 4,
+    "name": "Al Nufais",
+    "db_path": "assets/reciters/ayah-recitation-alnufais.db",
+    "identifier": "al-nufais"
+  },
+  {
+    "id": 5,
+    "name": "Hani Ar-Rifai (Murattal Hafs)",
+    "db_path": "assets/reciters/ayah-recitation-hani-ar-rifai-recitation-murattal-hafs-68.db",
+    "identifier": "hani-ar-rifai"
+  },
+  {
+    "id": 6,
+    "name": "Khalifa Al-Tunaiji (Murattal Hafs)",
+    "db_path": "assets/reciters/ayah-recitation-khalifa-al-tunaiji-murattal-hafs-958.db",
+    "identifier": "khalifa-al-tunaiji"
+  },
+  {
+    "id": 7,
+    "name": "Maher Al-Mu'aiqly (Murattal Hafs)",
+    "db_path": "assets/reciters/ayah-recitation-maher-al-mu-aiqly-murattal-hafs-948.db",
+    "identifier": "maher-al-muaiqly"
+  },
+  {
+    "id": 8,
+    "name": "Mahmoud Khalil Al-Husary (Mujawwad Hafs)",
+    "db_path": "assets/reciters/ayah-recitation-mahmoud-khalil-al-husary-mujawwad-hafs-956.db",
+    "identifier": "husary-mujawwad"
+  },
+  {
+    "id": 9,
+    "name": "Mahmoud Khalil Al-Husary (Murattal Hafs)",
+    "db_path": "assets/reciters/ayah-recitation-mahmoud-khalil-al-husary-murattal-hafs-955.db",
+    "identifier": "husary-murattal-1"
+  },
+  {
+    "id": 10,
+    "name": "Mahmoud Khalil Al-Husary (Murattal Hafs)",
+    "db_path": "assets/reciters/ayah-recitation-mahmoud-khalil-al-husary-murattal-hafs-957.db",
+    "identifier": "husary-murattal-2"
+  },
+  {
+    "id": 11,
+    "name": "Mishari Rashid Al-Afasy (Murattal Hafs)",
+    "db_path": "assets/reciters/ayah-recitation-mishari-rashid-al-afasy-murattal-hafs-953.db",
+    "identifier": "mishari-alafasy"
+  },
+  {
+    "id": 12,
+    "name": "Mohamed Al-Tablawi (Murattal Hafs)",
+    "db_path": "assets/reciters/ayah-recitation-mohamed-al-tablawi-recitation-murattal-hafs-73.db",
+    "identifier": "mohamed-tablawi"
+  },
+  {
+    "id": 13,
+    "name": "Muhammad Siddiq Al-Minshawi (Murattal Hafs)",
+    "db_path": "assets/reciters/ayah-recitation-muhammad-siddiq-al-minshawi-murattal-hafs-959.db",
+    "identifier": "minshawi-murattal"
+  },
+  {
+    "id": 14,
+    "name": "Saad Al-Ghamdi (Murattal Hafs)",
+    "db_path": "assets/reciters/ayah-recitation-saad-al-ghamdi-murattal-hafs-954.db",
+    "identifier": "saad-al-ghamdi"
+  },
+  {
+    "id": 15,
+    "name": "Saud Al-Shuraim (Murattal Hafs)",
+    "db_path": "assets/reciters/ayah-recitation-saud-al-shuraim-murattal-hafs-960.db",
+    "identifier": "saud-al-shuraim"
+  },
+  {
+    "id": 16,
+    "name": "Yasser Al-Dosari (Murattal Hafs)",
+    "db_path": "assets/reciters/ayah-recitation-yasser-al-dosari-murattal-hafs-961.db",
+    "identifier": "yasser-al-dosari"
+  }
+]
