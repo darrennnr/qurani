@@ -20,13 +20,14 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // Sample data - replace with actual data from provider/API
-  int _currentStreak = 1;
-  int _longestStreak = 2;
-  int _versesRecited = 13;
-  int _completionPercentage = 2;
+  // Stats data - fetched from database
+  int _currentStreak = 0;
+  int _longestStreak = 0;
+  int _versesRecited = 0;
+  int _completionPercentage = 0;
   int _memorizedPercentage = 0;
-  String _engagementTime = "1:33:26";
+  String _engagementTime = "0:00:00";
+  bool _isLoadingStats = true;
 
   // ✅ NEW: Backend integration
   final SupabaseService _supabaseService = SupabaseService();
@@ -37,7 +38,51 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _loadLatestSession(); // ✅ Load session on init
+    _loadLatestSession();
+    _loadUserStats(); // ✅ Load real stats from database
+  }
+
+  /// ✅ NEW: Load user stats from database (streak, time, ayahs)
+  Future<void> _loadUserStats() async {
+    final userUuid = _authService.userId;
+    if (userUuid == null) {
+      setState(() => _isLoadingStats = false);
+      return;
+    }
+
+    try {
+      // Fetch streak and stats in parallel
+      final results = await Future.wait([
+        _supabaseService.getUserStreak(userUuid),
+        _supabaseService.getUserStats(userUuid),
+      ]);
+
+      final streak = results[0] as Map<String, int>;
+      final stats = results[1] as Map<String, dynamic>;
+
+      setState(() {
+        _currentStreak = streak['current_streak'] ?? 0;
+        _longestStreak = streak['longest_streak'] ?? 0;
+        _versesRecited = stats['total_ayahs_read'] ?? 0;
+
+        // Format time
+        final totalSeconds = stats['total_time_seconds'] ?? 0;
+        final hours = totalSeconds ~/ 3600;
+        final minutes = (totalSeconds % 3600) ~/ 60;
+        final seconds = totalSeconds % 60;
+        _engagementTime = '$hours:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+
+        // Calculate completion (total 6236 ayat dalam Quran)
+        _completionPercentage = ((_versesRecited / 6236) * 100).round();
+
+        _isLoadingStats = false;
+      });
+
+      print('✅ HOME: Stats loaded - streak: $_currentStreak, time: $_engagementTime, verses: $_versesRecited');
+    } catch (e) {
+      print('❌ HOME: Error loading stats: $e');
+      setState(() => _isLoadingStats = false);
+    }
   }
 
   /// ✅ NEW: Load latest resumable session from backend

@@ -8,8 +8,9 @@ import 'widgets/mushaf_view.dart';
 import 'widgets/list_view.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cuda_qurani/core/widgets/achievement_popup.dart'; // ✅ NEW
 
-class SttPage extends StatelessWidget {
+class SttPage extends StatefulWidget {
   final int? suratId;
   final int? pageId;
   final int? juzId;
@@ -35,18 +36,43 @@ class SttPage extends StatelessWidget {
       super(key: key);
 
   @override
+  State<SttPage> createState() => _SttPageState();
+}
+
+class _SttPageState extends State<SttPage> {
+  bool _achievementShown = false;
+
+  void _showAchievementPopup(BuildContext context, SttController controller) {
+    if (_achievementShown) return;
+    if (controller.newlyEarnedAchievements.isEmpty) return;
+
+    _achievementShown = true;
+    final achievement = controller.newlyEarnedAchievements.first;
+
+    AchievementUnlockedDialog.show(
+      context,
+      emoji: achievement['newly_earned_emoji'] ?? '🏆',
+      title: achievement['newly_earned_title'] ?? 'Achievement!',
+      subtitle: achievement['newly_earned_code'] ?? '',
+    ).then((_) {
+      controller.clearNewAchievements();
+      _achievementShown = false;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(
           create: (_) {
             final controller = SttController(
-              suratId: suratId,
-              pageId: pageId,
-              juzId: juzId,
-              isFromHistory: isFromHistory,
-              initialWordStatusMap: initialWordStatusMap,
-              resumeSessionId: resumeSessionId, // ✅ NEW
+              suratId: widget.suratId,
+              pageId: widget.pageId,
+              juzId: widget.juzId,
+              isFromHistory: widget.isFromHistory,
+              initialWordStatusMap: widget.initialWordStatusMap,
+              resumeSessionId: widget.resumeSessionId, // ✅ NEW
             );
             Future.microtask(() => controller.initializeApp());
             return controller;
@@ -56,6 +82,13 @@ class SttPage extends StatelessWidget {
       ],
       child: Consumer<SttController>(
         builder: (context, controller, child) {
+          // ✅ NEW: Show achievement popup when earned
+          if (controller.newlyEarnedAchievements.isNotEmpty) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _showAchievementPopup(context, controller);
+            });
+          }
+
           return Scaffold(
             backgroundColor: backgroundColor,
             extendBodyBehindAppBar: true, // ✅ Key: Body extends behind AppBar

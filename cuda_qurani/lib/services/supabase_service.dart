@@ -184,4 +184,210 @@ class SupabaseService {
     print('📡 getAllSessions called with userUuid: $userUuid');
     return getSessions(userUuid: userUuid);
   }
+
+  // ============================================================================
+  // ACHIEVEMENT SYSTEM - NEW METHODS
+  // ============================================================================
+
+  /// Get user's streak (current and longest)
+  Future<Map<String, int>> getUserStreak(String userId) async {
+    try {
+      final response = await Supabase.instance.client.rpc(
+        'calculate_user_streak',
+        params: {'p_user_id': userId},
+      );
+      
+      if (response != null && response is List && response.isNotEmpty) {
+        return {
+          'current_streak': response[0]['current_streak'] ?? 0,
+          'longest_streak': response[0]['longest_streak'] ?? 0,
+        };
+      }
+      return {'current_streak': 0, 'longest_streak': 0};
+    } catch (e) {
+      print('❌ Error getting user streak: $e');
+      return {'current_streak': 0, 'longest_streak': 0};
+    }
+  }
+
+  /// Get user's stats from user_profiles
+  Future<Map<String, dynamic>> getUserStats(String userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+          '$supabaseUrl/rest/v1/user_profiles?id=eq.$userId&select=total_sessions,total_time_seconds,total_ayahs_read',
+        ),
+        headers: _headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as List;
+        if (data.isNotEmpty) {
+          return data[0] as Map<String, dynamic>;
+        }
+      }
+      return {
+        'total_sessions': 0,
+        'total_time_seconds': 0,
+        'total_ayahs_read': 0,
+      };
+    } catch (e) {
+      print('❌ Error getting user stats: $e');
+      return {
+        'total_sessions': 0,
+        'total_time_seconds': 0,
+        'total_ayahs_read': 0,
+      };
+    }
+  }
+
+  /// Get all available achievements
+  Future<List<Map<String, dynamic>>> getAllAchievements() async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+          '$supabaseUrl/rest/v1/achievements?is_active=eq.true&order=sort_order',
+        ),
+        headers: _headers,
+      );
+
+      if (response.statusCode == 200) {
+        return List<Map<String, dynamic>>.from(jsonDecode(response.body));
+      }
+      return [];
+    } catch (e) {
+      print('❌ Error getting all achievements: $e');
+      return [];
+    }
+  }
+
+  /// Get user's earned achievements
+  Future<List<Map<String, dynamic>>> getUserAchievements(String userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+          '$supabaseUrl/rest/v1/user_achievements?user_id=eq.$userId&select=*,achievements(*)',
+        ),
+        headers: _headers,
+      );
+
+      if (response.statusCode == 200) {
+        return List<Map<String, dynamic>>.from(jsonDecode(response.body));
+      }
+      return [];
+    } catch (e) {
+      print('❌ Error getting user achievements: $e');
+      return [];
+    }
+  }
+
+  /// Check and grant new achievements (returns newly earned ones)
+  Future<List<Map<String, dynamic>>> checkNewAchievements(String userId) async {
+    try {
+      final response = await Supabase.instance.client.rpc(
+        'check_and_grant_achievements',
+        params: {'p_user_id': userId},
+      );
+      
+      if (response != null && response is List) {
+        return List<Map<String, dynamic>>.from(response);
+      }
+      return [];
+    } catch (e) {
+      print('❌ Error checking achievements: $e');
+      return [];
+    }
+  }
+
+  /// Get user's subscription plan
+  Future<String> getUserSubscriptionPlan(String userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+          '$supabaseUrl/rest/v1/subscriptions?user_id=eq.$userId&select=plan&limit=1',
+        ),
+        headers: _headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as List;
+        if (data.isNotEmpty) {
+          return data[0]['plan'] ?? 'free';
+        }
+      }
+      return 'free';
+    } catch (e) {
+      print('❌ Error getting subscription: $e');
+      return 'free';
+    }
+  }
+
+  /// Get user's daily goal
+  Future<Map<String, dynamic>?> getUserGoal(String userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+          '$supabaseUrl/rest/v1/user_goals?user_id=eq.$userId&is_active=eq.true&limit=1',
+        ),
+        headers: _headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as List;
+        if (data.isNotEmpty) {
+          return data[0] as Map<String, dynamic>;
+        }
+      }
+      return null;
+    } catch (e) {
+      print('❌ Error getting user goal: $e');
+      return null;
+    }
+  }
+
+  /// Set user's daily goal
+  Future<bool> setUserGoal(String userId, String goalType, int targetValue) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$supabaseUrl/rest/v1/user_goals'),
+        headers: {..._headers, 'Prefer': 'resolution=merge-duplicates'},
+        body: jsonEncode({
+          'user_id': userId,
+          'goal_type': goalType,
+          'target_value': targetValue,
+          'is_active': true,
+        }),
+      );
+
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      print('❌ Error setting user goal: $e');
+      return false;
+    }
+  }
+
+  /// Get today's goal progress
+  Future<Map<String, dynamic>?> getDailyGoalProgress(String userId) async {
+    try {
+      final today = DateTime.now().toIso8601String().split('T')[0];
+      
+      final response = await http.get(
+        Uri.parse(
+          '$supabaseUrl/rest/v1/daily_goal_progress?user_id=eq.$userId&goal_date=eq.$today&limit=1',
+        ),
+        headers: _headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as List;
+        if (data.isNotEmpty) {
+          return data[0] as Map<String, dynamic>;
+        }
+      }
+      return null;
+    } catch (e) {
+      print('❌ Error getting daily goal progress: $e');
+      return null;
+    }
+  }
 }
