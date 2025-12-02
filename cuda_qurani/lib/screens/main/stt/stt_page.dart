@@ -13,12 +13,18 @@ class SttPage extends StatelessWidget {
   final int? suratId;
   final int? pageId;
   final int? juzId;
+  final bool isFromHistory;
+  final Map<String, dynamic>? initialWordStatusMap;
+  final String? resumeSessionId; // ✅ NEW: Continue existing session
 
   const SttPage({
     Key? key,
     this.suratId,
     this.pageId,
     this.juzId,
+    this.isFromHistory = false,
+    this.initialWordStatusMap,
+    this.resumeSessionId, // ✅ NEW
   }) : assert(
         (suratId != null ? 1 : 0) +
                 (pageId != null ? 1 : 0) +
@@ -38,6 +44,9 @@ class SttPage extends StatelessWidget {
               suratId: suratId,
               pageId: pageId,
               juzId: juzId,
+              isFromHistory: isFromHistory,
+              initialWordStatusMap: initialWordStatusMap,
+              resumeSessionId: resumeSessionId, // ✅ NEW
             );
             Future.microtask(() => controller.initializeApp());
             return controller;

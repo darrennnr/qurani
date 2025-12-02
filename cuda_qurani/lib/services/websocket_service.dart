@@ -65,9 +65,11 @@ class WebSocketService {
   bool _isReconnecting = false;
   bool _shouldAutoReconnect = true;
   Timer? _reconnectTimer;
+  Timer? _heartbeatTimer;
   int _reconnectAttempts = 0;
   final int _maxReconnectAttempts = 5;
   final Duration _reconnectDelay = const Duration(seconds: 3);
+  final Duration _heartbeatInterval = const Duration(seconds: 15);
 
   bool get isConnected => _isConnected;
   bool get isReconnecting => _isReconnecting;
@@ -116,6 +118,9 @@ class WebSocketService {
       _reconnectAttempts = 0;
       _connectionStatusController.add(true);
       print('✅ WebSocket connected successfully');
+      
+      // ✅ Start heartbeat timer to keep connection alive
+      _startHeartbeat();
 
       _channel!.stream.listen(
         (message) {
@@ -166,6 +171,7 @@ class WebSocketService {
     if (!_isConnected) return;
     
     _isConnected = false;
+    _stopHeartbeat();  // ✅ Stop heartbeat on disconnect
     _connectionStatusController.add(false);
     print('WebSocket disconnected: $reason');
     
@@ -203,6 +209,24 @@ class WebSocketService {
     _reconnectTimer?.cancel();
     _isReconnecting = false;
   }
+  
+  void _startHeartbeat() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = Timer.periodic(_heartbeatInterval, (timer) {
+      if (_isConnected && _channel != null) {
+        sendHeartbeat();
+      } else {
+        timer.cancel();
+      }
+    });
+    print('💓 WebSocket: Heartbeat timer started (every ${_heartbeatInterval.inSeconds}s)');
+  }
+  
+  void _stopHeartbeat() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = null;
+    print('💓 WebSocket: Heartbeat timer stopped');
+  }
 
   int _audioChunksSent = 0;
   
@@ -236,7 +260,7 @@ class WebSocketService {
     // Method kept for backward compatibility but does nothing
   }
 
-  void sendStartRecording(int surahNumber, {int? pageId, int? juzId, int? ayah}) {
+  void sendStartRecording(int surahNumber, {int? pageId, int? juzId, int? ayah, bool isFromHistory = false, String? sessionId}) {
     if (_isConnected && _channel != null) {
       _audioChunksSent = 0; // Reset counter
       
@@ -244,16 +268,23 @@ class WebSocketService {
       final messageData = {
         'type': 'start',
         'surah': surahNumber,
+        'is_from_history': isFromHistory,
       };
+      
+      // ✅ NEW: Include session_id if resuming existing session
+      if (sessionId != null) {
+        messageData['session_id'] = sessionId;
+        print('🔄 Including session_id for resume: $sessionId');
+      }
       
       // ✅ Add optional location info (page/juz/ayah)
       if (pageId != null) {
-        messageData['page'] = pageId;
-        print('📄 Including page: $pageId');
+        messageData['page_number'] = pageId;
+        print('📄 Including page_number: $pageId');
       }
       if (juzId != null) {
-        messageData['juz'] = juzId;
-        print('📚 Including juz: $juzId');
+        messageData['juz_number'] = juzId;
+        print('📚 Including juz_number: $juzId');
       }
       if (ayah != null) {
         messageData['ayah'] = ayah;
@@ -273,7 +304,7 @@ class WebSocketService {
       
       final message = jsonEncode(messageData);
       _channel!.sink.add(message);
-      print('🚀 WebSocket: Sent START command for Surah $surahNumber');
+      print('🚀 WebSocket: Sent START command for Surah $surahNumber (isFromHistory: $isFromHistory)');
     } else {
       print('❌ Cannot start recording: WebSocket not connected');
       if (_shouldAutoReconnect && !_isReconnecting) {
@@ -395,6 +426,7 @@ class WebSocketService {
     
     _shouldAutoReconnect = false;
     _reconnectTimer?.cancel();
+    _stopHeartbeat();  // ✅ Stop heartbeat timer
     _channel?.sink.close();
     _channel = null;  // ✅ Clear channel reference
     _isConnected = false;
