@@ -1,13 +1,12 @@
-// lib/services/listening_audio_service.dart
+// lib/services/_listening_audio_service.dart
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
-import 'dart:typed_data';
 import 'package:cuda_qurani/services/audio_download_services.dart';
+import 'package:cuda_qurani/services/global_ayat_services.dart';
+import 'package:cuda_qurani/services/reciter_manager_services.dart';
 import 'package:just_audio/just_audio.dart';
 import '../models/playback_settings_model.dart';
-import 'reciter_database_service.dart';
 
 class ListeningAudioService {
   final AudioPlayer _player = AudioPlayer();
@@ -16,15 +15,13 @@ class ListeningAudioService {
 
   StreamController<VerseReference>? _currentVerseController;
   StreamController<int>? _wordHighlightController;
-  Timer? _wordHighlightTimer;
 
   PlaybackSettings? _currentSettings;
-  List<ReciterAudioData> _playlist = [];
+  String? _reciterIdentifier;
+  List<Map<String, dynamic>> _playlist = [];
   int _currentTrackIndex = 0;
   int _currentVerseRepeat = 0;
   int _currentRangeRepeat = 0;
-
-  String? _currentFilePath; // Track current playing file
 
   // Getters
   bool get isPlaying => _isPlaying;
@@ -34,10 +31,16 @@ class ListeningAudioService {
   Stream<int>? get wordHighlightStream => _wordHighlightController?.stream;
   AudioPlayer get player => _player;
 
-  // Initialize and prepare playlist
-  Future<void> initialize(PlaybackSettings settings) async {
+  // Initialize with reciter
+  Future<void> initialize(
+    PlaybackSettings settings,
+    String reciterIdentifier,
+  ) async {
     print('🎵 ListeningAudioService: Initializing...');
+    print('   Reciter: $reciterIdentifier');
+    
     _currentSettings = settings;
+    _reciterIdentifier = reciterIdentifier;
     _currentTrackIndex = 0;
     _currentVerseRepeat = 0;
     _currentRangeRepeat = 0;
@@ -52,63 +55,68 @@ class ListeningAudioService {
     // Load playlist
     await _loadPlaylist();
 
-    print(
-      '✅ ListeningAudioService initialized with ${_playlist.length} tracks',
-    );
+    print('✅ Initialized with ${_playlist.length} tracks');
   }
 
   // Load audio files for verse range
-  Future<void> _loadPlaylist() async {
-    _playlist.clear();
+  // Load audio files for verse range
+Future<void> _loadPlaylist() async {
+  _playlist.clear();
 
-    if (_currentSettings == null) return;
+  if (_currentSettings == null || _reciterIdentifier == null) return;
 
-    print(
-      '📋 Loading playlist for range: ${_currentSettings!.startSurahId}:${_currentSettings!.startVerse} - ${_currentSettings!.endSurahId}:${_currentSettings!.endVerse}',
+  print('📋 Loading playlist: ${_currentSettings!.startSurahId}:${_currentSettings!.startVerse} - ${_currentSettings!.endSurahId}:${_currentSettings!.endVerse}');
+
+  // Generate verse list
+  for (int surah = _currentSettings!.startSurahId;
+      surah <= _currentSettings!.endSurahId;
+      surah++) {
+    int startAyah = (surah == _currentSettings!.startSurahId)
+        ? _currentSettings!.startVerse
+        : 1;
+    int endAyah = (surah == _currentSettings!.endSurahId)
+        ? _currentSettings!.endVerse
+        : 286;
+
+    // Get all audio URLs for this surah
+    final audioUrls = await ReciterManagerService.getSurahAudioUrls(
+      _reciterIdentifier!,
+      surah,
     );
 
-    // Generate verse list
-    final verses = <Map<String, int>>[];
+    // ✅ FIX: Convert local range to GLOBAL for filtering
+    final startGlobalAyat = GlobalAyatService.toGlobalAyat(surah, startAyah);
+    final endGlobalAyat = GlobalAyatService.toGlobalAyat(surah, endAyah);
 
-    for (
-      int surah = _currentSettings!.startSurahId;
-      surah <= _currentSettings!.endSurahId;
-      surah++
-    ) {
-      int startAyah = (surah == _currentSettings!.startSurahId)
-          ? _currentSettings!.startVerse
-          : 1;
-      int endAyah = (surah == _currentSettings!.endSurahId)
-          ? _currentSettings!.endVerse
-          : 286; // Max ayah
+    print('🔍 Filtering surah $surah: local [$startAyah-$endAyah] → global [$startGlobalAyat-$endGlobalAyat]');
 
-      for (int ayah = startAyah; ayah <= endAyah; ayah++) {
-        verses.add({'surah': surah, 'ayah': ayah});
+    for (final verse in audioUrls) {
+      final globalAyahNum = verse['ayah_number'] as int;  // ← Database stores GLOBAL index
+      
+      // ✅ Compare GLOBAL with GLOBAL
+      if (globalAyahNum >= startGlobalAyat && globalAyahNum <= endGlobalAyat) {
+        // ✅ Convert back to LOCAL ayah for display
+        final localAyahInfo = GlobalAyatService.fromGlobalAyat(globalAyahNum);
+        final localAyahNum = localAyahInfo['ayah_number']!;
+
+        _playlist.add({
+          'surah_number': surah,
+          'ayah_number': localAyahNum,  // ← Store LOCAL for UI
+          'global_ayah_number': globalAyahNum,  // ← Store GLOBAL for tracking
+          'audio_url': verse['audio_url'],
+          'duration': verse['duration'],
+          'segments': verse['segments'],
+        });
+        
+        print('  ✅ Added: Surah $surah Ayah $localAyahNum (Global #$globalAyahNum)');
       }
     }
-
-    // Fetch audio data from database
-    final audioDataList = await ReciterDatabaseService.getVersesAudio(verses);
-
-    // Download audio files
-    print('📥 Downloading ${audioDataList.length} audio files...');
-    final urls = audioDataList.map((a) => a.audioUrl).toList();
-    final downloadedFiles = await AudioDownloadService.downloadMultiple(
-      urls,
-      onProgress: (completed, total) {
-        print('📥 Download progress: $completed/$total');
-      },
-    );
-
-    // Verify all files downloaded
-    _playlist = audioDataList.where((audio) {
-      return downloadedFiles.containsKey(audio.audioUrl);
-    }).toList();
-
-    print('✅ Playlist ready: ${_playlist.length} tracks');
   }
 
-  // Start playback (Tarteel-style: audio only, no backend)
+  print('✅ Playlist ready: ${_playlist.length} tracks');
+}
+
+  // Start playback
   Future<void> startPlayback() async {
     if (_playlist.isEmpty) {
       throw Exception('Playlist is empty');
@@ -117,77 +125,120 @@ class ListeningAudioService {
     _isPlaying = true;
     _isPaused = false;
 
-    print('▶️ Starting playback (Listening Mode - Passive)...');
+    print('▶️ Starting playback...');
     await _playNextTrack();
   }
 
-  // Play next track in playlist
- // Play next track in playlist
-Future<void> _playNextTrack() async {
-  if (!_isPlaying || _currentTrackIndex >= _playlist.length) {
-    // Range completed, check repeat
-    if (_shouldRepeatRange()) {
-      _currentRangeRepeat++;
-      _currentTrackIndex = 0;
-      _currentVerseRepeat = 0;
-      print(
-        '🔁 Repeating range (${_currentRangeRepeat}/${_currentSettings!.rangeRepeat})',
-      );
-      await _playNextTrack();
-    } else {
-      print('🏁 Playback completed');
+  // REPLACE method _playNextTrack() di listening_audio_services.txt dengan kode ini:
 
-      // ✅ FIX: Properly stop and notify completion
-      _isPlaying = false;
-      _isPaused = false;
-      
-      await _player.stop();
-      _stopWordHighlightTimer();
-      
-      // ✅ Send completion signal (surahId: -999 indicates full completion)
-      _currentVerseController?.add(
-        VerseReference(surahId: -999, verseNumber: -999),
-      );
-      
-      print('✅ Listening mode fully stopped');
+  // Play next track
+  Future<void> _playNextTrack() async {
+    if (!_isPlaying || _currentTrackIndex >= _playlist.length) {
+      // Range completed, check repeat
+      if (_shouldRepeatRange()) {
+        _currentRangeRepeat++;
+        _currentTrackIndex = 0;
+        _currentVerseRepeat = 0;
+        print('🔁 Repeating range (${_currentRangeRepeat}/${_currentSettings!.rangeRepeat})');
+        await _playNextTrack();
+      } else {
+        print('🏁 Playback completed');
+        _isPlaying = false;
+        _isPaused = false;
+        await _player.stop();
+        _currentVerseController?.add(
+          VerseReference(surahId: -999, verseNumber: -999),
+        );
+        print('✅ Listening mode fully stopped');
+      }
+      return;
     }
-    return;
-  }
 
     final currentAudio = _playlist[_currentTrackIndex];
+    final surahNum = currentAudio['surah_number'] as int;
+    final ayahNum = currentAudio['ayah_number'] as int;
 
     // Notify current verse
     _currentVerseController?.add(
-      VerseReference(
-        surahId: currentAudio.surahNumber,
-        verseNumber: currentAudio.ayahNumber,
-      ),
+      VerseReference(surahId: surahNum, verseNumber: ayahNum),
     );
 
-    print(
-      '🎵 Playing: ${currentAudio.surahNumber}:${currentAudio.ayahNumber} (repeat ${_currentVerseRepeat + 1})',
+    print('🎵 Playing: $surahNum:$ayahNum (repeat ${_currentVerseRepeat + 1})');
+
+    // Get cached file path (download if not exists)
+    final audioUrl = currentAudio['audio_url'] as String;
+    String? filePath = await AudioDownloadService.getCachedFilePath(
+      _reciterIdentifier!,
+      audioUrl,
     );
 
-    // Get cached file path
-    final filePath = await AudioDownloadService.getCachedFilePath(
-      currentAudio.audioUrl,
-    );
+    // If not cached, download it
+    if (filePath == null) {
+      print('📥 Audio not cached, downloading...');
+      filePath = await AudioDownloadService.downloadAudio(
+        _reciterIdentifier!,
+        audioUrl,
+      );
+    }
 
     if (filePath == null) {
-      print('⚠️ Audio file not found, skipping...');
+      print('⚠️ Audio file not available, skipping...');
       _moveToNextTrack();
       return;
     }
 
     try {
-      // ✅ Store current file path
-      _currentFilePath = filePath;
-
       // Load audio file
       await _player.setFilePath(filePath);
 
-      // Start word highlight timer
-      _startWordHighlightTimer(currentAudio.segments);
+      // ✅ FIX: Parse segments dari database
+      final segmentsJson = currentAudio['segments'] as String?;
+      List<Map<String, dynamic>> segments = [];
+      
+      if (segmentsJson != null && segmentsJson.isNotEmpty) {
+        try {
+          final List<dynamic> segmentsList = jsonDecode(segmentsJson);
+          segments = segmentsList.map((s) => {
+            'word_index': s[0] as int,
+            'start_ms': s[2] as int,
+            'end_ms': s[3] as int,
+          }).toList();
+          
+          print('🎯 Loaded ${segments.length} word segments for ayah $ayahNum');
+        } catch (e) {
+          print('⚠️ Error parsing segments: $e');
+        }
+      }
+
+      // ✅ FIX: Start word highlighting SEBELUM play
+      StreamSubscription? positionSubscription;
+      
+      if (segments.isNotEmpty) {
+        int currentHighlightedWord = -1;
+        
+        positionSubscription = _player.positionStream.listen((position) {
+          final positionMs = position.inMilliseconds;
+          
+          // Find which word is currently playing
+          for (int i = 0; i < segments.length; i++) {
+            final segment = segments[i];
+            final startMs = segment['start_ms'] as int;
+            final endMs = segment['end_ms'] as int;
+            
+            if (positionMs >= startMs && positionMs <= endMs) {
+              final wordIndex = segment['word_index'] as int;
+              
+              // Only emit if word changed (avoid spam)
+              if (wordIndex != currentHighlightedWord) {
+                currentHighlightedWord = wordIndex;
+                _wordHighlightController?.add(wordIndex);
+                print('✨ Highlighting word $wordIndex at ${positionMs}ms');
+              }
+              break;
+            }
+          }
+        });
+      }
 
       // Start playback
       await _player.play();
@@ -197,8 +248,12 @@ Future<void> _playNextTrack() async {
         (state) => state.processingState == ProcessingState.completed,
       );
 
-      // Stop word highlighting
-      _stopWordHighlightTimer();
+      // ✅ Cancel position subscription
+      await positionSubscription?.cancel();
+      
+      // ✅ Reset highlight setelah ayah selesai
+      _wordHighlightController?.add(-1);
+      print('🔄 Reset word highlight after ayah completed');
 
       // Check verse repeat
       if (_shouldRepeatVerse()) {
@@ -214,69 +269,25 @@ Future<void> _playNextTrack() async {
     }
   }
 
-  // Move to next track
   void _moveToNextTrack() {
     _currentTrackIndex++;
     _playNextTrack();
   }
 
-  // Check if should repeat current verse
   bool _shouldRepeatVerse() {
     if (_currentSettings == null) return false;
-
     final repeatCount = _currentSettings!.eachVerseRepeat;
-    if (repeatCount == -1) return true; // Loop forever
-
+    if (repeatCount == -1) return true;
     return _currentVerseRepeat < (repeatCount - 1);
   }
 
-  // Check if should repeat entire range
   bool _shouldRepeatRange() {
     if (_currentSettings == null) return false;
-
     final repeatCount = _currentSettings!.rangeRepeat;
-    if (repeatCount == -1) return true; // Loop forever
-
+    if (repeatCount == -1) return true;
     return _currentRangeRepeat < (repeatCount - 1);
   }
 
-
-
-  // Start word-level highlighting based on segments
-  void _startWordHighlightTimer(List<WordSegment> segments) {
-    if (segments.isEmpty) return;
-
-    _stopWordHighlightTimer();
-
-    final speed = _currentSettings?.speed ?? 1.0;
-
-    for (final segment in segments) {
-      final adjustedStartMs = (segment.startMs / speed).round();
-      final adjustedDurationMs = ((segment.endMs - segment.startMs) / speed)
-          .round();
-
-      // Schedule highlight
-      Timer(Duration(milliseconds: adjustedStartMs), () {
-        if (_isPlaying) {
-          _wordHighlightController?.add(segment.wordIndex);
-        }
-      });
-
-      // Schedule un-highlight
-      Timer(Duration(milliseconds: adjustedStartMs + adjustedDurationMs), () {
-        if (_isPlaying) {
-          _wordHighlightController?.add(-1); // Clear highlight
-        }
-      });
-    }
-  }
-
-  void _stopWordHighlightTimer() {
-    _wordHighlightTimer?.cancel();
-    _wordHighlightTimer = null;
-  }
-
-  // Pause playback
   Future<void> pausePlayback() async {
     if (_isPlaying && !_isPaused) {
       await _player.pause();
@@ -285,7 +296,6 @@ Future<void> _playNextTrack() async {
     }
   }
 
-  // Resume playback
   Future<void> resumePlayback() async {
     if (_isPlaying && _isPaused) {
       await _player.play();
@@ -294,22 +304,15 @@ Future<void> _playNextTrack() async {
     }
   }
 
-  // Stop playback
   Future<void> stopPlayback() async {
     _isPlaying = false;
     _isPaused = false;
-    _stopWordHighlightTimer();
-
     await _player.stop();
-
     _currentVerseController?.add(VerseReference(surahId: 0, verseNumber: 0));
-
     print('⏹️ Playback stopped');
   }
 
-  // Dispose
   void dispose() {
-    _stopWordHighlightTimer();
     _player.dispose();
     _currentVerseController?.close();
     _wordHighlightController?.close();

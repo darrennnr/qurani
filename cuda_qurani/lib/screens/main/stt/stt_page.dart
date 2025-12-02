@@ -155,10 +155,10 @@ class SttPage extends StatelessWidget {
 
   Widget _buildQuranText(BuildContext context, SttController controller) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final margin = screenWidth * 0.01;
+    final padding = screenWidth * 0.03; // 1% padding to perfectly center the text
 
     return Container(
-      margin: EdgeInsets.fromLTRB(margin, 0, margin, 0),
+      padding: EdgeInsets.symmetric(horizontal: padding),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),

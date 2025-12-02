@@ -373,7 +373,7 @@ class _QuranBottomBarState extends State<QuranBottomBar>
     final thumbSize = trackHeight * 0.85;
     final iconSize = screenWidth * 0.065;
     final labelSize = screenWidth * 0.032;
-    final bottomOffset = screenHeight * 0.060;
+    final bottomOffset = screenHeight * 0.057;
 
     final isListeningActive = controller.isListeningMode;
     final isRecordingActive = controller.isRecording;
@@ -663,7 +663,10 @@ class _QuranBottomBarState extends State<QuranBottomBar>
       if (_dragPosition > 0.5) return Icons.mic;
     }
 
-    return Icons.more_horiz;
+    return Icons.code;
+    // return Icons.swap_horiz;
+    //  return Icons.sync_alt;
+    //  return Icons.settings_ethernet;
   }
 }
 
