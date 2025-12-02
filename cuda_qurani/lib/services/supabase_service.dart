@@ -390,4 +390,27 @@ class SupabaseService {
       return null;
     }
   }
+
+  // ============================================================================
+  // ACTIVITY PAGE - OPTIMIZED (SINGLE CALL)
+  // ============================================================================
+
+  /// Get ALL activity page data in ONE call (optimized)
+  /// Returns: chart_data, stats (per period), badges, pages_data
+  Future<Map<String, dynamic>?> getActivityPageData(String userId) async {
+    try {
+      final response = await Supabase.instance.client.rpc(
+        'get_activity_page_data',
+        params: {'p_user_id': userId},
+      );
+      
+      if (response != null) {
+        return Map<String, dynamic>.from(response);
+      }
+      return null;
+    } catch (e) {
+      print('❌ Error getting activity page data: $e');
+      return null;
+    }
+  }
 }

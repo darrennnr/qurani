@@ -46,7 +46,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _loadUserStats() async {
     final userUuid = _authService.userId;
     if (userUuid == null) {
-      setState(() => _isLoadingStats = false);
+      if (mounted) setState(() => _isLoadingStats = false);
       return;
     }
 
@@ -56,6 +56,8 @@ class _HomePageState extends State<HomePage> {
         _supabaseService.getUserStreak(userUuid),
         _supabaseService.getUserStats(userUuid),
       ]);
+
+      if (!mounted) return; // ✅ FIX: Check mounted before setState
 
       final streak = results[0] as Map<String, int>;
       final stats = results[1] as Map<String, dynamic>;
@@ -81,7 +83,7 @@ class _HomePageState extends State<HomePage> {
       print('✅ HOME: Stats loaded - streak: $_currentStreak, time: $_engagementTime, verses: $_versesRecited');
     } catch (e) {
       print('❌ HOME: Error loading stats: $e');
-      setState(() => _isLoadingStats = false);
+      if (mounted) setState(() => _isLoadingStats = false);
     }
   }
 
@@ -91,7 +93,7 @@ class _HomePageState extends State<HomePage> {
 
     if (!_authService.isAuthenticated) {
       print('⚠️ HOME: User not authenticated');
-      setState(() => _isLoadingSession = false);
+      if (mounted) setState(() => _isLoadingSession = false);
       return;
     }
 
@@ -100,13 +102,15 @@ class _HomePageState extends State<HomePage> {
 
     if (userUuid == null) {
       print('⚠️ HOME: User UUID is null');
-      setState(() => _isLoadingSession = false);
+      if (mounted) setState(() => _isLoadingSession = false);
       return;
     }
 
     try {
       print('📡 HOME: Fetching session from database...');
       final session = await _supabaseService.getResumableSession(userUuid);
+
+      if (!mounted) return; // ✅ FIX: Check mounted before setState
 
       if (session != null) {
         print('✅ HOME: Session found!');
@@ -123,7 +127,7 @@ class _HomePageState extends State<HomePage> {
       });
     } catch (e) {
       print('❌ HOME: Error loading latest session: $e');
-      setState(() => _isLoadingSession = false);
+      if (mounted) setState(() => _isLoadingSession = false);
     }
   }
 

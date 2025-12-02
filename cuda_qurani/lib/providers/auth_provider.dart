@@ -28,6 +28,24 @@
        // Check auth state
        await _authService.initialize();
        
+       // ✅ VALIDATE TOKEN: Refresh session sebelum set loading false
+       // Ini mencegah user melihat HomePage sebentar lalu redirect ke Login
+       if (_authService.isAuthenticated) {
+         print('🔄 AuthProvider: Validating session token...');
+         try {
+           await Supabase.instance.client.auth.refreshSession();
+           print('✅ AuthProvider: Session token valid');
+         } catch (e) {
+           print('⚠️ AuthProvider: Session expired/invalid, signing out...');
+           print('   Error: $e');
+           try {
+             await _authService.signOut();
+           } catch (_) {
+             // Ignore signout errors
+           }
+         }
+       }
+       
        // ✅ Listen to auth state changes
        _authStateSubscription = _authService.authStateChanges.listen((AuthState state) {
          print('🔔 AuthProvider: Auth state changed');

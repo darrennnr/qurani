@@ -1,212 +1,275 @@
 // lib/screens/main/home/screens/activity_page.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:cuda_qurani/screens/main/home/widgets/navigation_bar.dart';
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
 import 'package:cuda_qurani/core/widgets/app_components.dart';
+import 'package:cuda_qurani/services/supabase_service.dart';
 
 class ActivityPage extends StatefulWidget {
-  const ActivityPage({Key? key}) : super(key: key);
+  const ActivityPage({super.key});
 
   @override
   State<ActivityPage> createState() => _ActivityPageState();
 }
 
 class _ActivityPageState extends State<ActivityPage> {
-  // Global filter (controls all sections by default)
-  String _globalFilter = 'day';
+  final SupabaseService _supabaseService = SupabaseService();
   
-  // Individual filters (can be overridden by user navigation)
+  // Loading & data state
+  bool _isLoading = true;
+  Map<String, dynamic>? _activityData;
+  
+  // Cache for instant reload
+  static Map<String, dynamic>? _cache;
+  static DateTime? _cacheTime;
+  
+  // Filter states
+  String _globalFilter = 'day';
   String _pagesTimeframe = 'day';
   String _engagementTimeframe = 'day';
   String _statisticsTimeframe = 'THIS DAY';
 
-  // Timeframe options
   final List<String> _timeframeOptions = ['day', 'week', 'month'];
-  
-  // Global filter options for dropdown
   final Map<String, String> _globalFilterOptions = {
     'day': 'Day',
-    'week': 'Week',
+    'week': 'Week', 
     'month': 'Month',
   };
 
-  // Dummy data untuk Pages Chart
-  final Map<String, List<FlSpot>> _pagesData = {
-    'day': [
-      FlSpot(0, 0), FlSpot(1, 0), FlSpot(2, 0), FlSpot(3, 0),
-      FlSpot(4, 0), FlSpot(5, 0), FlSpot(6, 0), FlSpot(7, 0),
-    ],
-    'week': [
-      FlSpot(0, 2), FlSpot(1, 3), FlSpot(2, 0), FlSpot(3, 4),
-      FlSpot(4, 5), FlSpot(5, 3), FlSpot(6, 2),
-    ],
-    'month': [
-      FlSpot(0, 1), FlSpot(1, 2), FlSpot(2, 3), FlSpot(3, 2),
-      FlSpot(4, 4), FlSpot(5, 3), FlSpot(6, 5),
-    ],
-  };
+  // Total ayahs in Quran for completion calculation
+  static const int _totalQuranAyahs = 6236;
 
-  // Dummy data untuk Engagement Chart
-  final Map<String, List<FlSpot>> _engagementData = {
-    'day': [
-      FlSpot(0, 0), FlSpot(1, 0), FlSpot(2, 0), FlSpot(3, 0),
-      FlSpot(4, 0), FlSpot(5, 0), FlSpot(6, 15), FlSpot(7, 0),
-    ],
-    'week': [
-      FlSpot(0, 8), FlSpot(1, 12), FlSpot(2, 0), FlSpot(3, 10),
-      FlSpot(4, 15), FlSpot(5, 9), FlSpot(6, 6),
-    ],
-    'month': [
-      FlSpot(0, 5), FlSpot(1, 8), FlSpot(2, 12), FlSpot(3, 7),
-      FlSpot(4, 14), FlSpot(5, 10), FlSpot(6, 16),
-    ],
-  };
+  @override
+  void initState() {
+    super.initState();
+    _loadActivityData();
+  }
 
-  // X-axis labels untuk Pages
-  final Map<String, List<String>> _pagesXLabels = {
-    'day': ['10/30', '10/31', '11/01', '11/02', '11/03', '11/04', '11/06', '11/07'],
-    'week': ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Week 7'],
-    'month': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
-  };
+  Future<void> _loadActivityData() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      if (mounted) setState(() => _isLoading = false);
+      return;
+    }
 
-  // X-axis labels untuk Engagement
-  final Map<String, List<String>> _engagementXLabels = {
-    'day': ['11/10', '11/11', '11/12', '11/13', '11/14', '11/15', '11/16', '11/17'],
-    'week': ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Week 7'],
-    'month': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
-  };
+    // Show cached data immediately (instant UI)
+    if (_cache != null) {
+      if (mounted) {
+        setState(() {
+          _activityData = _cache;
+          _isLoading = false;
+        });
+      }
+      
+      // If cache is fresh (< 30 seconds), don't refetch
+      if (_cacheTime != null && 
+          DateTime.now().difference(_cacheTime!).inSeconds < 30) {
+        return;
+      }
+    }
 
-  // Max Y values untuk charts
-  final Map<String, double> _pagesMaxY = {
-    'day': 6,
-    'week': 6,
-    'month': 6,
-  };
+    // Fetch fresh data (single optimized call)
+    try {
+      final data = await _supabaseService.getActivityPageData(user.id);
+      
+      if (data != null && mounted) {
+        _cache = data;
+        _cacheTime = DateTime.now();
+        setState(() {
+          _activityData = data;
+          _isLoading = false;
+        });
+      } else if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
-  final Map<String, double> _engagementMaxY = {
-    'day': 18,
-    'week': 18,
-    'month': 18,
-  };
+  // Get chart data key based on timeframe
+  String _getChartKey(String timeframe) {
+    switch (timeframe) {
+      case 'day': return 'chart_day';
+      case 'week': return 'chart_week';
+      case 'month': return 'chart_month';
+      default: return 'chart_day';
+    }
+  }
 
-  // Statistics data
-  final Map<String, Map<String, dynamic>> _statisticsData = {
-    'DAY': {
-      'engagement': '00:15:33',
-      'completion': '0.5%',
-      'verses': 3,
-      'recitation': '00:12',
-      'badges': 0,
-      'deeds': '1.2K',
-      'searches': 2,
+  // Get engagement chart data based on selected timeframe
+  List<FlSpot> _getEngagementChartData() {
+    if (_activityData == null) return [const FlSpot(0, 0)];
+    
+    final chartKey = _getChartKey(_engagementTimeframe);
+    final chartData = _activityData![chartKey] as List? ?? [];
+    if (chartData.isEmpty) return [const FlSpot(0, 0)];
+    
+    final spots = <FlSpot>[];
+    for (int i = 0; i < chartData.length; i++) {
+      final minutes = ((chartData[i]['duration_seconds'] ?? 0) as int) / 60;
+      spots.add(FlSpot(i.toDouble(), minutes));
+    }
+    return spots.isEmpty ? [const FlSpot(0, 0)] : spots;
+  }
+
+  List<String> _getEngagementXLabels() {
+    if (_activityData == null) return [''];
+    
+    final chartKey = _getChartKey(_engagementTimeframe);
+    final chartData = _activityData![chartKey] as List? ?? [];
+    if (chartData.isEmpty) return [''];
+    
+    return chartData.map((d) {
+      return d['activity_date']?.toString() ?? '';
+    }).toList();
+  }
+
+  double _getEngagementMaxY() {
+    final spots = _getEngagementChartData();
+    double maxY = 10;
+    for (var spot in spots) {
+      if (spot.y > maxY) maxY = spot.y;
+    }
+    return maxY + 5;
+  }
+
+  // Get pages chart data (currently only day view available)
+  List<FlSpot> _getPagesChartData() {
+    if (_activityData == null) return [const FlSpot(0, 0)];
+    
+    // For now, pages only has day view from database
+    final pagesData = _activityData!['pages_day'] as List? ?? [];
+    if (pagesData.isEmpty) return [const FlSpot(0, 0)];
+    
+    final spots = <FlSpot>[];
+    for (int i = 0; i < pagesData.length; i++) {
+      final pages = (pagesData[i]['pages_count'] ?? 0) as int;
+      spots.add(FlSpot(i.toDouble(), pages.toDouble()));
+    }
+    return spots.isEmpty ? [const FlSpot(0, 0)] : spots;
+  }
+
+  List<String> _getPagesXLabels() {
+    if (_activityData == null) return [''];
+    
+    final pagesData = _activityData!['pages_day'] as List? ?? [];
+    if (pagesData.isEmpty) return [''];
+    
+    return pagesData.map((d) {
+      return d['activity_date']?.toString() ?? '';
+    }).toList();
+  }
+
+  double _getPagesMaxY() {
+    final spots = _getPagesChartData();
+    double maxY = 5;
+    for (var spot in spots) {
+      if (spot.y > maxY) maxY = spot.y;
+    }
+    return maxY + 2;
+  }
+
+  // Get statistics for a period
+  Map<String, dynamic> _getStatsForPeriod(String period) {
+    if (_activityData == null) {
+      return _defaultStats();
+    }
+    
+    final stats = _activityData!['stats'] as Map<String, dynamic>? ?? {};
+    final badges = _activityData!['badges'] as Map<String, dynamic>? ?? {};
+    
+    final periodKey = period.toLowerCase();
+    final periodStats = stats[periodKey] as Map<String, dynamic>? ?? {};
+    final badgeCount = badges[periodKey] as int? ?? 0;
+    
+    final durationSeconds = periodStats['duration_seconds'] as int? ?? 0;
+    final verses = periodStats['verses'] as int? ?? 0;
+    final completion = (verses / _totalQuranAyahs * 100);
+    final deeds = verses * 10;
+    
+    return {
+      'engagement': _formatDuration(durationSeconds),
+      'completion': '${completion.toStringAsFixed(completion < 1 ? 2 : 1)}%',
+      'verses': verses,
+      'recitation': _formatDuration(0), // Will be available after backend deploy
+      'badges': badgeCount,
+      'deeds': _formatNumber(deeds),
+      'searches': 0,
       'shared': 0,
-    },
-    'WEEK': {
-      'engagement': '1:22:45',
-      'completion': '1.5%',
-      'verses': 8,
-      'recitation': '01:05',
-      'badges': 1,
-      'deeds': '8.5K',
-      'searches': 5,
-      'shared': 1,
-    },
-    'MONTH': {
-      'engagement': '4:12:18',
-      'completion': '3%',
-      'verses': 25,
-      'recitation': '03:45',
-      'badges': 3,
-      'deeds': '28.3K',
-      'searches': 8,
-      'shared': 2,
-    },
-    'YEAR': {
-      'engagement': '45:33:22',
-      'completion': '18%',
-      'verses': 456,
-      'recitation': '38:22',
-      'badges': 18,
-      'deeds': '342K',
-      'searches': 89,
-      'shared': 15,
-    },
-    'LIFETIME': {
-      'engagement': '1:33:51',
-      'completion': '2%',
-      'verses': 13,
-      'recitation': '02:05',
-      'badges': 6,
-      'deeds': '131.44K',
-      'searches': 12,
-      'shared': 2,
-    },
-  };
-
-  // Mapping label → key sebenarnya untuk statistics
-  String _mapTabToKey(String tab) {
-    switch (tab) {
-      case 'THIS DAY':
-        return 'DAY';
-      case 'THIS WEEK':
-        return 'WEEK';
-      case 'THIS MONTH':
-        return 'MONTH';
-      case 'THIS YEAR':
-        return 'YEAR';
-      case 'ALL TIME':
-        return 'LIFETIME';
-      default:
-        return 'LIFETIME';
-    }
+    };
   }
 
-  // Mapping global filter to statistics tab
-  String _mapGlobalToStatTab(String global) {
-    switch (global) {
-      case 'day':
-        return 'THIS DAY';
-      case 'week':
-        return 'THIS WEEK';
-      case 'month':
-        return 'THIS MONTH';
-      default:
-        return 'THIS DAY';
-    }
+  Map<String, dynamic> _defaultStats() {
+    return {
+      'engagement': '00:00',
+      'completion': '0%',
+      'verses': 0,
+      'recitation': '00:00',
+      'badges': 0,
+      'deeds': '0',
+      'searches': 0,
+      'shared': 0,
+    };
   }
 
-  // Format engagement time with suffix (m or h)
+  String _formatDuration(int seconds) {
+    if (seconds <= 0) return '00:00';
+    final hours = seconds ~/ 3600;
+    final minutes = (seconds % 3600) ~/ 60;
+    final secs = seconds % 60;
+    if (hours > 0) {
+      return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+    }
+    return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+  }
+
+  String _formatNumber(int number) {
+    if (number >= 1000000) return '${(number / 1000000).toStringAsFixed(1)}M';
+    if (number >= 1000) return '${(number / 1000).toStringAsFixed(1)}K';
+    return number.toString();
+  }
+
   String _formatEngagementWithSuffix(String timeStr) {
     final parts = timeStr.split(':');
     if (parts.length == 2) {
-      // Format: MM:SS
-      final minutes = int.parse(parts[0]);
-      return '$timeStr (${minutes}m)';
+      final minutes = int.tryParse(parts[0]) ?? 0;
+      if (minutes > 0) return '$timeStr (${minutes}m)';
+      return timeStr;
     } else if (parts.length == 3) {
-      // Format: HH:MM:SS or H:MM:SS
-      final hours = int.parse(parts[0]);
-      final minutes = int.parse(parts[1]);
-      
-      if (hours > 0) {
-        return '$timeStr (${hours}h ${minutes}m)';
-      } else if (minutes >= 60) {
-        final h = minutes ~/ 60;
-        final m = minutes % 60;
-        return '$timeStr (${h}h ${m}m)';
-      } else {
-        return '$timeStr (${minutes}m)';
-      }
+      final hours = int.tryParse(parts[0]) ?? 0;
+      final minutes = int.tryParse(parts[1]) ?? 0;
+      if (hours > 0) return '$timeStr (${hours}h ${minutes}m)';
+      if (minutes > 0) return '$timeStr (${minutes}m)';
     }
     return timeStr;
   }
 
-  // Handle global filter change
+  String _mapTabToKey(String tab) {
+    switch (tab) {
+      case 'THIS DAY': return 'day';
+      case 'THIS WEEK': return 'week';
+      case 'THIS MONTH': return 'month';
+      case 'THIS YEAR': return 'year';
+      case 'ALL TIME': return 'lifetime';
+      default: return 'lifetime';
+    }
+  }
+
+  String _mapGlobalToStatTab(String global) {
+    switch (global) {
+      case 'day': return 'THIS DAY';
+      case 'week': return 'THIS WEEK';
+      case 'month': return 'THIS MONTH';
+      default: return 'THIS DAY';
+    }
+  }
+
   void _onGlobalFilterChanged(String? newValue) {
     if (newValue == null) return;
-    
     AppHaptics.light();
     setState(() {
       _globalFilter = newValue;
@@ -218,13 +281,9 @@ class _ActivityPageState extends State<ActivityPage> {
 
   void _changeTimeframe(String currentTimeframe, bool isNext, bool isPages) {
     final currentIndex = _timeframeOptions.indexOf(currentTimeframe);
-    int newIndex;
-
-    if (isNext) {
-      newIndex = (currentIndex + 1) % _timeframeOptions.length;
-    } else {
-      newIndex = (currentIndex - 1 + _timeframeOptions.length) % _timeframeOptions.length;
-    }
+    int newIndex = isNext 
+        ? (currentIndex + 1) % _timeframeOptions.length
+        : (currentIndex - 1 + _timeframeOptions.length) % _timeframeOptions.length;
 
     AppHaptics.light();
     setState(() {
@@ -233,7 +292,6 @@ class _ActivityPageState extends State<ActivityPage> {
       } else {
         _engagementTimeframe = _timeframeOptions[newIndex];
       }
-      // Update global filter to match if they were synced
       if (_pagesTimeframe == _engagementTimeframe) {
         _globalFilter = _pagesTimeframe;
         _statisticsTimeframe = _mapGlobalToStatTab(_pagesTimeframe);
@@ -247,30 +305,36 @@ class _ActivityPageState extends State<ActivityPage> {
       backgroundColor: AppColors.backgroundLight,
       appBar: const MenuAppBar(selectedIndex: 4),
       body: SafeArea(
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            SliverPadding(
-              padding: AppPadding.only(
-                context,
-                left: AppDesignSystem.space20,
-                top: AppDesignSystem.space20,
-                right: AppDesignSystem.space20,
-                bottom: AppDesignSystem.space32,
+        child: RefreshIndicator(
+          onRefresh: () async {
+            _cache = null; // Force refresh
+            await _loadActivityData();
+          },
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+            slivers: [
+              SliverPadding(
+                padding: AppPadding.only(
+                  context,
+                  left: AppDesignSystem.space20,
+                  top: AppDesignSystem.space20,
+                  right: AppDesignSystem.space20,
+                  bottom: AppDesignSystem.space32,
+                ),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    _buildGlobalFilterDropdown(context),
+                    AppMargin.gapLarge(context),
+                    _buildPagesChart(context),
+                    AppMargin.gapLarge(context),
+                    _buildEngagementChart(context),
+                    AppMargin.gapLarge(context),
+                    _buildStatistics(context),
+                  ]),
+                ),
               ),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  _buildGlobalFilterDropdown(context),
-                  AppMargin.gapLarge(context),
-                  _buildPagesChart(context),
-                  AppMargin.gapLarge(context),
-                  _buildEngagementChart(context),
-                  AppMargin.gapLarge(context),
-                  _buildStatistics(context),
-                ]),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -279,35 +343,17 @@ class _ActivityPageState extends State<ActivityPage> {
   Widget _buildGlobalFilterDropdown(BuildContext context) {
     final s = AppDesignSystem.getScaleFactor(context);
     return AppCard(
-      padding: EdgeInsets.symmetric(
-        horizontal: 12 * s,
-        vertical: 8 * s,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: 12 * s, vertical: 8 * s),
       shadow: false,
       borderColor: AppColors.borderLight,
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(
-            Icons.filter_list_rounded,
-            color: AppColors.textSecondary,
-            size: 15 * s,
-          ),
+          Icon(Icons.filter_list_rounded, color: AppColors.textSecondary, size: 15 * s),
           SizedBox(width: 6 * s),
-          Text(
-            'Filter Period:',
-            style: TextStyle(
-              fontSize: 12 * s,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
-            ),
-          ),
+          Text('Filter Period:', style: TextStyle(fontSize: 12 * s, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
           const Spacer(),
           Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: 10 * s,
-              vertical: 2 * s,
-            ),
+            padding: EdgeInsets.symmetric(horizontal: 10 * s, vertical: 2 * s),
             decoration: BoxDecoration(
               color: AppColors.surfaceContainerLowest,
               borderRadius: BorderRadius.circular(6 * s),
@@ -315,31 +361,14 @@ class _ActivityPageState extends State<ActivityPage> {
             child: DropdownButton<String>(
               value: _globalFilter,
               underline: const SizedBox(),
-              icon: Icon(
-                Icons.keyboard_arrow_down_rounded,
-                color: AppColors.textPrimary,
-                size: 16 * s,
-              ),
-              style: TextStyle(
-                fontSize: 11 * s,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
+              icon: Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textPrimary, size: 16 * s),
+              style: TextStyle(fontSize: 11 * s, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
               dropdownColor: AppColors.surface,
               borderRadius: BorderRadius.circular(6 * s),
-              items: _globalFilterOptions.entries.map((entry) {
-                return DropdownMenuItem<String>(
-                  value: entry.key,
-                  child: Text(
-                    entry.value.toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 11 * s,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                );
-              }).toList(),
+              items: _globalFilterOptions.entries.map((e) => DropdownMenuItem(
+                value: e.key,
+                child: Text(e.value.toUpperCase(), style: TextStyle(fontSize: 11 * s, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+              )).toList(),
               onChanged: _onGlobalFilterChanged,
             ),
           ),
@@ -350,6 +379,10 @@ class _ActivityPageState extends State<ActivityPage> {
 
   Widget _buildPagesChart(BuildContext context) {
     final s = AppDesignSystem.getScaleFactor(context);
+    final spots = _getPagesChartData();
+    final labels = _getPagesXLabels();
+    final maxY = _getPagesMaxY();
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -358,15 +391,7 @@ class _ActivityPageState extends State<ActivityPage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Pages',
-                style: TextStyle(
-                  fontSize: 16 * s,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                  letterSpacing: -0.3,
-                ),
-              ),
+              Text('Pages', style: TextStyle(fontSize: 16 * s, fontWeight: FontWeight.w700, color: AppColors.textPrimary, letterSpacing: -0.3)),
               _buildTimeframeSelector(_pagesTimeframe, true, context),
             ],
           ),
@@ -377,12 +402,11 @@ class _ActivityPageState extends State<ActivityPage> {
           borderColor: AppColors.borderLight,
           child: SizedBox(
             height: 180 * s,
-            child: _buildLineChart(
-              _pagesData[_pagesTimeframe]!,
-              _pagesMaxY[_pagesTimeframe]!,
-              _pagesXLabels[_pagesTimeframe]!,
-              context,
-            ),
+            child: _isLoading
+                ? _buildChartSkeleton(context)
+                : (spots.length <= 1 && spots.first.y == 0)
+                    ? _buildEmptyChart(context, 'No pages data yet')
+                    : _buildLineChart(spots, maxY, labels, context),
           ),
         ),
       ],
@@ -391,6 +415,10 @@ class _ActivityPageState extends State<ActivityPage> {
 
   Widget _buildEngagementChart(BuildContext context) {
     final s = AppDesignSystem.getScaleFactor(context);
+    final spots = _getEngagementChartData();
+    final labels = _getEngagementXLabels();
+    final maxY = _getEngagementMaxY();
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -399,15 +427,7 @@ class _ActivityPageState extends State<ActivityPage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Engagement',
-                style: TextStyle(
-                  fontSize: 16 * s,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                  letterSpacing: -0.3,
-                ),
-              ),
+              Text('Engagement (minutes)', style: TextStyle(fontSize: 16 * s, fontWeight: FontWeight.w700, color: AppColors.textPrimary, letterSpacing: -0.3)),
               _buildTimeframeSelector(_engagementTimeframe, false, context),
             ],
           ),
@@ -418,15 +438,39 @@ class _ActivityPageState extends State<ActivityPage> {
           borderColor: AppColors.borderLight,
           child: SizedBox(
             height: 180 * s,
-            child: _buildLineChart(
-              _engagementData[_engagementTimeframe]!,
-              _engagementMaxY[_engagementTimeframe]!,
-              _engagementXLabels[_engagementTimeframe]!,
-              context,
-            ),
+            child: _isLoading
+                ? _buildChartSkeleton(context)
+                : (spots.length <= 1 && spots.first.y == 0)
+                    ? _buildEmptyChart(context, 'No engagement data yet')
+                    : _buildLineChart(spots, maxY, labels, context),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildChartSkeleton(BuildContext context) {
+    final s = AppDesignSystem.getScaleFactor(context);
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 24 * s,
+            height: 24 * s,
+            child: CircularProgressIndicator(strokeWidth: 2 * s, color: AppColors.primary),
+          ),
+          SizedBox(height: 8 * s),
+          Text('Loading...', style: TextStyle(fontSize: 11 * s, color: AppColors.textTertiary)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyChart(BuildContext context, String message) {
+    final s = AppDesignSystem.getScaleFactor(context);
+    return Center(
+      child: Text(message, style: TextStyle(fontSize: 12 * s, color: AppColors.textTertiary)),
     );
   }
 
@@ -434,26 +478,11 @@ class _ActivityPageState extends State<ActivityPage> {
     final s = AppDesignSystem.getScaleFactor(context);
     return Row(
       children: [
-        _buildSelectorButton(
-          Icons.chevron_left,
-          () => _changeTimeframe(current, false, isPages),
-          context,
-        ),
+        _buildSelectorButton(Icons.chevron_left, () => _changeTimeframe(current, false, isPages), context),
         SizedBox(width: 10 * s),
-        Text(
-          current.toUpperCase(),
-          style: TextStyle(
-            fontSize: 12 * s,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
+        Text(current.toUpperCase(), style: TextStyle(fontSize: 12 * s, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
         SizedBox(width: 10 * s),
-        _buildSelectorButton(
-          Icons.chevron_right,
-          () => _changeTimeframe(current, true, isPages),
-          context,
-        ),
+        _buildSelectorButton(Icons.chevron_right, () => _changeTimeframe(current, true, isPages), context),
       ],
     );
   }
@@ -461,35 +490,19 @@ class _ActivityPageState extends State<ActivityPage> {
   Widget _buildSelectorButton(IconData icon, VoidCallback onTap, BuildContext context) {
     final s = AppDesignSystem.getScaleFactor(context);
     return InkWell(
-      onTap: () {
-        AppHaptics.light();
-        onTap();
-      },
+      onTap: () { AppHaptics.light(); onTap(); },
       borderRadius: BorderRadius.circular(6 * s),
       child: Container(
         width: 28 * s,
         height: 28 * s,
-        decoration: BoxDecoration(
-          color: AppColors.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(6 * s),
-        ),
-        child: Icon(
-          icon,
-          size: 16 * s,
-          color: AppColors.textSecondary,
-        ),
+        decoration: BoxDecoration(color: AppColors.surfaceContainerLowest, borderRadius: BorderRadius.circular(6 * s)),
+        child: Icon(icon, size: 16 * s, color: AppColors.textSecondary),
       ),
     );
   }
 
-  Widget _buildLineChart(
-    List<FlSpot> spots,
-    double maxY,
-    List<String> xLabels,
-    BuildContext context,
-  ) {
+  Widget _buildLineChart(List<FlSpot> spots, double maxY, List<String> xLabels, BuildContext context) {
     final s = AppDesignSystem.getScaleFactor(context);
-    
     return LineChart(
       LineChartData(
         minY: 0,
@@ -502,18 +515,9 @@ class _ActivityPageState extends State<ActivityPage> {
             barWidth: 2 * s,
             dotData: FlDotData(
               show: true,
-              getDotPainter: (spot, percent, barData, index) {
-                return FlDotCirclePainter(
-                  radius: 3 * s,
-                  color: AppColors.primary,
-                  strokeWidth: 0,
-                );
-              },
+              getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(radius: 3 * s, color: AppColors.primary, strokeWidth: 0),
             ),
-            belowBarData: BarAreaData(
-              show: true,
-              color: AppColors.primaryWithOpacity(0.08),
-            ),
+            belowBarData: BarAreaData(show: true, color: AppColors.primaryWithOpacity(0.08)),
           ),
         ],
         titlesData: FlTitlesData(
@@ -522,16 +526,7 @@ class _ActivityPageState extends State<ActivityPage> {
               showTitles: true,
               reservedSize: 28 * s,
               interval: maxY / 3,
-              getTitlesWidget: (value, meta) {
-                return Text(
-                  value.toInt().toString(),
-                  style: TextStyle(
-                    fontSize: 9 * s,
-                    color: AppColors.textTertiary,
-                    fontWeight: FontWeight.w500,
-                  ),
-                );
-              },
+              getTitlesWidget: (value, meta) => Text(value.toInt().toString(), style: TextStyle(fontSize: 9 * s, color: AppColors.textTertiary, fontWeight: FontWeight.w500)),
             ),
           ),
           rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -546,14 +541,7 @@ class _ActivityPageState extends State<ActivityPage> {
                 if (index >= 0 && index < xLabels.length) {
                   return Padding(
                     padding: EdgeInsets.only(top: 6 * s),
-                    child: Text(
-                      xLabels[index],
-                      style: TextStyle(
-                        fontSize: 8.5 * s,
-                        color: AppColors.primary.withOpacity(0.7),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    child: Text(xLabels[index], style: TextStyle(fontSize: 8.5 * s, color: AppColors.primary.withOpacity(0.7), fontWeight: FontWeight.w600)),
                   );
                 }
                 return const SizedBox();
@@ -565,15 +553,10 @@ class _ActivityPageState extends State<ActivityPage> {
           show: true,
           drawVerticalLine: false,
           horizontalInterval: maxY / 3,
-          getDrawingHorizontalLine: (value) {
-            return FlLine(
-              color: AppColors.borderLight,
-              strokeWidth: 1 * s,
-            );
-          },
+          getDrawingHorizontalLine: (value) => FlLine(color: AppColors.borderLight, strokeWidth: 1 * s),
         ),
         borderData: FlBorderData(show: false),
-        lineTouchData: LineTouchData(enabled: false),
+        lineTouchData: const LineTouchData(enabled: false),
       ),
     );
   }
@@ -585,15 +568,7 @@ class _ActivityPageState extends State<ActivityPage> {
       children: [
         Padding(
           padding: EdgeInsets.only(bottom: 12 * s),
-          child: Text(
-            'Statistics',
-            style: TextStyle(
-              fontSize: 16 * s,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-              letterSpacing: -0.3,
-            ),
-          ),
+          child: Text('Statistics', style: TextStyle(fontSize: 16 * s, fontWeight: FontWeight.w700, color: AppColors.textPrimary, letterSpacing: -0.3)),
         ),
         AppCard(
           padding: EdgeInsets.all(16 * s),
@@ -614,7 +589,6 @@ class _ActivityPageState extends State<ActivityPage> {
   Widget _buildStatisticsTabs(BuildContext context) {
     final s = AppDesignSystem.getScaleFactor(context);
     final tabs = ['THIS DAY', 'THIS WEEK', 'THIS MONTH', 'THIS YEAR', 'ALL TIME'];
-    
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -625,33 +599,16 @@ class _ActivityPageState extends State<ActivityPage> {
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: () {
-                  AppHaptics.light();
-                  setState(() => _statisticsTimeframe = tab);
-                },
+                onTap: () { AppHaptics.light(); setState(() => _statisticsTimeframe = tab); },
                 borderRadius: BorderRadius.circular(6 * s),
                 child: Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 12 * s,
-                    vertical: 6 * s,
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 12 * s, vertical: 6 * s),
                   decoration: BoxDecoration(
                     color: isSelected ? AppColors.primary : Colors.transparent,
                     borderRadius: BorderRadius.circular(6 * s),
-                    border: Border.all(
-                      color: isSelected ? AppColors.primary : AppColors.borderMedium,
-                      width: 1 * s,
-                    ),
+                    border: Border.all(color: isSelected ? AppColors.primary : AppColors.borderMedium, width: 1 * s),
                   ),
-                  child: Text(
-                    tab,
-                    style: TextStyle(
-                      fontSize: 9.5 * s,
-                      fontWeight: FontWeight.w600,
-                      color: isSelected ? AppColors.textInverse : AppColors.textTertiary,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
+                  child: Text(tab, style: TextStyle(fontSize: 9.5 * s, fontWeight: FontWeight.w600, color: isSelected ? AppColors.textInverse : AppColors.textTertiary, letterSpacing: 0.3)),
                 ),
               ),
             ),
@@ -663,127 +620,40 @@ class _ActivityPageState extends State<ActivityPage> {
 
   Widget _buildStatisticsGrid(BuildContext context) {
     final s = AppDesignSystem.getScaleFactor(context);
-    final mappedKey = _mapTabToKey(_statisticsTimeframe);
-    final data = _statisticsData[mappedKey]!;
+    final periodKey = _mapTabToKey(_statisticsTimeframe);
+    final data = _getStatsForPeriod(periodKey);
 
     return Column(
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: _buildStatCard(
-                _formatEngagementWithSuffix(data['engagement']),
-                'Engagement',
-                Icons.access_time_rounded,
-                AppColors.primary,
-                context,
-              ),
-            ),
-            SizedBox(width: 10 * s),
-            Expanded(
-              child: _buildStatCard(
-                data['completion'],
-                'Completion',
-                Icons.check_circle_outline_rounded,
-                AppColors.success,
-                context,
-              ),
-            ),
-          ],
-        ),
+        Row(children: [
+          Expanded(child: _buildStatCard(_formatEngagementWithSuffix(data['engagement'].toString()), 'Engagement', Icons.access_time_rounded, AppColors.primary, context)),
+          SizedBox(width: 10 * s),
+          Expanded(child: _buildStatCard(data['completion'].toString(), 'Completion', Icons.check_circle_outline_rounded, AppColors.success, context)),
+        ]),
         SizedBox(height: 10 * s),
-        Row(
-          children: [
-            Expanded(
-              child: _buildStatCard(
-                data['verses'].toString(),
-                'Verses Recited',
-                Icons.menu_book_rounded,
-                AppColors.info,
-                context,
-              ),
-            ),
-            SizedBox(width: 10 * s),
-            Expanded(
-              child: _buildStatCard(
-                data['recitation'],
-                'Recitation Time',
-                Icons.timer_outlined,
-                AppColors.accent,
-                context,
-              ),
-            ),
-          ],
-        ),
+        Row(children: [
+          Expanded(child: _buildStatCard(data['verses'].toString(), 'Verses Recited', Icons.menu_book_rounded, AppColors.info, context)),
+          SizedBox(width: 10 * s),
+          Expanded(child: _buildStatCard(data['recitation'].toString(), 'Recitation Time', Icons.timer_outlined, AppColors.accent, context, subtitle: 'Coming soon')),
+        ]),
         SizedBox(height: 10 * s),
-        Row(
-          children: [
-            Expanded(
-              child: _buildStatCard(
-                data['badges'].toString(),
-                'Earned Badges',
-                Icons.emoji_events_outlined,
-                AppColors.warning,
-                context,
-              ),
-            ),
-            SizedBox(width: 10 * s),
-            Expanded(
-              child: _buildStatCard(
-                data['deeds'],
-                'Deeds Estimated',
-                Icons.favorite_border_rounded,
-                AppColors.error,
-                context,
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 10 * s),
-        Row(
-          children: [
-            Expanded(
-              child: _buildStatCard(
-                data['searches'].toString(),
-                'Search Queries',
-                Icons.search_rounded,
-                AppColors.secondary,
-                context,
-              ),
-            ),
-            SizedBox(width: 10 * s),
-            Expanded(
-              child: _buildStatCard(
-                data['shared'].toString(),
-                'Verses Shared',
-                Icons.share_outlined,
-                AppColors.primary,
-                context,
-              ),
-            ),
-          ],
-        ),
+        Row(children: [
+          Expanded(child: _buildStatCard(data['badges'].toString(), 'Earned Badges', Icons.emoji_events_outlined, AppColors.warning, context)),
+          SizedBox(width: 10 * s),
+          Expanded(child: _buildStatCard(data['deeds'].toString(), 'Deeds Estimated', Icons.favorite_border_rounded, AppColors.error, context)),
+        ]),
       ],
     );
   }
 
-  Widget _buildStatCard(
-    String value,
-    String label,
-    IconData icon,
-    Color color,
-    BuildContext context,
-  ) {
+  Widget _buildStatCard(String value, String label, IconData icon, Color color, BuildContext context, {String? subtitle}) {
     final s = AppDesignSystem.getScaleFactor(context);
     return Container(
       padding: EdgeInsets.all(12 * s),
       decoration: BoxDecoration(
         color: AppColors.surfaceVariant,
         borderRadius: BorderRadius.circular(10 * s),
-        border: Border.all(
-          color: AppColors.borderLight,
-          width: 1 * s,
-        ),
+        border: Border.all(color: AppColors.borderLight, width: 1 * s),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -791,39 +661,22 @@ class _ActivityPageState extends State<ActivityPage> {
           Container(
             width: 28 * s,
             height: 28 * s,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(6 * s),
-            ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 16 * s,
-            ),
+            decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(6 * s)),
+            child: Icon(icon, color: color, size: 16 * s),
           ),
           SizedBox(height: 10 * s),
           Text(
-            value,
-            style: TextStyle(
-              fontSize: 18 * s,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-              height: 1.1,
-            ),
+            _isLoading ? '...' : value,
+            style: TextStyle(fontSize: 18 * s, fontWeight: FontWeight.w700, color: AppColors.textPrimary, height: 1.1),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           SizedBox(height: 3 * s),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10 * s,
-              color: AppColors.textTertiary,
-              fontWeight: FontWeight.w500,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
+          Text(label, style: TextStyle(fontSize: 10 * s, color: AppColors.textTertiary, fontWeight: FontWeight.w500), maxLines: 1, overflow: TextOverflow.ellipsis),
+          if (subtitle != null) ...[
+            SizedBox(height: 2 * s),
+            Text(subtitle, style: TextStyle(fontSize: 8 * s, color: AppColors.textTertiary.withOpacity(0.7), fontStyle: FontStyle.italic)),
+          ],
         ],
       ),
     );
