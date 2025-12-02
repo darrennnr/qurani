@@ -144,68 +144,62 @@ class ReciterManagerService {
   }
 
   // Get audio URLs for specific surah from reciter
-  // ✅ NEW: Get audio URLs for specific surah using GLOBAL AYAT INDEX
-  static Future<List<Map<String, dynamic>>> getSurahAudioUrls(
-    String reciterIdentifier,
-    int surahNumber,
-  ) async {
-    try {
-      final reciter = await getReciterByIdentifier(reciterIdentifier);
-      if (reciter == null) {
-        throw Exception('Reciter not found: $reciterIdentifier');
-      }
+static Future<List<Map<String, dynamic>>> getSurahAudioUrls(
+  String reciterIdentifier,
+  int surahNumber,
+) async {
+  try {
+    final reciter = await getReciterByIdentifier(reciterIdentifier);
+    if (reciter == null) {
+      throw Exception('Reciter not found: $reciterIdentifier');
+    }
 
-      // ✅ Validate assetPath
-      if (reciter.assetPath.isEmpty) {
-        print('❌ Empty asset path for reciter: ${reciter.name}');
-        return [];
-      }
-
-      final db = await _initReciterDatabase(reciter);
-
-      // ✅ FIX: Convert surah range to GLOBAL AYAT range
-      final startGlobalAyat = GlobalAyatService.toGlobalAyat(surahNumber, 1);
-
-      // Get surah metadata to know verse count
-      final surahMeta = await _getSurahMetadata(surahNumber);
-      final versesCount = surahMeta['verses_count'] as int;
-
-      final endGlobalAyat = GlobalAyatService.toGlobalAyat(
-        surahNumber,
-        versesCount,
-      );
-
-      print('🔍 Query reciter DB for surah $surahNumber:');
-      print('   → Global ayat range: $startGlobalAyat - $endGlobalAyat');
-      print('   → Verses count: $versesCount');
-
-      // ✅ Query with GLOBAL AYAT range
-      final results = await db.query(
-        'verses',
-        where: 'surah_number = ? AND ayah_number BETWEEN ? AND ?',
-        whereArgs: [surahNumber, startGlobalAyat, endGlobalAyat],
-        orderBy: 'ayah_number ASC',
-      );
-
-      print('✅ Found ${results.length} verses for surah $surahNumber');
-
-      return results
-          .map(
-            (row) => {
-              'surah_number': row['surah_number'],
-              'ayah_number': row['ayah_number'], // This is GLOBAL index
-              'audio_url': row['audio_url'],
-              'duration': row['duration'],
-              'segments': row['segments'],
-            },
-          )
-          .toList();
-    } catch (e) {
-      print('❌ Error getting surah audio URLs: $e');
-      print('📍 Stack: ${StackTrace.current}');
+    // ✅ Validate assetPath
+    if (reciter.assetPath.isEmpty) {
+      print('❌ Empty asset path for reciter: ${reciter.name}');
       return [];
     }
+
+    final db = await _initReciterDatabase(reciter);
+
+    // ✅ Convert surah range to GLOBAL AYAT range
+    final surahMeta = await _getSurahMetadata(surahNumber);
+    final versesCount = surahMeta['verses_count'] as int;
+
+    final startGlobalAyat = GlobalAyatService.toGlobalAyat(surahNumber, 1);
+    final endGlobalAyat = GlobalAyatService.toGlobalAyat(surahNumber, versesCount);
+
+    print('🔍 Query reciter DB for surah $surahNumber:');
+    print('   → Global ayat range: $startGlobalAyat - $endGlobalAyat');
+    print('   → Verses count: $versesCount');
+
+    // ✅ Query with GLOBAL AYAT range (ayah_number column stores GLOBAL index)
+    final results = await db.query(
+      'verses',
+      where: 'ayah_number BETWEEN ? AND ?',  // ← Only GLOBAL range needed
+      whereArgs: [startGlobalAyat, endGlobalAyat],
+      orderBy: 'ayah_number ASC',
+    );
+
+    print('✅ Found ${results.length} verses for surah $surahNumber');
+
+    return results
+        .map(
+          (row) => {
+            'surah_number': surahNumber,  // ← Return original surah
+            'ayah_number': row['ayah_number'],  // ← GLOBAL index (for filtering)
+            'audio_url': row['audio_url'],
+            'duration': row['duration'],
+            'segments': row['segments'],
+          },
+        )
+        .toList();
+  } catch (e) {
+    print('❌ Error getting surah audio URLs: $e');
+    print('📍 Stack: ${StackTrace.current}');
+    return [];
   }
+}
 
   // ✅ NEW: Helper to get surah metadata
   static Future<Map<String, dynamic>> _getSurahMetadata(int surahNumber) async {

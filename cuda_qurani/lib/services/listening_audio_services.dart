@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:cuda_qurani/services/audio_download_services.dart';
+import 'package:cuda_qurani/services/global_ayat_services.dart';
 import 'package:cuda_qurani/services/reciter_manager_services.dart';
 import 'package:just_audio/just_audio.dart';
 import '../models/playback_settings_model.dart';
@@ -58,46 +59,62 @@ class ListeningAudioService {
   }
 
   // Load audio files for verse range
-  Future<void> _loadPlaylist() async {
-    _playlist.clear();
+  // Load audio files for verse range
+Future<void> _loadPlaylist() async {
+  _playlist.clear();
 
-    if (_currentSettings == null || _reciterIdentifier == null) return;
+  if (_currentSettings == null || _reciterIdentifier == null) return;
 
-    print('📋 Loading playlist: ${_currentSettings!.startSurahId}:${_currentSettings!.startVerse} - ${_currentSettings!.endSurahId}:${_currentSettings!.endVerse}');
+  print('📋 Loading playlist: ${_currentSettings!.startSurahId}:${_currentSettings!.startVerse} - ${_currentSettings!.endSurahId}:${_currentSettings!.endVerse}');
 
-    // Generate verse list
-    for (int surah = _currentSettings!.startSurahId;
-        surah <= _currentSettings!.endSurahId;
-        surah++) {
-      int startAyah = (surah == _currentSettings!.startSurahId)
-          ? _currentSettings!.startVerse
-          : 1;
-      int endAyah = (surah == _currentSettings!.endSurahId)
-          ? _currentSettings!.endVerse
-          : 286;
+  // Generate verse list
+  for (int surah = _currentSettings!.startSurahId;
+      surah <= _currentSettings!.endSurahId;
+      surah++) {
+    int startAyah = (surah == _currentSettings!.startSurahId)
+        ? _currentSettings!.startVerse
+        : 1;
+    int endAyah = (surah == _currentSettings!.endSurahId)
+        ? _currentSettings!.endVerse
+        : 286;
 
-      // Get all audio URLs for this surah
-      final audioUrls = await ReciterManagerService.getSurahAudioUrls(
-        _reciterIdentifier!,
-        surah,
-      );
+    // Get all audio URLs for this surah
+    final audioUrls = await ReciterManagerService.getSurahAudioUrls(
+      _reciterIdentifier!,
+      surah,
+    );
 
-      for (final verse in audioUrls) {
-        final ayahNum = verse['ayah_number'] as int;
-        if (ayahNum >= startAyah && ayahNum <= endAyah) {
-          _playlist.add({
-            'surah_number': surah,
-            'ayah_number': ayahNum,
-            'audio_url': verse['audio_url'],
-            'duration': verse['duration'],
-            'segments': verse['segments'],
-          });
-        }
+    // ✅ FIX: Convert local range to GLOBAL for filtering
+    final startGlobalAyat = GlobalAyatService.toGlobalAyat(surah, startAyah);
+    final endGlobalAyat = GlobalAyatService.toGlobalAyat(surah, endAyah);
+
+    print('🔍 Filtering surah $surah: local [$startAyah-$endAyah] → global [$startGlobalAyat-$endGlobalAyat]');
+
+    for (final verse in audioUrls) {
+      final globalAyahNum = verse['ayah_number'] as int;  // ← Database stores GLOBAL index
+      
+      // ✅ Compare GLOBAL with GLOBAL
+      if (globalAyahNum >= startGlobalAyat && globalAyahNum <= endGlobalAyat) {
+        // ✅ Convert back to LOCAL ayah for display
+        final localAyahInfo = GlobalAyatService.fromGlobalAyat(globalAyahNum);
+        final localAyahNum = localAyahInfo['ayah_number']!;
+
+        _playlist.add({
+          'surah_number': surah,
+          'ayah_number': localAyahNum,  // ← Store LOCAL for UI
+          'global_ayah_number': globalAyahNum,  // ← Store GLOBAL for tracking
+          'audio_url': verse['audio_url'],
+          'duration': verse['duration'],
+          'segments': verse['segments'],
+        });
+        
+        print('  ✅ Added: Surah $surah Ayah $localAyahNum (Global #$globalAyahNum)');
       }
     }
-
-    print('✅ Playlist ready: ${_playlist.length} tracks');
   }
+
+  print('✅ Playlist ready: ${_playlist.length} tracks');
+}
 
   // Start playback
   Future<void> startPlayback() async {

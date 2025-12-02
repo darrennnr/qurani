@@ -317,7 +317,7 @@ class _SurahNameLine extends StatelessWidget {
           Text(
             'header',
             style: TextStyle(
-              fontSize: headerSize,
+              fontSize: headerSize - 1.5,
               fontFamily: 'Quran-Common',
               color: Colors.black87,
               height: MediaQuery.of(context).size.height * 0.0010,
@@ -327,7 +327,7 @@ class _SurahNameLine extends StatelessWidget {
           Text(
             surahGlyphCode,
             style: TextStyle(
-              fontSize: surahNameSize,
+              fontSize: surahNameSize - 1,
               fontFamily: 'surah-name-v2',
               color: Colors.black,
             ),
@@ -546,7 +546,7 @@ class MushafPageHeader extends StatelessWidget {
     return Container(
       height: headerHeight,
       color: Colors.white, // ✅ ADD: Background to blend when hidden
-      padding: EdgeInsets.symmetric(horizontal: 8), // ✅ CHANGE: Minimal horizontal padding (was screenWidth * 0.005)
+      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.005), // ✅ CHANGE: Minimal horizontal padding (was screenWidth * 0.005)
       alignment: Alignment.center,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,

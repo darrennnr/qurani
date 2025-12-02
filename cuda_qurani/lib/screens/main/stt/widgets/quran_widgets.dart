@@ -373,7 +373,7 @@ class _QuranBottomBarState extends State<QuranBottomBar>
     final thumbSize = trackHeight * 0.85;
     final iconSize = screenWidth * 0.065;
     final labelSize = screenWidth * 0.032;
-    final bottomOffset = screenHeight * 0.060;
+    final bottomOffset = screenHeight * 0.057;
 
     final isListeningActive = controller.isListeningMode;
     final isRecordingActive = controller.isRecording;
