@@ -2272,47 +2272,44 @@ class SttController with ChangeNotifier {
     notifyListeners();
   }
 
-  // REPLACE method updateVisiblePage dengan:
+ // REPLACE method updateVisiblePage dengan:
   void updateVisiblePage(int pageNumber) {
-    if (_currentPage != pageNumber) {
-      appLogger.log(
-        'VISIBLE_PAGE',
-        'Updating visible page: $_currentPage → $pageNumber',
-      );
+  if (_currentPage != pageNumber) {
+    appLogger.log(
+      'VISIBLE_PAGE',
+      'Updating visible page: $_currentPage → $pageNumber',
+    );
 
-      _currentPage = pageNumber;
+    _currentPage = pageNumber;
 
-      // ✅ CRITICAL: Track list view position separately
-      if (!_isQuranMode) {
-        _listViewCurrentPage = pageNumber;
-        appLogger.log('VISIBLE_PAGE', 'List view position saved: $pageNumber');
-      }
-
-      _updateSurahNameForPage(pageNumber);
-
-      // Update current ayat index based on visible page
-      if (_ayatList.isNotEmpty) {
-        final firstAyatOnPage = _ayatList.firstWhere(
-          (a) => a.page == pageNumber,
-          orElse: () => _ayatList.first,
-        );
-        final newIndex = _ayatList.indexOf(firstAyatOnPage);
-        if (newIndex >= 0) {
-          _currentAyatIndex = newIndex;
-          appLogger.log(
-            'VISIBLE_PAGE',
-            'Updated ayat index to: $_currentAyatIndex',
-          );
-        }
-      }
-
-      if (!_isQuranMode) {
-        Future.microtask(() => _preloadAdjacentPagesAggressively());
-      }
-
-      notifyListeners();
+    if (!_isQuranMode) {
+      _listViewCurrentPage = pageNumber;
+      appLogger.log('VISIBLE_PAGE', 'List view position saved: $pageNumber');
     }
+
+    _updateSurahNameForPage(pageNumber);
+
+    if (_ayatList.isNotEmpty) {
+      final firstAyatOnPage = _ayatList.firstWhere(
+        (a) => a.page == pageNumber,
+        orElse: () => _ayatList.first,
+      );
+      final newIndex = _ayatList.indexOf(firstAyatOnPage);
+      if (newIndex >= 0) {
+        _currentAyatIndex = newIndex;
+        appLogger.log('VISIBLE_PAGE', 'Updated ayat index to: $_currentAyatIndex');
+      }
+    }
+
+    // ✅ FIX: Don't preload if scrolling (prevents database lock)
+    if (!_isQuranMode) {
+  Future.microtask(() => _preloadAdjacentPagesAggressively());
+}
+
+    notifyListeners();
   }
+}
+
 
   // ===== DISPOSAL =====
   @override
