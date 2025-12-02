@@ -5,7 +5,8 @@ import 'package:cuda_qurani/screens/main/home/widgets/navigation_bar.dart';
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
 import 'package:cuda_qurani/core/widgets/app_components.dart';
 import 'package:cuda_qurani/services/supabase_service.dart';
-import 'package:cuda_qurani/services/auth_service.dart'; // ✅ Import AuthService
+import 'package:cuda_qurani/services/auth_service.dart';
+import 'package:cuda_qurani/screens/main/stt/stt_page.dart';
 
 class AllSessionPage extends StatefulWidget {
   const AllSessionPage({Key? key}) : super(key: key);
@@ -39,8 +40,10 @@ class _AllSessionPageState extends State<AllSessionPage> {
       
       if (userUuid == null) {
         print('⚠️ ALL_SESSION: User not authenticated');
-        setState(() => _isLoading = false);
-        _loadDummyData();
+        setState(() {
+          _isLoading = false;
+          _sessions = [];
+        });
         return;
       }
       
@@ -60,105 +63,11 @@ class _AllSessionPageState extends State<AllSessionPage> {
     } catch (e, stackTrace) {
       print('❌ ALL_SESSION: Error loading sessions: $e');
       print('Stack trace: $stackTrace');
-      setState(() => _isLoading = false);
-      // Fallback to dummy data if error
-      _loadDummyData();
+      setState(() {
+        _isLoading = false;
+        _sessions = [];
+      });
     }
-  }
-  
-  void _loadDummyData() {
-    _sessions = [
-    SessionData(
-      type: SessionType.reading,
-      surah: 'Al-Kafirun 1 - Al-Masad 5',
-      duration: Duration.zero,
-      verses: 14,
-      timestamp: DateTime.now(),
-      displayDate: 'TODAY',
-      displayTime: '8:07AM - 9:08AM',
-    ),
-    SessionData(
-      type: SessionType.reading,
-      surah: 'Al-Ikhlas 1 - An-Nas 6',
-      duration: const Duration(minutes: 3),
-      verses: 15,
-      timestamp: DateTime(2025, 11, 12, 16, 2),
-      displayDate: 'NOVEMBER 12, 2025',
-      displayTime: '4:02PM - 4:12PM',
-    ),
-    SessionData(
-      type: SessionType.reading,
-      surah: 'Al-Furqan 21 - 32',
-      duration: Duration.zero,
-      verses: 12,
-      timestamp: DateTime(2025, 11, 12, 12, 28),
-      displayDate: 'NOVEMBER 12, 2025',
-      displayTime: '12:28PM - 12:29PM',
-    ),
-    SessionData(
-      type: SessionType.reading,
-      surah: 'Al-Ikhlas 1 - An-Nas 6',
-      duration: const Duration(minutes: 3),
-      verses: 15,
-      timestamp: DateTime(2025, 11, 12, 9, 34),
-      displayDate: 'NOVEMBER 12, 2025',
-      displayTime: '9:34AM - 9:43AM',
-    ),
-    SessionData(
-      type: SessionType.reading,
-      surah: 'Al-Ikhlas 1 - An-Nas 6',
-      duration: const Duration(minutes: 1),
-      verses: 15,
-      timestamp: DateTime(2025, 11, 12, 9, 17),
-      displayDate: 'NOVEMBER 12, 2025',
-      displayTime: '9:17AM - 9:18AM',
-    ),
-    SessionData(
-      type: SessionType.reading,
-      surah: "Al-'Imran 23 - 29",
-      duration: const Duration(minutes: 2),
-      verses: 7,
-      timestamp: DateTime(2025, 11, 11, 15, 45),
-      displayDate: 'NOVEMBER 11, 2025',
-      displayTime: '3:45PM - 3:47PM',
-    ),
-    SessionData(
-      type: SessionType.reading,
-      surah: 'Al-Baqarah 145 - 152',
-      duration: const Duration(minutes: 5),
-      verses: 8,
-      timestamp: DateTime(2025, 11, 11, 10, 22),
-      displayDate: 'NOVEMBER 11, 2025',
-      displayTime: '10:22AM - 10:27AM',
-    ),
-    SessionData(
-      type: SessionType.reading,
-      surah: 'Yunus 38 - 45',
-      duration: const Duration(minutes: 4),
-      verses: 8,
-      timestamp: DateTime(2025, 11, 10, 14, 15),
-      displayDate: 'NOVEMBER 10, 2025',
-      displayTime: '2:15PM - 2:19PM',
-    ),
-    SessionData(
-      type: SessionType.reading,
-      surah: 'Al-Kahf 1 - 10',
-      duration: const Duration(minutes: 6),
-      verses: 10,
-      timestamp: DateTime(2025, 11, 9, 8, 30),
-      displayDate: 'NOVEMBER 9, 2025',
-      displayTime: '8:30AM - 8:36AM',
-    ),
-    SessionData(
-      type: SessionType.reading,
-      surah: 'Maryam 16 - 25',
-      duration: const Duration(minutes: 3),
-      verses: 10,
-      timestamp: DateTime(2025, 11, 8, 17, 12),
-      displayDate: 'NOVEMBER 8, 2025',
-      displayTime: '5:12PM - 5:15PM',
-    ),
-  ];
   }
 
   @override
@@ -460,10 +369,30 @@ class _AllSessionPageState extends State<AllSessionPage> {
   }
 
   void _navigateToSession(BuildContext context, SessionData session) {
-    // TODO: Navigate to session detail or reading page
-    ScaffoldMessenger.of(context).showSnackBar(
-      AppComponentStyles.infoSnackBar(
-        message: 'Opening ${session.surah}...',
+    if (session.surahId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        AppComponentStyles.errorSnackBar(
+          message: 'Invalid session data',
+        ),
+      );
+      return;
+    }
+    
+    print('📱 ALL_SESSION: Navigating to SttPage');
+    print('   surahId: ${session.surahId}');
+    print('   isFromHistory: true');
+    print('   status: ${session.status}');
+    print('   sessionId: ${session.sessionId}');
+    print('   wordStatusMap: ${session.wordStatusMap?.keys.length ?? 0} ayahs');
+    
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => SttPage(
+          suratId: session.surahId!,
+          isFromHistory: true,
+          initialWordStatusMap: session.wordStatusMap,
+          resumeSessionId: session.sessionId, // ✅ NEW: Pass session_id
+        ),
       ),
     );
   }
@@ -496,6 +425,10 @@ class SessionData {
   final String displayDate;
   final String displayTime;
   final String? sessionId;
+  final int? surahId;
+  final String? status;
+  final int? position;
+  final Map<String, dynamic>? wordStatusMap; // ✅ NEW
 
   SessionData({
     required this.type,
@@ -506,23 +439,70 @@ class SessionData {
     required this.displayDate,
     required this.displayTime,
     this.sessionId,
+    this.surahId,
+    this.status,
+    this.position,
+    this.wordStatusMap, // ✅ NEW
   });
   
   factory SessionData.fromSupabase(Map<String, dynamic> data) {
     final timestamp = DateTime.parse(data['created_at'] ?? DateTime.now().toIso8601String());
-    final surahId = data['surah_id'] ?? 1;
-    final ayah = data['ayah'] ?? 1;
+    final surahId = data['surah_id'] as int? ?? 1;
+    final ayah = data['ayah'] as int? ?? 1;
+    final position = data['position'] as int? ?? 0;
+    final status = data['status'] as String? ?? 'unknown';
+    
+    // ✅ NEW: Extract word_status_map from data
+    Map<String, dynamic>? wordStatusMap;
+    if (data['data'] != null && data['data']['word_status_map'] != null) {
+      wordStatusMap = Map<String, dynamic>.from(data['data']['word_status_map']);
+    }
+    
+    final surahName = _getSurahName(surahId);
     
     return SessionData(
       type: SessionType.reading,
-      surah: 'Surah $surahId: $ayah',
+      surah: '$surahName - Ayah $ayah',
       duration: Duration(minutes: 0),
       verses: ayah,
       timestamp: timestamp,
       displayDate: _formatDate(timestamp),
       displayTime: _formatTime(timestamp),
       sessionId: data['session_id'],
+      surahId: surahId,
+      status: status,
+      position: position,
+      wordStatusMap: wordStatusMap, // ✅ NEW
     );
+  }
+  
+  static String _getSurahName(int surahId) {
+    const surahNames = {
+      1: 'Al-Fatihah', 2: 'Al-Baqarah', 3: "Ali 'Imran", 4: 'An-Nisa', 5: 'Al-Maidah',
+      6: "Al-An'am", 7: "Al-A'raf", 8: 'Al-Anfal', 9: 'At-Tawbah', 10: 'Yunus',
+      11: 'Hud', 12: 'Yusuf', 13: "Ar-Ra'd", 14: 'Ibrahim', 15: 'Al-Hijr',
+      16: 'An-Nahl', 17: 'Al-Isra', 18: 'Al-Kahf', 19: 'Maryam', 20: 'Ta-Ha',
+      21: 'Al-Anbiya', 22: 'Al-Hajj', 23: "Al-Mu'minun", 24: 'An-Nur', 25: 'Al-Furqan',
+      26: "Ash-Shu'ara", 27: 'An-Naml', 28: 'Al-Qasas', 29: "Al-'Ankabut", 30: 'Ar-Rum',
+      31: 'Luqman', 32: 'As-Sajdah', 33: 'Al-Ahzab', 34: 'Saba', 35: 'Fatir',
+      36: 'Ya-Sin', 37: 'As-Saffat', 38: 'Sad', 39: 'Az-Zumar', 40: 'Ghafir',
+      41: 'Fussilat', 42: 'Ash-Shura', 43: 'Az-Zukhruf', 44: 'Ad-Dukhan', 45: 'Al-Jathiyah',
+      46: 'Al-Ahqaf', 47: 'Muhammad', 48: 'Al-Fath', 49: 'Al-Hujurat', 50: 'Qaf',
+      51: 'Adh-Dhariyat', 52: 'At-Tur', 53: 'An-Najm', 54: 'Al-Qamar', 55: 'Ar-Rahman',
+      56: "Al-Waqi'ah", 57: 'Al-Hadid', 58: 'Al-Mujadila', 59: 'Al-Hashr', 60: 'Al-Mumtahanah',
+      61: 'As-Saff', 62: "Al-Jumu'ah", 63: 'Al-Munafiqun', 64: 'At-Taghabun', 65: 'At-Talaq',
+      66: 'At-Tahrim', 67: 'Al-Mulk', 68: 'Al-Qalam', 69: 'Al-Haqqah', 70: "Al-Ma'arij",
+      71: 'Nuh', 72: 'Al-Jinn', 73: 'Al-Muzzammil', 74: 'Al-Muddaththir', 75: 'Al-Qiyamah',
+      76: 'Al-Insan', 77: 'Al-Mursalat', 78: 'An-Naba', 79: "An-Nazi'at", 80: "'Abasa",
+      81: 'At-Takwir', 82: 'Al-Infitar', 83: 'Al-Mutaffifin', 84: 'Al-Inshiqaq', 85: 'Al-Buruj',
+      86: 'At-Tariq', 87: "Al-A'la", 88: 'Al-Ghashiyah', 89: 'Al-Fajr', 90: 'Al-Balad',
+      91: 'Ash-Shams', 92: 'Al-Layl', 93: 'Ad-Duha', 94: 'Ash-Sharh', 95: 'At-Tin',
+      96: "Al-'Alaq", 97: 'Al-Qadr', 98: 'Al-Bayyinah', 99: 'Az-Zalzalah', 100: "Al-'Adiyat",
+      101: "Al-Qari'ah", 102: 'At-Takathur', 103: "Al-'Asr", 104: 'Al-Humazah', 105: 'Al-Fil',
+      106: 'Quraysh', 107: "Al-Ma'un", 108: 'Al-Kawthar', 109: 'Al-Kafirun', 110: 'An-Nasr',
+      111: 'Al-Masad', 112: 'Al-Ikhlas', 113: 'Al-Falaq', 114: 'An-Nas',
+    };
+    return surahNames[surahId] ?? 'Surah $surahId';
   }
   
   static String _formatDate(DateTime dt) {
@@ -536,7 +516,7 @@ class SessionData {
   static String _formatTime(DateTime dt) {
     final hour = dt.hour > 12 ? dt.hour - 12 : dt.hour;
     final period = dt.hour >= 12 ? 'PM' : 'AM';
-    return '${hour}:${dt.minute.toString().padLeft(2, '0')}$period';
+    return '$hour:${dt.minute.toString().padLeft(2, '0')}$period';
   }
   
   static String _monthName(int month) {

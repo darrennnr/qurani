@@ -23,10 +23,20 @@ class SttController with ChangeNotifier {
   final int? suratId;
   final int? pageId;
   final int? juzId;
+  final bool isFromHistory;
+  final Map<String, dynamic>? initialWordStatusMap;
+  final String? resumeSessionId; // ✅ NEW: Continue existing session
 
   int? _determinedSurahId;
 
-  SttController({this.suratId, this.pageId, this.juzId}) {
+  SttController({
+    this.suratId, 
+    this.pageId, 
+    this.juzId, 
+    this.isFromHistory = false,
+    this.initialWordStatusMap,
+    this.resumeSessionId, // ✅ NEW
+  }) {
     print(
       'ðŸ—ƒï¸ SttController: CONSTRUCTOR - surah:$suratId page:$pageId juz:$juzId',
     );
@@ -36,11 +46,41 @@ class SttController with ChangeNotifier {
     );
     try {
       _initializeWebSocket();
+      
+      // ✅ NEW: Apply initial word status map immediately (for resume from history)
+      if (initialWordStatusMap != null && initialWordStatusMap!.isNotEmpty && suratId != null) {
+        _applyInitialWordStatusMap(suratId!, initialWordStatusMap!);
+      }
       print('âœ… SttController: _initializeWebSocket() completed');
     } catch (e, stack) {
       print('âŒ SttController: _initializeWebSocket() FAILED: $e');
       print('Stack trace: $stack');
     }
+  }
+  
+  // ✅ NEW: Apply word status map from Supabase data
+  void _applyInitialWordStatusMap(int surahId, Map<String, dynamic> wordMap) {
+    print('🎨 Applying initial word status map for surah $surahId');
+    print('   Input data: $wordMap');
+    
+    _wordStatusMap.clear();
+    wordMap.forEach((ayahKey, wordData) {
+      final int ayahNum = int.tryParse(ayahKey) ?? -1;
+      if (ayahNum > 0 && wordData is Map) {
+        final key = _wordKey(surahId, ayahNum);
+        _wordStatusMap[key] = {};
+        (wordData as Map<String, dynamic>).forEach((wordIndexKey, status) {
+          final int wordIndex = int.tryParse(wordIndexKey) ?? -1;
+          if (wordIndex >= 0) {
+            _wordStatusMap[key]![wordIndex] = _mapWordStatus(status.toString());
+          }
+        });
+      }
+    });
+    
+    print('✅ Applied word status: ${_wordStatusMap.length} ayahs colored');
+    print('   Word status map: $_wordStatusMap');
+    notifyListeners();
   }
 
   // Services
@@ -2117,9 +2157,15 @@ class SttController with ChangeNotifier {
     try {
       print('âœ… startRecording(): Connected, clearing state...');
       _tartibStatus.clear();
-      _wordStatusMap.clear();
+      // ✅ FIX: Don't clear wordStatusMap if resuming from history (colors already applied)
+      if (resumeSessionId == null) {
+        _wordStatusMap.clear();
+        print('   Cleared wordStatusMap (new session)');
+      } else {
+        print('   Keeping wordStatusMap (resuming session: $resumeSessionId)');
+      }
       _expectedAyah = 1;
-      _sessionId = null;
+      _sessionId = resumeSessionId; // ✅ Use existing session_id if resuming
       _errorMessage = '';
 
       // âœ… FIX: Determine surah ID with proper priority
@@ -2160,6 +2206,8 @@ class SttController with ChangeNotifier {
         pageId: pageId,
         juzId: juzId,
         ayah: firstAyah,
+        isFromHistory: isFromHistory,
+        sessionId: resumeSessionId, // ✅ NEW: Pass existing session_id for resume
       );
 
       print('ðŸŽ™ï¸ startRecording(): Starting audio recording...');
@@ -2224,47 +2272,44 @@ class SttController with ChangeNotifier {
     notifyListeners();
   }
 
-  // REPLACE method updateVisiblePage dengan:
+ // REPLACE method updateVisiblePage dengan:
   void updateVisiblePage(int pageNumber) {
-    if (_currentPage != pageNumber) {
-      appLogger.log(
-        'VISIBLE_PAGE',
-        'Updating visible page: $_currentPage → $pageNumber',
-      );
+  if (_currentPage != pageNumber) {
+    appLogger.log(
+      'VISIBLE_PAGE',
+      'Updating visible page: $_currentPage → $pageNumber',
+    );
 
-      _currentPage = pageNumber;
+    _currentPage = pageNumber;
 
-      // ✅ CRITICAL: Track list view position separately
-      if (!_isQuranMode) {
-        _listViewCurrentPage = pageNumber;
-        appLogger.log('VISIBLE_PAGE', 'List view position saved: $pageNumber');
-      }
-
-      _updateSurahNameForPage(pageNumber);
-
-      // Update current ayat index based on visible page
-      if (_ayatList.isNotEmpty) {
-        final firstAyatOnPage = _ayatList.firstWhere(
-          (a) => a.page == pageNumber,
-          orElse: () => _ayatList.first,
-        );
-        final newIndex = _ayatList.indexOf(firstAyatOnPage);
-        if (newIndex >= 0) {
-          _currentAyatIndex = newIndex;
-          appLogger.log(
-            'VISIBLE_PAGE',
-            'Updated ayat index to: $_currentAyatIndex',
-          );
-        }
-      }
-
-      if (!_isQuranMode) {
-        Future.microtask(() => _preloadAdjacentPagesAggressively());
-      }
-
-      notifyListeners();
+    if (!_isQuranMode) {
+      _listViewCurrentPage = pageNumber;
+      appLogger.log('VISIBLE_PAGE', 'List view position saved: $pageNumber');
     }
+
+    _updateSurahNameForPage(pageNumber);
+
+    if (_ayatList.isNotEmpty) {
+      final firstAyatOnPage = _ayatList.firstWhere(
+        (a) => a.page == pageNumber,
+        orElse: () => _ayatList.first,
+      );
+      final newIndex = _ayatList.indexOf(firstAyatOnPage);
+      if (newIndex >= 0) {
+        _currentAyatIndex = newIndex;
+        appLogger.log('VISIBLE_PAGE', 'Updated ayat index to: $_currentAyatIndex');
+      }
+    }
+
+    // ✅ FIX: Don't preload if scrolling (prevents database lock)
+    if (!_isQuranMode) {
+  Future.microtask(() => _preloadAdjacentPagesAggressively());
+}
+
+    notifyListeners();
   }
+}
+
 
   // ===== DISPOSAL =====
   @override

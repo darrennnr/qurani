@@ -374,17 +374,29 @@ class _HomePageState extends State<HomePage> {
       final surahId = _latestSession!['surah_id'] as int;
       final ayah = _latestSession!['ayah'] as int?;
       final position = _latestSession!['position'] as int?;
+      final sessionId = _latestSession!['session_id'] as String?; // ✅ NEW
+      
+      // ✅ Extract word_status_map from session data
+      Map<String, dynamic>? wordStatusMap;
+      if (_latestSession!['data'] != null && _latestSession!['data']['word_status_map'] != null) {
+        wordStatusMap = Map<String, dynamic>.from(_latestSession!['data']['word_status_map']);
+      }
 
       print('▶️ Navigating to resume session:');
       print('   Surah: $surahId');
       print('   Ayah: $ayah');
       print('   Position: $position');
+      print('   Session ID: $sessionId');
+      print('   Word status map: ${wordStatusMap?.keys.length ?? 0} ayahs');
 
-      // ✅ Navigate to STT page (user clicks resume button inside)
-      await Navigator.of(context).pushReplacement(
+      // ✅ Navigate to STT page with session_id and word_status_map
+      await Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => SttPage(
-            suratId: surahId, // ✅ Pass suratId
+            suratId: surahId,
+            isFromHistory: true,
+            initialWordStatusMap: wordStatusMap,
+            resumeSessionId: sessionId, // ✅ NEW: Pass session_id for backend resume
           ),
         ),
       );

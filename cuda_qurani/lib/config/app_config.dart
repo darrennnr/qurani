@@ -11,8 +11,4 @@ class AppConfig {
   // Supabase Configuration
   static const String supabaseUrl = 'https://xqguweftjklmzmrwtqet.supabase.co';
   static const String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxZ3V3ZWZ0amtsbXptcnd0cWV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzNzYxNjgsImV4cCI6MjA2OTk1MjE2OH0.JckKnoCcns114jhSUfycEmrnUWiUTySR2P0xfzBhkDU';
-  
-  // // App Settings
-  // static const int defaultSurahNumber = 1; // Default: Al-Fatihah (can be changed)
-  // static const String appName = 'Qurani Hafidz';
 }
