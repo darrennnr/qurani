@@ -379,7 +379,8 @@ class _JustifiedAyahLine extends StatelessWidget {
     // SPECIAL: Slightly larger font for page 1 & 2
     final fontSizeMultiplier = (pageNumber == 1 || pageNumber == 2)
         ? 0.080
-        : 0.0619; // Reduced from 0.066 to prevent overflow
+        : 0.0616; // Reduced from 0.066 to prevent overflow
+        
     final baseFontSize = screenWidth * fontSizeMultiplier;
 
     // OPTIMIZATION: Font size untuk kata terakhir ayat (angka ayat)
@@ -404,7 +405,7 @@ class _JustifiedAyahLine extends StatelessWidget {
       for (int i = 0; i < segment.words.length; i++) {
         final word = segment.words[i];
 
-        // ✅ FIX: Use wordNumber - 1 as index (wordNumber is 1-indexed, backend uses 0-indexed)
+        // Use wordNumber - 1 as index (wordNumber is 1-indexed, backend uses 0-indexed)
         final wordIndex = word.wordNumber - 1;
 
         // Get word status dari wordStatusMap (key = "surahId:ayahNumber")

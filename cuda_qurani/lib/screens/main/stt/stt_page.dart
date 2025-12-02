@@ -1,5 +1,7 @@
 // lib\screens\main\stt\stt_page.dart
 
+import 'package:cuda_qurani/screens/main/stt/widgets/slider_guide_popup.dart';
+
 import 'controllers/stt_controller.dart';
 import 'services/quran_service.dart';
 import 'utils/constants.dart';
@@ -168,23 +170,25 @@ class _SttPageState extends State<SttPage> {
     );
   }
 
-  Widget _buildMainContent() {
-    return Consumer<SttController>(
-      builder: (context, controller, child) {
-        return Stack(
-          children: [
-            _buildQuranText(context, controller), // ✅ FIX: pass context
-            const Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: QuranBottomBar(),
-            ),
-          ],
-        );
-      },
-    );
-  }
+Widget _buildMainContent() {
+  return Consumer<SttController>(
+    builder: (context, controller, child) {
+      return Stack(
+        children: [
+          _buildQuranText(context, controller),
+          const Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: QuranBottomBar(),
+          ),
+          // ✅ TAMBAHKAN INI - Popup Guide
+          const SliderGuidePopup(),
+        ],
+      );
+    },
+  );
+}
 
   Widget _buildQuranText(BuildContext context, SttController controller) {
     final screenWidth = MediaQuery.of(context).size.width;
