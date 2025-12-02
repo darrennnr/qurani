@@ -241,6 +241,36 @@ class AudioDownloadService {
       };
     }
   }
+
+  // ✅ NEW: Get all cached file names at once (super fast)
+static Future<Set<String>> getAllCachedFiles(String reciterId) async {
+  try {
+    final cacheDir = await _getReciterCacheDirectory(reciterId);
+    if (!await cacheDir.exists()) {
+      return {};
+    }
+    
+    final Set<String> fileNames = {};
+    
+    // ✅ Single directory scan (very fast)
+    await for (final entity in cacheDir.list(recursive: false)) {
+      if (entity is File) {
+        fileNames.add(path.basename(entity.path));
+      }
+    }
+    
+    print('✅ Scanned cache: ${fileNames.length} files found');
+    return fileNames;
+  } catch (e) {
+    print('❌ Error scanning cache: $e');
+    return {};
+  }
+}
+
+// ✅ NEW: Public method to get cache filename from URL
+static String getCacheFileNameFromUrl(String url) {
+  return _getCacheFileName(url);
+}
   
   // Clear cache for specific reciter
   static Future<void> clearReciterCache(String reciterId) async {

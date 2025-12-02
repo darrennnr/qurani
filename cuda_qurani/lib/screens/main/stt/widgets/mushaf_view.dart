@@ -378,12 +378,12 @@ class _JustifiedAyahLine extends StatelessWidget {
 
     // SPECIAL: Slightly larger font for page 1 & 2
     final fontSizeMultiplier = (pageNumber == 1 || pageNumber == 2)
-        ? 0.070
-        : 0.0625; // Reduced from 0.066 to prevent overflow
+        ? 0.080
+        : 0.0619; // Reduced from 0.066 to prevent overflow
     final baseFontSize = screenWidth * fontSizeMultiplier;
 
     // OPTIMIZATION: Font size untuk kata terakhir ayat (angka ayat)
-    final lastWordFontMultiplier = 1.0; // Same size as regular words for consistency
+    final lastWordFontMultiplier = 0.9; // Same size as regular words for consistency
 
     if (line.ayahSegments == null || line.ayahSegments!.isEmpty) {
       return SizedBox(height: MushafRenderer.lineHeight(context));

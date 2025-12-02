@@ -26,17 +26,17 @@ class _AudioManagerPageState extends State<AudioManagerPage> {
   final Map<int, double> _downloadProgress = {};
   final Map<int, bool> _downloadedStatus = {};
   final Set<int> _downloadingIds = {};
-  
+
   // Storage info
   Map<String, dynamic> _storageInfo = {
     'totalBytes': 0,
     'fileCount': 0,
     'formattedSize': '0 KB',
   };
-  
+
   // Download speed tracking
   final Map<int, String> _downloadSpeeds = {};
-  
+
   List<Map<String, dynamic>> _allSurahs = [];
   bool _isLoading = true;
   bool _isDownloadingAll = false;
@@ -73,7 +73,7 @@ class _AudioManagerPageState extends State<AudioManagerPage> {
     final info = await AudioDownloadService.getReciterStorageInfo(
       widget.reciterIdentifier,
     );
-    
+
     if (mounted) {
       setState(() {
         _storageInfo = info;
@@ -83,28 +83,37 @@ class _AudioManagerPageState extends State<AudioManagerPage> {
   }
 
   Future<void> _checkDownloadedStatus() async {
+    // ✅ STEP 1: Scan ALL cached files ONCE (super fast)
+    final cachedFiles = await AudioDownloadService.getAllCachedFiles(
+      widget.reciterIdentifier,
+    );
+
+    // ✅ STEP 2: Check each surah against cached files (in-memory lookup)
     for (var surah in _allSurahs) {
       final surahId = surah['id'] as int;
       final audioUrls = await ReciterManagerService.getSurahAudioUrls(
         widget.reciterIdentifier,
         surahId,
       );
-      
+
       if (audioUrls.isEmpty) continue;
-      
-      // Check if all verses are downloaded
+
+      // ✅ FAST: O(1) lookup from Set
       int downloadedCount = 0;
       for (var verse in audioUrls) {
-        final isCached = await AudioDownloadService.isAudioCached(
-          widget.reciterIdentifier,
+        final fileName = AudioDownloadService.getCacheFileNameFromUrl(
           verse['audio_url'],
         );
-        if (isCached) downloadedCount++;
+        if (cachedFiles.contains(fileName)) {
+          downloadedCount++;
+        }
       }
-      
+
       if (mounted) {
         setState(() {
-          final percentage = audioUrls.isEmpty ? 0.0 : (downloadedCount / audioUrls.length);
+          final percentage = audioUrls.isEmpty
+              ? 0.0
+              : (downloadedCount / audioUrls.length);
           _downloadProgress[surahId] = percentage;
           _downloadedStatus[surahId] = percentage >= 1.0;
         });
@@ -114,12 +123,12 @@ class _AudioManagerPageState extends State<AudioManagerPage> {
 
   Future<void> _downloadSurah(int surahId) async {
     if (_downloadingIds.contains(surahId)) return;
-    
+
     setState(() {
       _downloadingIds.add(surahId);
       _downloadProgress[surahId] = 0.0;
     });
-    
+
     AppHaptics.selection();
 
     try {
@@ -128,20 +137,20 @@ class _AudioManagerPageState extends State<AudioManagerPage> {
         widget.reciterIdentifier,
         surahId,
       );
-      
+
       if (audioUrls.isEmpty) {
         throw Exception('No audio URLs found for surah $surahId');
       }
-      
+
       print('📥 Downloading ${audioUrls.length} verses for surah $surahId');
-      
+
       int completed = 0;
-      
+
       for (var verse in audioUrls) {
         if (!_downloadingIds.contains(surahId)) break; // Cancelled
-        
+
         final audioUrl = verse['audio_url'] as String;
-        
+
         await AudioDownloadService.downloadAudio(
           widget.reciterIdentifier,
           audioUrl,
@@ -153,16 +162,16 @@ class _AudioManagerPageState extends State<AudioManagerPage> {
             }
           },
         );
-        
+
         completed++;
-        
+
         if (mounted && _downloadingIds.contains(surahId)) {
           setState(() {
             _downloadProgress[surahId] = completed / audioUrls.length;
           });
         }
       }
-      
+
       if (mounted) {
         setState(() {
           _downloadProgress[surahId] = 1.0;
@@ -170,21 +179,20 @@ class _AudioManagerPageState extends State<AudioManagerPage> {
           _downloadingIds.remove(surahId);
           _downloadSpeeds.remove(surahId);
         });
-        
+
         await _loadStorageInfo();
       }
-      
+
       print('✅ Surah $surahId downloaded successfully');
-      
     } catch (e) {
       print('❌ Error downloading surah $surahId: $e');
-      
+
       if (mounted) {
         setState(() {
           _downloadingIds.remove(surahId);
           _downloadSpeeds.remove(surahId);
         });
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Download failed: ${e.toString()}'),
@@ -197,25 +205,25 @@ class _AudioManagerPageState extends State<AudioManagerPage> {
 
   Future<void> _downloadAll() async {
     if (_isDownloadingAll) return;
-    
+
     setState(() {
       _isDownloadingAll = true;
     });
-    
+
     AppHaptics.selection();
-    
+
     for (var surah in _allSurahs) {
       final surahId = surah['id'] as int;
-      
+
       // Skip if already downloaded
       if (_downloadedStatus[surahId] == true) continue;
-      
+
       await _downloadSurah(surahId);
-      
+
       // Small delay between surahs
       await Future.delayed(const Duration(milliseconds: 100));
     }
-    
+
     if (mounted) {
       setState(() {
         _isDownloadingAll = false;
@@ -244,12 +252,10 @@ class _AudioManagerPageState extends State<AudioManagerPage> {
         ],
       ),
     );
-    
+
     if (confirmed == true) {
-      await AudioDownloadService.clearReciterCache(
-        widget.reciterIdentifier,
-      );
-      
+      await AudioDownloadService.clearReciterCache(widget.reciterIdentifier);
+
       // Reset state
       for (var surah in _allSurahs) {
         final surahId = surah['id'] as int;
@@ -258,9 +264,9 @@ class _AudioManagerPageState extends State<AudioManagerPage> {
           _downloadedStatus[surahId] = false;
         });
       }
-      
+
       await _loadStorageInfo();
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -296,10 +302,7 @@ class _AudioManagerPageState extends State<AudioManagerPage> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         border: Border(
-          bottom: BorderSide(
-            color: AppColors.borderLight,
-            width: 1.0 * s,
-          ),
+          bottom: BorderSide(color: AppColors.borderLight, width: 1.0 * s),
         ),
       ),
       child: Row(
@@ -330,7 +333,7 @@ class _AudioManagerPageState extends State<AudioManagerPage> {
             ),
           ),
           SizedBox(width: AppDesignSystem.space12 * s),
-          
+
           // Progress indicator
           if (isDownloading) ...[
             SizedBox(
@@ -359,9 +362,9 @@ class _AudioManagerPageState extends State<AudioManagerPage> {
               ),
             ),
           ],
-          
+
           SizedBox(width: AppDesignSystem.space8 * s),
-          
+
           // Download button
           InkWell(
             onTap: isDownloaded || isDownloading
@@ -389,9 +392,7 @@ class _AudioManagerPageState extends State<AudioManagerPage> {
                         ),
                       )
                     : Icon(
-                        isDownloaded
-                            ? Icons.check
-                            : Icons.arrow_downward,
+                        isDownloaded ? Icons.check : Icons.arrow_downward,
                         size: 16 * s,
                         color: isDownloaded
                             ? Colors.white
@@ -549,8 +550,11 @@ class _AudioManagerPageState extends State<AudioManagerPage> {
                           final surahId = surah['id'] as int;
                           final surahName = _getSurahDisplayName(surah);
                           final progress = _downloadProgress[surahId] ?? 0.0;
-                          final isDownloading = _downloadingIds.contains(surahId);
-                          final isDownloaded = _downloadedStatus[surahId] ?? false;
+                          final isDownloading = _downloadingIds.contains(
+                            surahId,
+                          );
+                          final isDownloaded =
+                              _downloadedStatus[surahId] ?? false;
 
                           return _buildSurahItem(
                             surahId: surahId,
@@ -568,7 +572,7 @@ class _AudioManagerPageState extends State<AudioManagerPage> {
             ),
     );
   }
-  
+
   @override
   void dispose() {
     // Cancel any ongoing downloads
