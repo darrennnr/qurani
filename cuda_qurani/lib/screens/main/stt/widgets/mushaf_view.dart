@@ -379,7 +379,7 @@ class _JustifiedAyahLine extends StatelessWidget {
     // SPECIAL: Slightly larger font for page 1 & 2
     final fontSizeMultiplier = (pageNumber == 1 || pageNumber == 2)
         ? 0.070
-        : 0.058; // Reduced from 0.066 to prevent overflow
+        : 0.0625; // Reduced from 0.066 to prevent overflow
     final baseFontSize = screenWidth * fontSizeMultiplier;
 
     // OPTIMIZATION: Font size untuk kata terakhir ayat (angka ayat)

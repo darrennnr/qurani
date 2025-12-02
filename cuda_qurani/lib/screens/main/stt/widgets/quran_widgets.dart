@@ -663,7 +663,10 @@ class _QuranBottomBarState extends State<QuranBottomBar>
       if (_dragPosition > 0.5) return Icons.mic;
     }
 
-    return Icons.more_horiz;
+    return Icons.code;
+    // return Icons.swap_horiz;
+    //  return Icons.sync_alt;
+    //  return Icons.settings_ethernet;
   }
 }
 
