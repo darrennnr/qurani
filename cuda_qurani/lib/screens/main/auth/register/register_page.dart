@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
 import 'package:cuda_qurani/core/widgets/app_components.dart';
-import 'package:cuda_qurani/screens/main/stt/utils/constants.dart' as constants;
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -49,69 +48,41 @@ class _RegisterPageState extends State<RegisterPage> {
     if (!_formKey.currentState!.validate()) return;
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
-    print('📝 RegisterPage: Starting registration for ${_emailController.text.trim()}');
-
     final success = await authProvider.signUp(
       email: _emailController.text.trim(),
       password: _passwordController.text,
       fullName: _nameController.text.trim(),
     );
 
-    print('📝 RegisterPage: Registration result = $success');
-    print('📝 RegisterPage: isAuthenticated after signup = ${authProvider.isAuthenticated}');
-
     if (!mounted) return;
 
     if (success) {
-      print('✅ RegisterPage: Registration SUCCESS!');
-
-      // Check if email confirmation is required
       if (authProvider.errorMessage?.contains('email') == true) {
-        print('📧 RegisterPage: Email confirmation required');
-        
         ScaffoldMessenger.of(context).showSnackBar(
           AppComponentStyles.successSnackBar(
             message: 'Registrasi berhasil! Silakan cek email untuk verifikasi',
             duration: const Duration(seconds: 3),
           ),
         );
-        
         Navigator.of(context).pop();
       } else {
-        print('✅ RegisterPage: Navigating to HomePage...');
-        
         ScaffoldMessenger.of(context).showSnackBar(
           AppComponentStyles.successSnackBar(
             message: 'Registrasi berhasil! Selamat datang',
           ),
         );
-
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (context) => const HomePage(),
-          ),
+          MaterialPageRoute(builder: (context) => const HomePage()),
           (route) => false,
         );
       }
     } else {
-      print('❌ RegisterPage: Registration FAILED - ${authProvider.errorMessage}');
-      
       ScaffoldMessenger.of(context).showSnackBar(
         AppComponentStyles.errorSnackBar(
           message: authProvider.errorMessage ?? 'Registrasi gagal',
         ),
       );
     }
-  }
-
-  void _handleGoogleSignUp() {
-    // TODO: Implement Google Sign Up
-    ScaffoldMessenger.of(context).showSnackBar(
-      AppComponentStyles.infoSnackBar(
-        message: 'Google Sign Up akan segera tersedia',
-      ),
-    );
   }
 
   @override
@@ -139,39 +110,16 @@ class _RegisterPageState extends State<RegisterPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Logo Section
-                _buildLogoSection(context, s),
-                
+                _buildLogoSection(s),
                 AppMargin.gapXLarge(context),
-
-                // Welcome Text
-                _buildWelcomeSection(context),
-
+                _buildWelcomeSection(),
                 AppMargin.gapLarge(context),
-
-                // Form Section
-                _buildFormSection(context, s),
-
+                _buildForm(s),
                 AppMargin.gapLarge(context),
-
-                // Register Button
-                _buildRegisterButton(context),
-
+                _buildRegisterButton(),
                 AppMargin.gap(context),
-
-                // Divider
-                _buildDivider(context),
-
                 AppMargin.gap(context),
-
-                // Google Sign Up Button
-                _buildGoogleButton(context),
-
-                AppMargin.gap(context),
-
-                // Login Link
-                _buildLoginLink(context),
-
+                _buildLoginLink(),
                 AppMargin.gapLarge(context),
               ],
             ),
@@ -181,18 +129,15 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  Widget _buildLogoSection(BuildContext context, double s) {
+  Widget _buildLogoSection(double s) {
     return Center(
       child: Column(
         children: [
-          // Logo container
           Container(
             width: 140 * s,
             height: 140 * s,
             decoration: BoxDecoration(
-              color: Color.fromARGB(0, 36, 124, 100),
               borderRadius: BorderRadius.circular(AppDesignSystem.radiusLarge * s),
-              
             ),
             child: Center(
               child: Text(
@@ -206,10 +151,7 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
             ),
           ),
-          
           AppMargin.gap(context),
-          
-          // Brand name
           Image.asset(
             'assets/images/qurani-white-text.png',
             height: 28 * s,
@@ -217,230 +159,144 @@ class _RegisterPageState extends State<RegisterPage> {
             errorBuilder: (context, error, stackTrace) {
               return Text(
                 'Qurani',
-                style: AppTypography.h2(
-                  context,
-                  color: AppColors.primary,
-                  weight: AppTypography.bold,
-                ),
+                style: AppTypography.h2(context, color: AppColors.primary, weight: AppTypography.bold),
               );
             },
           ),
-          
           SizedBox(height: 4 * s),
-          
           Text(
             'Hafidz',
-            style: AppTypography.label(
-              context,
-              color: AppColors.primary,
-              weight: AppTypography.semiBold,
-            ).copyWith(
-              letterSpacing: 2 * s,
-            ),
+            style: AppTypography.label(context, color: AppColors.primary, weight: AppTypography.semiBold)
+                .copyWith(letterSpacing: 2 * s),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildWelcomeSection(BuildContext context) {
+  Widget _buildWelcomeSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Buat Akun Baru',
-          style: AppTypography.displaySmall(context),
-        ),
+        Text('Buat Akun Baru', style: AppTypography.displaySmall(context)),
         AppMargin.gapSmall(context),
         Text(
           'Daftar untuk memulai perjalanan Quran Anda',
-          style: AppTypography.body(
-            context,
-            color: AppColors.textTertiary,
-          ),
+          style: AppTypography.body(context, color: AppColors.textTertiary),
         ),
       ],
     );
   }
 
-  Widget _buildFormSection(BuildContext context, double s) {
+  Widget _buildForm(double s) {
     return Form(
       key: _formKey,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Name Field
-          _buildNameField(context, s),
-          
+          _buildTextField(
+            controller: _nameController,
+            label: 'Username',
+            icon: Icons.person_outline_rounded,
+            validator: (value) {
+              if (value == null || value.isEmpty) return 'Username tidak boleh kosong';
+              if (value.length < 3) return 'Username minimal 3 karakter';
+              return null;
+            },
+            s: s,
+          ),
           AppMargin.gap(context),
-
-          // Email Field
-          _buildEmailField(context, s),
-
+          _buildTextField(
+            controller: _emailController,
+            label: 'Email',
+            icon: Icons.email_outlined,
+            keyboardType: TextInputType.emailAddress,
+            validator: (value) {
+              if (value == null || value.isEmpty) return 'Email tidak boleh kosong';
+              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                return 'Format email tidak valid';
+              }
+              return null;
+            },
+            s: s,
+          ),
           AppMargin.gap(context),
-
-          // Password Field
-          _buildPasswordField(context, s),
-
+          _buildPasswordField(_passwordController, 'Password', _isPasswordVisible, (val) {
+            setState(() => _isPasswordVisible = val);
+          }, s),
           AppMargin.gap(context),
-
-          // Confirm Password Field
-          _buildConfirmPasswordField(context, s),
-
+          _buildPasswordField(_confirmPasswordController, 'Konfirmasi Password', _isConfirmPasswordVisible, (val) {
+            setState(() => _isConfirmPasswordVisible = val);
+          }, s, confirmPassword: true),
           AppMargin.gap(context),
-
-          // Terms & Conditions
-          _buildTermsCheckbox(context, s),
+          _buildTermsCheckbox(s),
         ],
       ),
     );
   }
 
-  Widget _buildNameField(BuildContext context, double s) {
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    required String? Function(String?) validator,
+    required double s,
+    TextInputType? keyboardType,
+  }) {
     return TextFormField(
-      controller: _nameController,
-      textCapitalization: TextCapitalization.words,
+      controller: controller,
+      keyboardType: keyboardType,
+      textCapitalization: label == 'Username' ? TextCapitalization.words : TextCapitalization.none,
       style: AppTypography.body(context),
       decoration: AppComponentStyles.inputDecoration(
         context: context,
-        labelText: 'Username',
+        labelText: label,
         prefixIcon: Padding(
           padding: EdgeInsets.only(left: AppDesignSystem.space12 * s),
-          child: Icon(
-            Icons.person_outline_rounded,
-            color: AppColors.textTertiary,
-            size: AppDesignSystem.iconLarge * s,
-          ),
+          child: Icon(icon, color: AppColors.textTertiary, size: AppDesignSystem.iconLarge * s),
         ),
       ),
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Username tidak boleh kosong';
-        }
-        if (value.length < 3) {
-          return 'Username minimal 3 karakter';
-        }
-        return null;
-      },
+      validator: validator,
     );
   }
 
-  Widget _buildEmailField(BuildContext context, double s) {
+  Widget _buildPasswordField(
+    TextEditingController controller,
+    String label,
+    bool isVisible,
+    Function(bool) onToggle,
+    double s, {
+    bool confirmPassword = false,
+  }) {
     return TextFormField(
-      controller: _emailController,
-      keyboardType: TextInputType.emailAddress,
+      controller: controller,
+      obscureText: !isVisible,
       style: AppTypography.body(context),
       decoration: AppComponentStyles.inputDecoration(
         context: context,
-        labelText: 'Email',
+        labelText: label,
         prefixIcon: Padding(
           padding: EdgeInsets.only(left: AppDesignSystem.space12 * s),
-          child: Icon(
-            Icons.email_outlined,
-            color: AppColors.textTertiary,
-            size: AppDesignSystem.iconLarge * s,
-          ),
-        ),
-      ),
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Email tidak boleh kosong';
-        }
-        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-          return 'Format email tidak valid';
-        }
-        return null;
-      },
-    );
-  }
-
-  Widget _buildPasswordField(BuildContext context, double s) {
-    return TextFormField(
-      controller: _passwordController,
-      obscureText: !_isPasswordVisible,
-      style: AppTypography.body(context),
-      decoration: AppComponentStyles.inputDecoration(
-        context: context,
-        labelText: 'Password',
-        prefixIcon: Padding(
-          padding: EdgeInsets.only(left: AppDesignSystem.space12 * s),
-          child: Icon(
-            Icons.lock_outline_rounded,
-            color: AppColors.textTertiary,
-            size: AppDesignSystem.iconLarge * s,
-          ),
+          child: Icon(Icons.lock_outline_rounded, color: AppColors.textTertiary, size: AppDesignSystem.iconLarge * s),
         ),
         suffixIcon: IconButton(
           icon: Icon(
-            _isPasswordVisible
-                ? Icons.visibility_outlined
-                : Icons.visibility_off_outlined,
+            isVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
             color: AppColors.textTertiary,
             size: AppDesignSystem.iconLarge * s,
           ),
-          onPressed: () {
-            setState(() {
-              _isPasswordVisible = !_isPasswordVisible;
-            });
-          },
+          onPressed: () => onToggle(!isVisible),
         ),
       ),
       validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Password tidak boleh kosong';
-        }
-        if (value.length < 6) {
-          return 'Password minimal 6 karakter';
-        }
+        if (value == null || value.isEmpty) return '$label tidak boleh kosong';
+        if (value.length < 6) return 'Password minimal 6 karakter';
+        if (confirmPassword && value != _passwordController.text) return 'Password tidak sama';
         return null;
       },
     );
   }
 
-  Widget _buildConfirmPasswordField(BuildContext context, double s) {
-    return TextFormField(
-      controller: _confirmPasswordController,
-      obscureText: !_isConfirmPasswordVisible,
-      style: AppTypography.body(context),
-      decoration: AppComponentStyles.inputDecoration(
-        context: context,
-        labelText: 'Konfirmasi Password',
-        prefixIcon: Padding(
-          padding: EdgeInsets.only(left: AppDesignSystem.space12 * s),
-          child: Icon(
-            Icons.lock_outline_rounded,
-            color: AppColors.textTertiary,
-            size: AppDesignSystem.iconLarge * s,
-          ),
-        ),
-        suffixIcon: IconButton(
-          icon: Icon(
-            _isConfirmPasswordVisible
-                ? Icons.visibility_outlined
-                : Icons.visibility_off_outlined,
-            color: AppColors.textTertiary,
-            size: AppDesignSystem.iconLarge * s,
-          ),
-          onPressed: () {
-            setState(() {
-              _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
-            });
-          },
-        ),
-      ),
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Konfirmasi password tidak boleh kosong';
-        }
-        if (value != _passwordController.text) {
-          return 'Password tidak sama';
-        }
-        return null;
-      },
-    );
-  }
-
-  Widget _buildTermsCheckbox(BuildContext context, double s) {
+  Widget _buildTermsCheckbox(double s) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -449,15 +305,9 @@ class _RegisterPageState extends State<RegisterPage> {
           width: 20 * s,
           child: Checkbox(
             value: _agreeToTerms,
-            onChanged: (value) {
-              setState(() {
-                _agreeToTerms = value ?? false;
-              });
-            },
+            onChanged: (value) => setState(() => _agreeToTerms = value ?? false),
             activeColor: AppColors.primary,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(4 * s),
-            ),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4 * s)),
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             visualDensity: VisualDensity.compact,
           ),
@@ -468,29 +318,18 @@ class _RegisterPageState extends State<RegisterPage> {
             padding: EdgeInsets.only(top: 1 * s),
             child: RichText(
               text: TextSpan(
-                style: AppTypography.bodySmall(
-                  context,
-                  color: AppColors.textSecondary,
-                ),
+                style: AppTypography.bodySmall(context, color: AppColors.textSecondary),
                 children: [
                   const TextSpan(text: 'Saya menyetujui '),
                   WidgetSpan(
                     alignment: PlaceholderAlignment.baseline,
                     baseline: TextBaseline.alphabetic,
                     child: GestureDetector(
-                      onTap: () {
-                        // Handle terms tap
-                      },
+                      onTap: () {},
                       child: Text(
                         'Syarat dan Ketentuan',
-                        style: AppTypography.bodySmall(
-                          context,
-                          color: AppColors.primary,
-                          weight: AppTypography.semiBold,
-                        ).copyWith(
-                          decoration: TextDecoration.underline,
-                          decorationColor: AppColors.primary,
-                        ),
+                        style: AppTypography.bodySmall(context, color: AppColors.primary, weight: AppTypography.semiBold)
+                            .copyWith(decoration: TextDecoration.underline, decorationColor: AppColors.primary),
                       ),
                     ),
                   ),
@@ -499,19 +338,11 @@ class _RegisterPageState extends State<RegisterPage> {
                     alignment: PlaceholderAlignment.baseline,
                     baseline: TextBaseline.alphabetic,
                     child: GestureDetector(
-                      onTap: () {
-                        // Handle privacy tap
-                      },
+                      onTap: () {},
                       child: Text(
                         'Kebijakan Privasi',
-                        style: AppTypography.bodySmall(
-                          context,
-                          color: AppColors.primary,
-                          weight: AppTypography.semiBold,
-                        ).copyWith(
-                          decoration: TextDecoration.underline,
-                          decorationColor: AppColors.primary,
-                        ),
+                        style: AppTypography.bodySmall(context, color: AppColors.primary, weight: AppTypography.semiBold)
+                            .copyWith(decoration: TextDecoration.underline, decorationColor: AppColors.primary),
                       ),
                     ),
                   ),
@@ -524,7 +355,7 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  Widget _buildRegisterButton(BuildContext context) {
+  Widget _buildRegisterButton() {
     return Consumer<AuthProvider>(
       builder: (context, auth, _) {
         return AppButton(
@@ -537,76 +368,11 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  Widget _buildDivider(BuildContext context) {
-    return Row(
-      children: [
-        const Expanded(child: AppDivider()),
-        Padding(
-          padding: AppPadding.horizontal(context, AppDesignSystem.space16),
-          child: Text(
-            'atau',
-            style: AppTypography.caption(
-              context,
-              color: AppColors.textDisabled,
-            ),
-          ),
-        ),
-        const Expanded(child: AppDivider()),
-      ],
-    );
-  }
-
-  Widget _buildGoogleButton(BuildContext context) {
-    final s = AppDesignSystem.getScaleFactor(context);
-    
-    return SizedBox(
-      height: AppDesignSystem.buttonHeightLarge * s,
-      child: OutlinedButton(
-        onPressed: _handleGoogleSignUp,
-        style: AppComponentStyles.secondaryButton(context).copyWith(
-          backgroundColor: MaterialStateProperty.all(AppColors.surface),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(
-              'assets/images/google-icon.png',
-              height: AppDesignSystem.iconLarge * s,
-              width: AppDesignSystem.iconLarge * s,
-              errorBuilder: (context, error, stackTrace) {
-                return Icon(
-                  Icons.g_mobiledata_rounded,
-                  size: AppDesignSystem.iconXLarge * s,
-                  color: AppColors.textPrimary,
-                );
-              },
-            ),
-            AppMargin.gapHSmall(context),
-            Text(
-              'Daftar dengan Google',
-              style: AppTypography.label(
-                context,
-                color: AppColors.textPrimary,
-                weight: AppTypography.semiBold,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLoginLink(BuildContext context) {
+  Widget _buildLoginLink() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(
-          'Sudah punya akun? ',
-          style: AppTypography.body(
-            context,
-            color: AppColors.textSecondary,
-          ),
-        ),
+        Text('Sudah punya akun? ', style: AppTypography.body(context, color: AppColors.textSecondary)),
         AppTextButton(
           text: 'Masuk',
           onPressed: () => Navigator.of(context).pop(),
