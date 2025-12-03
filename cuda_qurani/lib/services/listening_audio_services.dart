@@ -38,7 +38,7 @@ class ListeningAudioService {
   ) async {
     print('🎵 ListeningAudioService: Initializing...');
     print('   Reciter: $reciterIdentifier');
-    
+
     _currentSettings = settings;
     _reciterIdentifier = reciterIdentifier;
     _currentTrackIndex = 0;
@@ -58,63 +58,65 @@ class ListeningAudioService {
     print('✅ Initialized with ${_playlist.length} tracks');
   }
 
-  // Load audio files for verse range
-  // Load audio files for verse range
-Future<void> _loadPlaylist() async {
-  _playlist.clear();
+  Future<void> _loadPlaylist() async {
+    _playlist.clear();
 
-  if (_currentSettings == null || _reciterIdentifier == null) return;
+    if (_currentSettings == null || _reciterIdentifier == null) return;
 
-  print('📋 Loading playlist: ${_currentSettings!.startSurahId}:${_currentSettings!.startVerse} - ${_currentSettings!.endSurahId}:${_currentSettings!.endVerse}');
-
-  // Generate verse list
-  for (int surah = _currentSettings!.startSurahId;
-      surah <= _currentSettings!.endSurahId;
-      surah++) {
-    int startAyah = (surah == _currentSettings!.startSurahId)
-        ? _currentSettings!.startVerse
-        : 1;
-    int endAyah = (surah == _currentSettings!.endSurahId)
-        ? _currentSettings!.endVerse
-        : 286;
-
-    // Get all audio URLs for this surah
-    final audioUrls = await ReciterManagerService.getSurahAudioUrls(
-      _reciterIdentifier!,
-      surah,
+    print(
+      '📋 Loading playlist (GLOBAL): ${_currentSettings!.startSurahId}:${_currentSettings!.startVerse} - ${_currentSettings!.endSurahId}:${_currentSettings!.endVerse}',
     );
 
-    // ✅ FIX: Convert local range to GLOBAL for filtering
-    final startGlobalAyat = GlobalAyatService.toGlobalAyat(surah, startAyah);
-    final endGlobalAyat = GlobalAyatService.toGlobalAyat(surah, endAyah);
+    // ✅ Convert start/end ke GLOBAL ayat
+    final startGlobal = GlobalAyatService.toGlobalAyat(
+      _currentSettings!.startSurahId,
+      _currentSettings!.startVerse,
+    );
+    final endGlobal = GlobalAyatService.toGlobalAyat(
+      _currentSettings!.endSurahId,
+      _currentSettings!.endVerse,
+    );
 
-    print('🔍 Filtering surah $surah: local [$startAyah-$endAyah] → global [$startGlobalAyat-$endGlobalAyat]');
+    print('🌍 Global range: $startGlobal - $endGlobal');
 
-    for (final verse in audioUrls) {
-      final globalAyahNum = verse['ayah_number'] as int;  // ← Database stores GLOBAL index
-      
-      // ✅ Compare GLOBAL with GLOBAL
-      if (globalAyahNum >= startGlobalAyat && globalAyahNum <= endGlobalAyat) {
-        // ✅ Convert back to LOCAL ayah for display
-        final localAyahInfo = GlobalAyatService.fromGlobalAyat(globalAyahNum);
-        final localAyahNum = localAyahInfo['ayah_number']!;
+    // ✅ Load SEMUA surah yang terlibat dalam range
+    for (
+      int surah = _currentSettings!.startSurahId;
+      surah <= _currentSettings!.endSurahId;
+      surah++
+    ) {
+      final audioUrls = await ReciterManagerService.getSurahAudioUrls(
+        _reciterIdentifier!,
+        surah,
+      );
 
-        _playlist.add({
-          'surah_number': surah,
-          'ayah_number': localAyahNum,  // ← Store LOCAL for UI
-          'global_ayah_number': globalAyahNum,  // ← Store GLOBAL for tracking
-          'audio_url': verse['audio_url'],
-          'duration': verse['duration'],
-          'segments': verse['segments'],
-        });
-        
-        print('  ✅ Added: Surah $surah Ayah $localAyahNum (Global #$globalAyahNum)');
+      for (final verse in audioUrls) {
+        final globalAyahNum =
+            verse['ayah_number'] as int; // ← Ini SUDAH GLOBAL dari database
+
+        // ✅ Filter: hanya ambil yang dalam range global
+        if (globalAyahNum >= startGlobal && globalAyahNum <= endGlobal) {
+          // ✅ Convert GLOBAL ke LOCAL untuk UI display
+          final localInfo = GlobalAyatService.fromGlobalAyat(globalAyahNum);
+
+          _playlist.add({
+            'surah_number': localInfo['surah_id']!,
+            'ayah_number': localInfo['ayah_number']!,
+            'global_ayah_number': globalAyahNum,
+            'audio_url': verse['audio_url'],
+            'duration': verse['duration'],
+            'segments': verse['segments'],
+          });
+
+          print(
+            '  ✅ Added: Surah ${localInfo['surah_id']} Ayah ${localInfo['ayah_number']} (Global #$globalAyahNum)',
+          );
+        }
       }
     }
-  }
 
-  print('✅ Playlist ready: ${_playlist.length} tracks');
-}
+    print('✅ Playlist ready: ${_playlist.length} tracks');
+  }
 
   // Start playback
   Future<void> startPlayback() async {
@@ -139,7 +141,9 @@ Future<void> _loadPlaylist() async {
         _currentRangeRepeat++;
         _currentTrackIndex = 0;
         _currentVerseRepeat = 0;
-        print('🔁 Repeating range (${_currentRangeRepeat}/${_currentSettings!.rangeRepeat})');
+        print(
+          '🔁 Repeating range (${_currentRangeRepeat}/${_currentSettings!.rangeRepeat})',
+        );
         await _playNextTrack();
       } else {
         print('🏁 Playback completed');
@@ -194,16 +198,20 @@ Future<void> _loadPlaylist() async {
       // ✅ FIX: Parse segments dari database
       final segmentsJson = currentAudio['segments'] as String?;
       List<Map<String, dynamic>> segments = [];
-      
+
       if (segmentsJson != null && segmentsJson.isNotEmpty) {
         try {
           final List<dynamic> segmentsList = jsonDecode(segmentsJson);
-          segments = segmentsList.map((s) => {
-            'word_index': s[0] as int,
-            'start_ms': s[2] as int,
-            'end_ms': s[3] as int,
-          }).toList();
-          
+          segments = segmentsList
+              .map(
+                (s) => {
+                  'word_index': s[0] as int,
+                  'start_ms': s[2] as int,
+                  'end_ms': s[3] as int,
+                },
+              )
+              .toList();
+
           print('🎯 Loaded ${segments.length} word segments for ayah $ayahNum');
         } catch (e) {
           print('⚠️ Error parsing segments: $e');
@@ -212,22 +220,22 @@ Future<void> _loadPlaylist() async {
 
       // ✅ FIX: Start word highlighting SEBELUM play
       StreamSubscription? positionSubscription;
-      
+
       if (segments.isNotEmpty) {
         int currentHighlightedWord = -1;
-        
+
         positionSubscription = _player.positionStream.listen((position) {
           final positionMs = position.inMilliseconds;
-          
+
           // Find which word is currently playing
           for (int i = 0; i < segments.length; i++) {
             final segment = segments[i];
             final startMs = segment['start_ms'] as int;
             final endMs = segment['end_ms'] as int;
-            
+
             if (positionMs >= startMs && positionMs <= endMs) {
               final wordIndex = segment['word_index'] as int;
-              
+
               // Only emit if word changed (avoid spam)
               if (wordIndex != currentHighlightedWord) {
                 currentHighlightedWord = wordIndex;
@@ -250,7 +258,7 @@ Future<void> _loadPlaylist() async {
 
       // ✅ Cancel position subscription
       await positionSubscription?.cancel();
-      
+
       // ✅ Reset highlight setelah ayah selesai
       _wordHighlightController?.add(-1);
       print('🔄 Reset word highlight after ayah completed');

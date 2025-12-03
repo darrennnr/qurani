@@ -64,26 +64,27 @@ class _PlaybackSettingsPageState extends State<PlaybackSettingsPage> {
     _loadReciters();
   }
 
-Future<void> _loadReciters() async {
-  print('🔍 Loading reciters...'); // ✅ Debug
-  final reciters = await ReciterManagerService.getAllReciters();
-  print('📊 Loaded ${reciters.length} reciters'); // ✅ Debug
-  
-  if (reciters.isEmpty) {
-    print('❌ No reciters loaded!'); // ✅ Debug
-  }
-  
-  setState(() {
-    _reciters = reciters;
-    if (_reciters.isNotEmpty) {
-      _selectedReciter = _reciters.first.name;
-      _selectedReciterId = _reciters.first.identifier;
-      print('✅ Selected: $_selectedReciter'); // ✅ Debug
-    } else {
-      print('⚠️ Reciters list is empty!'); // ✅ Debug
+  Future<void> _loadReciters() async {
+    print('🔍 Loading reciters...'); // ✅ Debug
+    final reciters = await ReciterManagerService.getAllReciters();
+    print('📊 Loaded ${reciters.length} reciters'); // ✅ Debug
+
+    if (reciters.isEmpty) {
+      print('❌ No reciters loaded!'); // ✅ Debug
     }
-  });
-}
+
+    setState(() {
+      _reciters = reciters;
+      if (_reciters.isNotEmpty) {
+        _selectedReciter = _reciters.first.name;
+        _selectedReciterId = _reciters.first.identifier;
+        print('✅ Selected: $_selectedReciter'); // ✅ Debug
+      } else {
+        print('⚠️ Reciters list is empty!'); // ✅ Debug
+      }
+    });
+  }
+
   /// Loads Surah data from SQLite using your LocalDatabaseService
   Future<void> _loadDatabaseData() async {
     try {
@@ -429,32 +430,6 @@ Future<void> _loadReciters() async {
                 InkWell(
                   onTap: () {
                     AppHaptics.light();
-                     Navigator.push(
-      context,
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            RecitersDownloadPage(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          const begin = Offset(0.03, 0.0);
-          const end = Offset.zero;
-          const curve = Curves.easeInOut;
-          var tween = Tween(
-            begin: begin,
-            end: end,
-          ).chain(CurveTween(curve: curve));
-          var offsetAnimation = animation.drive(tween);
-          var fadeAnimation = animation.drive(
-            Tween(begin: 0.0, end: 1.0).chain(CurveTween(curve: curve)),
-          );
-
-          return FadeTransition(
-            opacity: fadeAnimation,
-            child: SlideTransition(position: offsetAnimation, child: child),
-          );
-        },
-        transitionDuration: AppDesignSystem.durationNormal,
-      ),
-    );
                     Navigator.push(
                       context,
                       PageRouteBuilder(
@@ -488,7 +463,6 @@ Future<void> _loadReciters() async {
                         transitionDuration: AppDesignSystem.durationNormal,
                       ),
                     );
-                    // Add download management logic here
                   },
                   borderRadius: BorderRadius.vertical(
                     bottom: Radius.circular(AppDesignSystem.radiusMedium * s),
