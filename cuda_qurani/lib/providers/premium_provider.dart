@@ -16,8 +16,10 @@ class PremiumProvider extends ChangeNotifier {
 
   // Getters
   String get plan => _plan;
+  // Premium = 'premium' atau 'pro'
+  // Non-premium = 'free', 'basic', atau apapun selainnya
   bool get isPremium => _plan == 'premium' || _plan == 'pro';
-  bool get isFree => _plan == 'free';
+  bool get isFree => !isPremium; // Semua yang bukan premium = free (termasuk 'basic')
   bool get isLoading => _isLoading;
   String? get error => _error;
 

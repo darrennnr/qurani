@@ -6,6 +6,7 @@ enum PremiumFeature {
   mistakeDetection,
   tashkeelMistakes,
   tajweedMistakes,
+  tajweedColors, // Show tajweed colors in text
   versePeeking,
   mistakeHistory,
   mistakeFrequency,
@@ -40,6 +41,7 @@ const Set<PremiumFeature> premiumOnlyFeatures = {
   PremiumFeature.mistakeDetection,
   PremiumFeature.tashkeelMistakes,
   PremiumFeature.tajweedMistakes,
+  PremiumFeature.tajweedColors,
   PremiumFeature.versePeeking,
   PremiumFeature.mistakeHistory,
   PremiumFeature.mistakeFrequency,
@@ -77,6 +79,8 @@ String getFeatureName(PremiumFeature feature) {
       return 'Tashkeel Mistakes';
     case PremiumFeature.tajweedMistakes:
       return 'Tajweed Mistakes';
+    case PremiumFeature.tajweedColors:
+      return 'Tajweed Colors';
     case PremiumFeature.versePeeking:
       return 'Verse Peeking';
     case PremiumFeature.mistakeHistory:
@@ -121,6 +125,8 @@ String getFeatureDescription(PremiumFeature feature) {
       return 'Detect tashkeel/diacritics errors';
     case PremiumFeature.tajweedMistakes:
       return 'Identify tajweed rule violations';
+    case PremiumFeature.tajweedColors:
+      return 'Color letters according to tajweed rules';
     case PremiumFeature.versePeeking:
       return 'Peek at upcoming verses while reciting';
     case PremiumFeature.mistakeHistory:

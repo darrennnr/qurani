@@ -2,10 +2,18 @@ import 'package:cuda_qurani/screens/main/home/screens/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/premium_provider.dart';
 import './main/auth/login/login_page.dart';
 
-class AuthWrapper extends StatelessWidget {
+class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
+
+  @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  bool _wasAuthenticated = false;
 
   @override
   Widget build(BuildContext context) {
@@ -47,11 +55,21 @@ class AuthWrapper extends StatelessWidget {
 
         // Authenticated -> Home
         if (auth.isAuthenticated) {
+          // ✅ Refresh PremiumProvider ketika baru login
+          if (!_wasAuthenticated) {
+            _wasAuthenticated = true;
+            // Use addPostFrameCallback to avoid calling during build
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              print('🔓 AuthWrapper: User authenticated, refreshing PremiumProvider...');
+              context.read<PremiumProvider>().refresh();
+            });
+          }
           print('   → Navigating to HOME');
           return const HomePage();
         }
 
         // Not authenticated -> Login
+        _wasAuthenticated = false;
         print('   → Navigating to LOGIN');
         return const LoginPage();
       },

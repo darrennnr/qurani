@@ -1,8 +1,12 @@
 // lib/screens/main/home/screens/settings/submenu/marking.dart
 import 'package:cuda_qurani/screens/main/home/screens/settings/widgets/tajweed_rules.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
 import 'package:cuda_qurani/screens/main/home/screens/settings/widgets/appbar.dart';
+import 'package:cuda_qurani/providers/premium_provider.dart';
+import 'package:cuda_qurani/models/premium_features.dart';
+import 'package:cuda_qurani/core/widgets/premium_dialog.dart';
 
 /// ==================== MARKING SETTINGS PAGE ====================
 /// Halaman untuk mengatur pengaturan marking/penandaan dalam pembacaan Quran
@@ -183,12 +187,12 @@ class _MarkingPageState extends State<MarkingPage> {
                               ),
                             ),
                           ),
-                          Switch(
+                          // 🔒 PREMIUM GATED
+                          _buildPremiumSwitch(
+                            context,
+                            feature: PremiumFeature.tajweedColors,
                             value: _showTajweedColors,
                             onChanged: _toggleShowTajweedColors,
-                            activeColor: Color(0xFF4CAF50),
-                            inactiveThumbColor: AppColors.borderMedium,
-                            inactiveTrackColor: AppColors.borderLight,
                           ),
                         ],
                       ),
@@ -260,12 +264,12 @@ class _MarkingPageState extends State<MarkingPage> {
                               ),
                             ),
                           ),
-                          Switch(
+                          // 🔒 PREMIUM GATED
+                          _buildPremiumSwitch(
+                            context,
+                            feature: PremiumFeature.mistakeHistory,
                             value: _highlightMistakeHistory,
                             onChanged: _toggleHighlightMistakeHistory,
-                            activeColor: Color(0xFF4CAF50),
-                            inactiveThumbColor: AppColors.borderMedium,
-                            inactiveTrackColor: AppColors.borderLight,
                           ),
                         ],
                       ),
@@ -367,6 +371,62 @@ class _MarkingPageState extends State<MarkingPage> {
           ),
         ),
       ),
+    );
+  }
+
+  /// 🔒 Helper untuk build switch dengan premium gating
+  Widget _buildPremiumSwitch(
+    BuildContext context, {
+    required PremiumFeature feature,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    final premium = context.watch<PremiumProvider>();
+    final canAccess = premium.canAccess(feature);
+    final s = AppDesignSystem.getScaleFactor(context);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // PRO badge jika tidak bisa akses
+        if (!canAccess)
+          GestureDetector(
+            onTap: () => showPremiumFeatureDialog(context, feature),
+            child: Container(
+              margin: EdgeInsets.only(right: 8 * s),
+              padding: EdgeInsets.symmetric(horizontal: 6 * s, vertical: 2 * s),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF39C12).withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(4 * s),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.lock, size: 10 * s, color: const Color(0xFFF39C12)),
+                  SizedBox(width: 2 * s),
+                  Text(
+                    'PRO',
+                    style: TextStyle(
+                      fontSize: 8 * s,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFFF39C12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        // Switch
+        Switch(
+          value: canAccess ? value : false,
+          onChanged: canAccess
+              ? onChanged
+              : (_) => showPremiumFeatureDialog(context, feature),
+          activeColor: const Color(0xFF4CAF50),
+          inactiveThumbColor: AppColors.borderMedium,
+          inactiveTrackColor: AppColors.borderLight,
+        ),
+      ],
     );
   }
 }
