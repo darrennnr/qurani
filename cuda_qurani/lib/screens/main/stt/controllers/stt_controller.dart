@@ -18,6 +18,7 @@ import 'package:cuda_qurani/services/supabase_service.dart'; // ✅ NEW: For ses
 import 'package:cuda_qurani/services/auth_service.dart'; // ✅ NEW: For user UUID
 import 'package:cuda_qurani/config/app_config.dart';
 import 'package:cuda_qurani/services/metadata_cache_service.dart';
+import 'package:cuda_qurani/core/widgets/achievement_popup.dart'; // ✅ NEW: Achievement popup
 
 class SttController with ChangeNotifier {
   final int? suratId;
@@ -128,6 +129,10 @@ class SttController with ChangeNotifier {
       []; // âœ… ADD: Store current words for realtime updates
   StreamSubscription? _wsSubscription;
   StreamSubscription? _connectionSubscription;
+
+  // ✅ NEW: Achievement system
+  List<Map<String, dynamic>> _newlyEarnedAchievements = [];
+  List<Map<String, dynamic>> get newlyEarnedAchievements => _newlyEarnedAchievements;
 
   // Getters for recording state
   bool get isRecording => _isRecording;
@@ -1971,6 +1976,9 @@ class SttController with ChangeNotifier {
         _errorMessage = 'Session completed successfully!';
         notifyListeners();
 
+        // ✅ NEW: Check for new achievements after session completes
+        _checkForNewAchievements();
+
         // Clear message after 3 seconds
         Future.delayed(const Duration(seconds: 3), () {
           if (_errorMessage == 'Session completed successfully!') {
@@ -1980,6 +1988,37 @@ class SttController with ChangeNotifier {
         });
         break;
     }
+  }
+
+  /// ✅ NEW: Check for newly earned achievements after session ends
+  Future<void> _checkForNewAchievements() async {
+    final userId = _authService.userId;
+    if (userId == null) return;
+
+    try {
+      print('🏆 Checking for new achievements...');
+      final achievements = await _supabaseService.checkNewAchievements(userId);
+      
+      if (achievements.isNotEmpty) {
+        print('🎉 New achievements earned: ${achievements.length}');
+        for (final a in achievements) {
+          print('   ${a['newly_earned_emoji']} ${a['newly_earned_title']}');
+        }
+        
+        _newlyEarnedAchievements = achievements;
+        notifyListeners();
+      } else {
+        print('📭 No new achievements earned');
+      }
+    } catch (e) {
+      print('❌ Error checking achievements: $e');
+    }
+  }
+
+  /// Clear the newly earned achievements list (call after showing popup)
+  void clearNewAchievements() {
+    _newlyEarnedAchievements = [];
+    notifyListeners();
   }
 
   WordStatus _mapWordStatus(String status) {

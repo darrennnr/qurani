@@ -451,37 +451,53 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   // ==================== GOOGLE BUTTON ====================
-  Widget _buildGoogleButton(BuildContext context, double s) {
-    return SizedBox(
-      height: AppDesignSystem.scale(context, AppDesignSystem.buttonHeightLarge),
-      child: OutlinedButton.icon(
-        onPressed: () {
-          // Handle Google sign in
-        },
-        style: AppComponentStyles.secondaryButton(context),
-        icon: Image.asset(
-          'assets/images/google-icon.png',
-          height: AppDesignSystem.scale(context, 20),
-          width: AppDesignSystem.scale(context, 20),
-          errorBuilder: (context, error, stackTrace) {
-            return Icon(
-              Icons.g_mobiledata,
-              size: AppDesignSystem.iconLarge * s,
-              color: AppColors.textPrimary,
-            );
-          },
-        ),
-        label: Text(
-          'Masuk dengan Google',
-          style: AppTypography.label(
-            context,
-            color: AppColors.textPrimary,
-            weight: AppTypography.semiBold,
+Widget _buildGoogleButton(BuildContext context, double s) {
+  final double iconSize = 28 * s; // SAMA dengan signup
+
+  return SizedBox(
+    height: AppDesignSystem.scale(context, AppDesignSystem.buttonHeightLarge),
+    child: OutlinedButton(
+      onPressed: () {
+        // Handle Google sign in
+      },
+      style: AppComponentStyles.secondaryButton(context).copyWith(
+        padding: WidgetStateProperty.all(
+          EdgeInsets.symmetric(
+            horizontal: AppDesignSystem.scale(context, 16),
           ),
         ),
       ),
-    );
-  }
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Image.asset(
+            'assets/images/google-icon.jpg',
+            height: iconSize,
+            width: iconSize,
+            errorBuilder: (context, error, stackTrace) {
+              return Icon(
+                Icons.g_mobiledata,
+                size: AppDesignSystem.iconLarge * s,
+                color: AppColors.textPrimary,
+              );
+            },
+          ),
+          SizedBox(width: 12 * s),
+          Text(
+            'Masuk dengan Google',
+            style: AppTypography.label(
+              context,
+              color: AppColors.textPrimary,
+              weight: AppTypography.semiBold,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+
 
   // ==================== REGISTER LINK ====================
   Widget _buildRegisterLink(BuildContext context) {
