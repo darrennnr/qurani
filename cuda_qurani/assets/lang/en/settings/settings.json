@@ -1,0 +1,31 @@
+{
+    "settings" : {
+        "settings_text": "Settings",
+        "experiences_text": "Experiences",
+        "recitation_text": "Recitation",
+        "listening_text": "Listening",
+        "quran_appearance_text" : "Quran Appearance",
+        "mushaf_layout_text" : "Mushaf Layout",
+        "hidden_verses_text" : "Hidden Verses",
+        "marking_text" : "Marking",
+        "appearance_text" : "Appearance",
+        "language_text" : "Language",
+        "theme_text" : "Theme",
+        "notifications_text" : "Notifications",
+        "reminders_text" : "Reminders",
+        "sounds_haptics_text" : "Sounds & Haptics",
+        "mistake_feedback_text" : "Mistake Feedback",
+        "session_start_stop_text" : "Session Start & Stop",
+        "dropped_connection_text" : "Dropped Connection",
+        "downloads_text" : "Downloads",
+        "reciters_text" : "Reciters",
+        "translations_text" : "Translations",
+        "tafsir_text" : "Tafsir",
+        "privacy_text" : "Privacy",
+        "data_usage_text" : "Data Usage",
+        "delete_all_audio_data_text" : "Delete All Audio Data",
+        "delete_all_audio_data_desc" : "Are you sure you want to delete all audio recordings? This action cannot be undone and will permanently remove all your recitation history.",
+        "delete_text" : "Delete",
+        "cancel_text" : "Cancel"
+    }
+}

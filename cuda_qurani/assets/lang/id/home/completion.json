@@ -1,0 +1,18 @@
+{
+    "completion": {
+        "completeion_banner": "Selesaikan Al-Qur'an",
+        "khatm_text": "(khatam)",
+        "total_pages_text": "Total Halaman",
+        "Remaining_pages_textq": "Sisa Halaman",
+        "completions_text": "Penyelesaian",
+        "continue_reading_text": "Lanjutkan Membaca",
+        "page_text": "Halaman",
+        "search_text": "Cari berdasarkan surah",
+        "complete_text": "Selesai",
+        "incomplete_text": "Belum Selesai",
+        "started_text": "Dimulai",
+        "completion_by_chapter_text": "Penyelesaian per Surah",
+        "remaining_text": "Sisa",
+        "none_remaining_text": "Tidak Ada Sisa"
+    }
+}

@@ -1,0 +1,11 @@
+{
+    "language_page" : {
+        "language_text" : "Language"
+    }, 
+    "theme_page" : {
+        "theme_text" : "Theme",
+        "light_text" : "Light",
+        "dark_text" : "Dark",
+        "auto_text" : "Auto(Light/Dark)"
+    }
+}

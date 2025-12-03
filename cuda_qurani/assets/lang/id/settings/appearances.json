@@ -1,0 +1,11 @@
+{
+    "language_page": {
+        "language_text": "Bahasa"
+    },
+    "theme_page": {
+        "theme_text": "Tema",
+        "light_text": "Terang",
+        "dark_text": "Gelap",
+        "auto_text": "Otomatis (Terang/Gelap)"
+    }
+}

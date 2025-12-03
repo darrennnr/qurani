@@ -175,7 +175,6 @@ class _MenuAppBarState extends State<MenuAppBar>
               ),
             ),
             isSelected: widget.selectedIndex == 3,
-            tooltip: 'Profile',
           ),
 
           SizedBox(width: AppDesignSystem.space8 * s),
@@ -218,7 +217,6 @@ class _MenuAppBarState extends State<MenuAppBar>
                   transitionDuration: AppDesignSystem.durationNormal,
                 ),
               ),
-              tooltip: 'Settings',
             ),
         ],
       ),

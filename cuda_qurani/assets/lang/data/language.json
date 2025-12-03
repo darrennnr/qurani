@@ -1,0 +1,22 @@
+{
+  "languages": [
+    {
+      "code": "en",
+      "name": "English",
+      "native_name": "English",
+      "flag": "🇺🇸"
+    },
+    {
+      "code": "id",
+      "name": "Indonesian",
+      "native_name": "Bahasa Indonesia",
+      "flag": "🇮🇩"
+    },
+    {
+      "code": "ar",
+      "name": "Arabic",
+      "native_name": "العربية",
+      "flag": "🇸🇦"
+    }
+  ]
+}

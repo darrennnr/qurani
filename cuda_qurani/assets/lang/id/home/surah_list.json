@@ -1,0 +1,13 @@
+{
+    "surah_list": {
+        "search_text": "Cari surah, juz, atau halaman...",
+        "surah_text": "Surah",
+        "juz_text": "Juz",
+        "page_text": "Halaman",
+        "ayah_text": "Ayat",
+        "makkah_text": "Makkah",
+        "madinah_text": "Madinah",
+        "null_result_text": "Tidak Ada Hasil",
+        "null_result_desc": "Coba cari dengan kata kunci lain"
+    }
+}

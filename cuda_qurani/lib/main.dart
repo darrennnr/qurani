@@ -13,6 +13,9 @@ import 'package:cuda_qurani/config/app_config.dart';
 import 'package:cuda_qurani/screens/splash_screen.dart';
 import 'package:cuda_qurani/services/metadata_cache_service.dart';
 
+// ✅ NEW: Import Language Provider
+import 'package:cuda_qurani/core/providers/language_provider.dart';
+
 // Global flag to track DB initialization
 bool _isDatabaseInitialized = false;
 
@@ -24,11 +27,30 @@ void main() async {
     anonKey: AppConfig.supabaseAnonKey,
   );
   print('✅ Supabase initialized');
+  
   // ✅ Pre-initialize ALL databases BEFORE app starts
   await _initializeDatabases();
   await JuzService.initialize();
   await _initializeListeningServices();
+  
+  // ✅ NEW: Initialize Language Service
+  await _initializeLanguageService();
+  
   runApp(const MainApp());
+}
+
+/// ✅ NEW: Initialize Language Service
+Future<void> _initializeLanguageService() async {
+  try {
+    print('🔄 [MAIN] Initializing language service...');
+    final languageProvider = LanguageProvider();
+    await languageProvider.initialize();
+    print('✅ [MAIN] Language service initialized: ${languageProvider.currentLanguageCode}');
+  } catch (e, stackTrace) {
+    print('⚠️ [MAIN] Language service initialization failed: $e');
+    print('🔍 Stack trace: $stackTrace');
+    // Don't throw - app should still work with default language
+  }
 }
 
 Future<void> _initializeListeningServices() async {
@@ -73,13 +95,22 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // ✅ NEW: Auth Provider
-        ChangeNotifierProvider(create: (_) => AuthProvider(), lazy: false),
-        // ✅ FIX: Make RecitationProvider lazy (only created when needed)
-        // This prevents holding old WebSocket reference after logout
+        // ✅ Auth Provider
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(),
+          lazy: false,
+        ),
+        
+        // ✅ NEW: Language Provider (lazy: false agar langsung available)
+        ChangeNotifierProvider(
+          create: (_) => LanguageProvider()..initialize(),
+          lazy: false,
+        ),
+        
+        // ✅ Recitation Provider (lazy to prevent WebSocket issues)
         ChangeNotifierProvider(
           create: (_) => RecitationProvider(),
-          lazy: true, // ← CHANGED from false to true
+          lazy: true,
         ),
       ],
       child: MaterialApp(
@@ -90,13 +121,13 @@ class MainApp extends StatelessWidget {
           primaryColor: const Color(0xFF247C64),
           scaffoldBackgroundColor: const Color(0xFFFFFFFF),
         ),
-        home: const InitialSplashScreen(), // ✅ Show splash first, THEN auth
+        home: const InitialSplashScreen(),
       ),
     );
   }
 }
 
-/// ✅ NEW: Initial splash screen that shows ONCE on app start
+/// ✅ Initial splash screen that shows ONCE on app start
 /// Separate from auth loading state
 class InitialSplashScreen extends StatefulWidget {
   const InitialSplashScreen({super.key});

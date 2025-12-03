@@ -1,0 +1,23 @@
+{
+    "activity": {
+        "filter_period_text": "Filter Periode:",
+        "month_text": "Bulan",
+        "week_text": "Minggu",
+        "day_text": "Hari",
+        "pages_text": "Halaman",
+        "engangement_text": "Keterlibatan",
+        "statistics_text": "Statistik",
+        "this_day_text": "Hari Ini",
+        "this_week_text": "Minggu Ini",
+        "this_month_text": "Bulan Ini",
+        "this_year_text": "Tahun Ini",
+        "alltime_text": "Sepanjang Waktu",
+        "completion_text": "Penyelesaian",
+        "verses_recited": "Ayat Dibaca",
+        "recitatiom_time_text": "Waktu Tilawah",
+        "earned_badges_text": "Lencana Diperoleh",
+        "deeds_estimated_text": "Perkiraan Pahala",
+        "verses_shared_text": "Ayat Dibagikan",
+        "search_queries_text": "Pencarian"
+    }
+}

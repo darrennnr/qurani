@@ -1,0 +1,10 @@
+{
+    "appbar_widget": {
+        "home_text": "Beranda",
+        "quran_text": "Quran",
+        "completion_text": "Penyelesaian",
+        "activity_text": "Aktivitas",
+        "history_text": "Riwayat",
+        "premium_text": "Premium"
+    }
+}

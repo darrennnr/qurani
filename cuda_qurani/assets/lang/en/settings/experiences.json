@@ -1,0 +1,41 @@
+{
+    "experiences_menu": {
+        "recitation_text": "Recitation",
+        "recitation_page": {
+            "mistake_detection_text": "Mistake Detection",
+            "detect_mistakes_text": "Detect mistakes",
+            "detect_tashkeel_text": "Detect Tashkeel (diacritics) mistakes",
+            "detect_tashkeel_desc": "Tashkeel mistake detection is a new feature and may miss some of your tashkeel mistakes.",
+            "dont_progress_text": "Don't progress until mistake is fixed",
+            "dont_progress_desc": "Require every single word to be recited correctly before moving on to the next word.",
+            "sessions_text": "Sessions",
+            "resumable_sessions_text": "Resumable Sessions",
+            "resumable_sessions_desc": "Control whether to resume the current session, or start a new session every time recording is started."
+        },
+        "listening_text": "Listening",
+        "listening_page": {
+            "reciter_text": "Reciter",
+            "manage_downloads_text": "Manage Downloads",
+            "manage_download_page": {
+                "total_storage_text": "Total Storage Used",
+                "available_reciters_text": "Available Reciters",
+                "clear_all_caches_text": "Clear All Caches",
+                "clear_all_caches_desc": "Are you sure you want to delete all downloaded audio for all reciters?",
+                "clear_all_caches_desc2": "This action cannot be undone.",
+                "cancel_text": "Cancel",
+                "delete_text": "Delete",
+                "delete_all_text": "Delete All",
+                "audio_manager_page": {
+                    "audio_manager_text": "Audio Manager",
+                    "using_text": "Using",
+                    "files_text": "Files",
+                    "download_all_text": "Download All",
+                    "clear_caches_text": "Clear Caches",
+                    "clear_caches_desc": "Are you sure you want to delete all downloaded audio for ",
+                    "clear_caches_desc2": "This will free up "
+                }
+            }
+        }
+    },
+    "quran_appearance": {}
+}

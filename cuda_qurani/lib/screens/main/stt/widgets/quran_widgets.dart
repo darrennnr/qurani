@@ -55,7 +55,6 @@ class QuranAppBar extends StatelessWidget implements PreferredSizeWidget {
             onPressed: () {
               Navigator.pop(context);
             },
-            tooltip: 'Menu',
           ),
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -150,9 +149,6 @@ class QuranAppBar extends StatelessWidget implements PreferredSizeWidget {
                   });
                 }
               },
-              tooltip: controller.isQuranMode
-                  ? 'Switch to List Mode'
-                  : 'Switch to Mushaf Mode',
               splashRadius: iconSize * 1.1,
             ),
             // Visibility Toggle
@@ -164,9 +160,6 @@ class QuranAppBar extends StatelessWidget implements PreferredSizeWidget {
                 size: iconSize * 0.9,
               ),
               onPressed: controller.toggleHideUnread,
-              tooltip: controller.hideUnreadAyat
-                  ? 'Show All Text'
-                  : 'Hide Unread',
               splashRadius: iconSize * 1.1,
             ),
             // More Options Menu

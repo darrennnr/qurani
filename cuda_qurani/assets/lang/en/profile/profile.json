@@ -1,0 +1,25 @@
+{
+    "profile": {
+        "account_text": "Account",
+        "joined_text": "Joined",
+        "description_status_text": "Subscription Status",
+        "free_text": "Free",
+        "premium_text": "Premium",
+        "switch_account_text": "Switch Account",
+        "add_account_text": "Add Account",
+        "logout_text": "Log Out",
+        "logout_desc": "Are you sure you want to logout?",
+        "cancel_text": "Cancel",
+        "logout_text2": "Logout",
+        "about_qurani_text": "About Qurani",
+        "request_a_feature_text": "Request a Feauture",
+        "help_center_text": "Help Center",
+        "share_application_text": "Share Application",
+        "rate_application_text": "Rate Application",
+        "terms_and_conditions_text": "Terms of Service",
+        "privacy_policy_text": "Privacy Policy",
+        "delete_account_text": "Delete Account",
+        "delete_account_desc": "This action cannot be undone. All your data will be permanently deleted.",
+        "delete_text": "Delete"
+    }
+}

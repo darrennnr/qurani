@@ -1,0 +1,25 @@
+{
+    "profile": {
+        "account_text": "Akun",
+        "joined_text": "Bergabung",
+        "description_status_text": "Status Langganan",
+        "free_text": "Gratis",
+        "premium_text": "Premium",
+        "switch_account_text": "Ganti Akun",
+        "add_account_text": "Tambah Akun",
+        "logout_text": "Keluar",
+        "logout_desc": "Apakah Anda yakin ingin keluar?",
+        "cancel_text": "Batal",
+        "logout_text2": "Keluar",
+        "about_qurani_text": "Tentang Qurani",
+        "request_a_feature_text": "Ajukan Fitur",
+        "help_center_text": "Pusat Bantuan",
+        "share_application_text": "Bagikan Aplikasi",
+        "rate_application_text": "Nilai Aplikasi",
+        "terms_and_conditions_text": "Ketentuan Layanan",
+        "privacy_policy_text": "Kebijakan Privasi",
+        "delete_account_text": "Hapus Akun",
+        "delete_account_desc": "Tindakan ini tidak dapat dibatalkan. Semua data Anda akan dihapus secara permanen.",
+        "delete_text": "Hapus"
+    }
+}

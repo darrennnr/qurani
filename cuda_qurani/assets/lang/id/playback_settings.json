@@ -1,0 +1,17 @@
+{
+    "playback_settings": {
+        "select_range_text": "Pilih Rentang",
+        "starting_verse_text": "Ayat Mulai",
+        "ending_verse_text": "Ayat Akhir",
+        "cancel_text": "Batal",
+        "done_text": "Selesai",
+        "reciter_text": "Qari",
+        "manage_downloads_text": "Kelola Unduhan",
+        "play_Speed": "Kecepatan Putar",
+        "play_each_verse_text": "Putar setiap ayat",
+        "play_each_range_text": "Putar setiap rentang",
+        "times_text": "Kali",
+        "loop_text": "Ulangi",
+        "play_audio_text": "Putar Audio"
+    }
+}

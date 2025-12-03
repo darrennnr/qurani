@@ -1,0 +1,17 @@
+{
+    "app_bar": {
+        "juz_text": "Juz",
+        "ayah_text": "Ayat",
+        "page_text": "Halaman"
+    },
+    "bottom_bar": {
+        "listen_text": "Dengarkan",
+        "recite_text": "Lafalkan"
+    },
+    "mushaf_view": {
+        "juz_text": "Juz"
+    },
+    "list_view": {
+        "juz_text": "Juz"
+    }
+}

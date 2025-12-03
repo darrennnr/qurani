@@ -1,0 +1,43 @@
+{
+    "home": {
+        "greeting_text": "Good",
+        "afternoon": "Afternoon",
+        "morning": "Morning",
+        "evening": "Evening",
+        "latest_Session_text": "Latest Session",
+        "surah_text": "Surah",
+        "juz_text": "Juz",
+        "page_text": "Page",
+        "ayah_text": "Ayah",
+        "word_text": "Word",
+        "ago_text": "ago",
+        "hour_text": "hour",
+        "minute_text": "minute",
+        "second_text": "second",
+        "hours_text": "hours",
+        "minutes_text": "minutes",
+        "seconds_text": "seconds",
+        "continue_reading_text": "Continue Reading",
+        "see_all_text": "See All",
+        "session": {
+            "session_text": "Session",
+            "sessions_text": "Sessions",
+            "reading_text": "Reading",
+            "min_text": "min",
+            "continue_text" : "Continue"
+        },
+        "streak_text": "Streak",
+        "treak": "Longest Streak",
+        "day_text": "Day",
+        "days_text": "Days",
+        "progress_text": "Progress",
+        "completion_text": "Completion",
+        "memorized_text": "Memorized",
+        "time_text": "Time",
+        "verse_text": "Verse",
+        "verses_text": "Verses",
+        "todays_goal_text": "Today's Goal",
+        "ayah_a_day_text": "Ayah a Day",
+        "achievements_text": "Achievements"
+    }
+}

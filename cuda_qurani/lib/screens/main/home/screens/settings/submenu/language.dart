@@ -1,10 +1,14 @@
 // lib/screens/main/home/screens/settings/submenu/language.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
+import 'package:cuda_qurani/core/providers/language_provider.dart';
+import 'package:cuda_qurani/core/services/language_service.dart';
 import 'package:cuda_qurani/screens/main/home/screens/settings/widgets/appbar.dart';
 
 /// ==================== LANGUAGE SETTINGS PAGE ====================
-/// Halaman untuk memilih bahasa aplikasi dengan infinite scroll
+/// Halaman untuk memilih bahasa aplikasi
+/// Data bahasa diambil dari assets/lang/data/language.json
 
 class LanguagePage extends StatefulWidget {
   const LanguagePage({Key? key}) : super(key: key);
@@ -14,79 +18,114 @@ class LanguagePage extends StatefulWidget {
 }
 
 class _LanguagePageState extends State<LanguagePage> {
-  // Default selected language (dummy state)
-  String _selectedLanguage = 'English';
-
-  // Dummy language data for infinite scroll
-  final List<String> _languages = [
-    'English',
-    'Indonesia',
-    'العربية (Arabic)',
-    'Türkçe (Turkish)',
-    'اردو (Urdu)',
-    'فارسی (Persian)',
-    'Français (French)',
-    'Deutsch (German)',
-    'Español (Spanish)',
-    'Português (Portuguese)',
-    '中文 (Chinese)',
-    '日本語 (Japanese)',
-    '한국어 (Korean)',
-    'Русский (Russian)',
-    'Italiano (Italian)',
-    'Nederlands (Dutch)',
-    'Polski (Polish)',
-    'Українська (Ukrainian)',
-    'Bahasa Melayu (Malay)',
-    'বাংলা (Bengali)',
-    'हिन्दी (Hindi)',
-    'ภาษาไทย (Thai)',
-    'Tiếng Việt (Vietnamese)',
-    'Svenska (Swedish)',
-    'Norsk (Norwegian)',
-    'Dansk (Danish)',
-    'Suomi (Finnish)',
-    'Ελληνικά (Greek)',
-    'עברית (Hebrew)',
-    'Català (Catalan)',
-    'Čeština (Czech)',
-    'Magyar (Hungarian)',
-    'Română (Romanian)',
-    'Български (Bulgarian)',
-    'Srpski (Serbian)',
-    'Hrvatski (Croatian)',
-    'Slovenščina (Slovenian)',
-    'Lietuvių (Lithuanian)',
-    'Latviešu (Latvian)',
-    'Eesti (Estonian)',
-    'Shqip (Albanian)',
-    'Македонски (Macedonian)',
-    'Bosanski (Bosnian)',
-    'Íslenska (Icelandic)',
-    'Gaeilge (Irish)',
-    'Cymraeg (Welsh)',
-    'Euskara (Basque)',
-    'Galego (Galician)',
-  ];
-
-  void _selectLanguage(String language) {
-    setState(() {
-      _selectedLanguage = language;
+  @override
+  void initState() {
+    super.initState();
+    // Load available languages saat page dibuka
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = Provider.of<LanguageProvider>(context, listen: false);
+      if (provider.availableLanguages.isEmpty) {
+        provider.initialize();
+      }
     });
+  }
+
+  Future<void> _selectLanguage(LanguageModel language) async {
+    final provider = Provider.of<LanguageProvider>(context, listen: false);
+    
+    // Skip jika sudah dipilih
+    if (provider.currentLanguageCode == language.code) {
+      return;
+    }
+    
     AppHaptics.selection();
     
-    // TODO: Implement language change logic
-    // Example: Provider.of<LanguageProvider>(context, listen: false).setLanguage(language);
+    // Show loading dialog
+    if (mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Center(
+          child: Container(
+            padding: EdgeInsets.all(AppDesignSystem.space24 * 
+                AppDesignSystem.getScaleFactor(context)),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium * 
+                  AppDesignSystem.getScaleFactor(context)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(),
+                SizedBox(height: AppDesignSystem.space16 * 
+                    AppDesignSystem.getScaleFactor(context)),
+                const Text('Changing language...'),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Change language
+    final success = await provider.changeLanguage(language.code);
+    
+    if (!mounted) return;
+    
+    // Close loading dialog
+    Navigator.pop(context);
+    
+    if (success) {
+      // Show success snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Language changed to ${language.nativeName}',
+            style: const TextStyle(color: Colors.white),
+          ),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppDesignSystem.radiusSmall),
+          ),
+        ),
+      );
+      
+      // Optional: Pop back atau restart app untuk apply perubahan
+      // await Future.delayed(const Duration(milliseconds: 500));
+      // if (mounted) Navigator.pop(context);
+      
+      // Atau force rebuild semua widget:
+      // Phoenix.rebirth(context); // Jika pakai flutter_phoenix package
+    } else {
+      // Show error snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'Failed to change language',
+            style: TextStyle(color: Colors.white),
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppDesignSystem.radiusSmall),
+          ),
+        ),
+      );
+    }
   }
 
   Widget _buildLanguageOption({
-    required String label,
+    required LanguageModel language,
     required bool isSelected,
   }) {
     final s = AppDesignSystem.getScaleFactor(context);
 
     return InkWell(
-      onTap: () => _selectLanguage(label),
+      onTap: () => _selectLanguage(language),
       borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium * s * 0.9),
       child: Container(
         padding: EdgeInsets.symmetric(
@@ -103,20 +142,53 @@ class _LanguagePageState extends State<LanguagePage> {
         ),
         child: Row(
           children: [
+            // Flag emoji
+            if (language.flag.isNotEmpty) ...[
+              Text(
+                language.flag,
+                style: TextStyle(fontSize: 28 * s * 0.9),
+              ),
+              SizedBox(width: AppDesignSystem.space12 * s * 0.9),
+            ],
+            
+            // Language name
             Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 16 * s * 0.9,
-                  fontWeight: isSelected ? AppTypography.semiBold : AppTypography.regular,
-                  color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Native name (e.g., "Bahasa Indonesia")
+                  Text(
+                    language.nativeName,
+                    style: TextStyle(
+                      fontSize: 16 * s * 0.9,
+                      fontWeight: isSelected 
+                          ? AppTypography.semiBold 
+                          : AppTypography.regular,
+                      color: isSelected 
+                          ? AppColors.textPrimary 
+                          : AppColors.textSecondary,
+                    ),
+                  ),
+                  // English name (e.g., "Indonesian") - jika berbeda
+                  if (language.name != language.nativeName) ...[
+                    SizedBox(height: 2 * s * 0.9),
+                    Text(
+                      language.name,
+                      style: TextStyle(
+                        fontSize: 13 * s * 0.9,
+                        fontWeight: AppTypography.regular,
+                        color: AppColors.textTertiary,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
+            
             // Radio indicator
             Container(
-              width: 20 * s * 0.9,
-              height: 20 * s * 0.9,
+              width: 22 * s * 0.9,
+              height: 22 * s * 0.9,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
@@ -128,9 +200,9 @@ class _LanguagePageState extends State<LanguagePage> {
               child: isSelected
                   ? Center(
                       child: Container(
-                        width: 10 * s * 0.9,
-                        height: 10 * s * 0.9,
-                        decoration: BoxDecoration(
+                        width: 11 * s * 0.9,
+                        height: 11 * s * 0.9,
+                        decoration: const BoxDecoration(
                           shape: BoxShape.circle,
                           color: Colors.black,
                         ),
@@ -154,17 +226,126 @@ class _LanguagePageState extends State<LanguagePage> {
         title: 'Language',
       ),
       body: SafeArea(
-        child: ListView.separated(
-          padding: EdgeInsets.all(AppDesignSystem.space20 * s * 0.9),
-          itemCount: _languages.length,
-          separatorBuilder: (context, index) => SizedBox(
-            height: AppDesignSystem.space16 * s * 0.9,
-          ),
-          itemBuilder: (context, index) {
-            final language = _languages[index];
-            return _buildLanguageOption(
-              label: language,
-              isSelected: _selectedLanguage == language,
+        child: Consumer<LanguageProvider>(
+          builder: (context, provider, child) {
+            // Show loading state
+            if (provider.isLoading && provider.availableLanguages.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const CircularProgressIndicator(),
+                    SizedBox(height: AppDesignSystem.space16 * s),
+                    Text(
+                      'Loading languages...',
+                      style: TextStyle(
+                        fontSize: 14 * s,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            // Show error state
+            if (provider.error != null) {
+              return Center(
+                child: Padding(
+                  padding: EdgeInsets.all(AppDesignSystem.space20 * s),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 48 * s,
+                        color: Colors.red,
+                      ),
+                      SizedBox(height: AppDesignSystem.space16 * s),
+                      Text(
+                        'Failed to load languages',
+                        style: TextStyle(
+                          fontSize: 16 * s,
+                          fontWeight: AppTypography.semiBold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      SizedBox(height: AppDesignSystem.space8 * s),
+                      Text(
+                        provider.error!,
+                        style: TextStyle(
+                          fontSize: 14 * s,
+                          color: AppColors.textSecondary,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: AppDesignSystem.space24 * s),
+                      ElevatedButton.icon(
+                        onPressed: () => provider.initialize(),
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Retry'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: AppDesignSystem.space24 * s,
+                            vertical: AppDesignSystem.space12 * s,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppDesignSystem.radiusMedium * s,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            // Get languages and current selection
+            final languages = provider.availableLanguages;
+            final currentCode = provider.currentLanguageCode;
+
+            // Show empty state
+            if (languages.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.language,
+                      size: 48 * s,
+                      color: AppColors.textTertiary,
+                    ),
+                    SizedBox(height: AppDesignSystem.space16 * s),
+                    Text(
+                      'No languages available',
+                      style: TextStyle(
+                        fontSize: 16 * s,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            // Show languages list
+            return ListView.separated(
+              padding: EdgeInsets.all(AppDesignSystem.space20 * s * 0.9),
+              itemCount: languages.length,
+              separatorBuilder: (context, index) => SizedBox(
+                height: AppDesignSystem.space12 * s * 0.9,
+              ),
+              itemBuilder: (context, index) {
+                final language = languages[index];
+                return _buildLanguageOption(
+                  language: language,
+                  isSelected: currentCode == language.code,
+                );
+              },
             );
           },
         ),

@@ -1,0 +1,43 @@
+{
+    "home": {
+        "greeting_text": "Selamat",
+        "afternoon": "Siang",
+        "morning": "Pagi",
+        "evening": "Malam",
+        "latest_Session_text": "Sesi Terakhir",
+        "surah_text": "Surah",
+        "juz_text": "Juz",
+        "page_text": "Halaman",
+        "ayah_text": "Ayat",
+        "word_text": "Kata",
+        "ago_text": "yang lalu",
+        "hour_text": "jam",
+        "minute_text": "menit",
+        "second_text": "detik",
+        "hours_text": "jam",
+        "minutes_text": "menit",
+        "seconds_text": "detik",
+        "continue_reading_text": "Lanjutkan Membaca",
+        "see_all_text": "Lihat Semua",
+        "session": {
+            "session_text": "Sesi",
+            "sessions_text": "Sesi",
+            "reading_text": "Membaca",
+            "min_text": "menit",
+            "continue_text": "Lanjutkan"
+        },
+        "streak_text": "Streak",
+        "treak": "Streak Terpanjang",
+        "day_text": "Hari",
+        "days_text": "Hari",
+        "progress_text": "Progres",
+        "completion_text": "Penyelesaian",
+        "memorized_text": "Hafalan",
+        "time_text": "Waktu",
+        "verse_text": "Ayat",
+        "verses_text": "Ayat",
+        "todays_goal_text": "Target Hari Ini",
+        "ayah_a_day_text": "Ayat per Hari",
+        "achievements_text": "Pencapaian"
+    }
+}

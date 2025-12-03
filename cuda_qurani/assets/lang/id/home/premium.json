@@ -1,0 +1,91 @@
+{
+  "premium_offer": {
+    "title": "Premium",
+    "upgrade_title": "TINGKATKAN KE PREMIUM ⭐\nHAFAL LEBIH BANYAK",
+    "compare_premium_features_text": "Bandingkan Fitur\nPremium",
+
+    "plans": {
+      "free_text": "GRATIS",
+      "premium_text": "PREMIUM",
+      "subscribe_button": "BERLANGGANAN",
+      "dialog_title": "Langganan Segera Hadir",
+      "dialog_message": "Fitur langganan premium sedang dalam pengembangan. Nantikan fitur-fitur luar biasa!",
+      "dialog_close": "Mengerti"
+    },
+
+    "sections": {
+      "memorization": "Hafalan",
+      "recitation": "Tilawah",
+      "progress": "Progres",
+      "challenges": "Tantangan",
+      "audio": "Audio",
+      "search": "Pencarian",
+      "mushaf": "Mushaf",
+      "devices": "Perangkat",
+      "advertisement": "Iklan"
+    },
+
+    "features": {
+      "hide_verses": "Sembunyikan Ayat",
+      "mistake_detection": "Deteksi Kesalahan",
+      "tashkeel_mistakes": "Kesalahan Tashkeel",
+      "tajweed_mistakes": "Kesalahan Tajwid",
+      "verse_peeking": "Intip Ayat",
+      "mistake_history": "Riwayat Kesalahan",
+      "mistake_frequency": "Frekuensi Kesalahan",
+      "mistake_playback": "Putar Ulang Kesalahan",
+
+      "follow_along": "Ikuti Bacaan",
+      "session_audio": "Audio Sesi",
+      "share_audio": "Bagikan Audio",
+      "session_pausing": "Jeda Sesi",
+
+      "streaks": "Streak",
+      "session_history": "Riwayat Sesi",
+      "analytics": "Analitik",
+      "memorization_progress": "Progres Hafalan",
+      "add_external_sessions": "Tambahkan Sesi Eksternal",
+
+      "goals": "Target",
+      "badges": "Lencana",
+      "notifications": "Notifikasi",
+
+      "audio_follow_along": "Ikuti via Audio",
+      "various_recitations": "Beragam Qari",
+      "repeat_functionality": "Fitur Ulang",
+      "custom_range": "Rentang Kustom",
+
+      "voice_search": "Suara",
+      "text_search": "Teks",
+      "recent_search_history": "Riwayat Pencarian Terbaru",
+
+      "mushaf_types": "Indopak / Madani",
+      "translations_transliteration": "Terjemahan / Transliterasi",
+      "tafsir": "Tafsir",
+      "bookmarks": "Penanda",
+
+      "devices": "Perangkat",
+      "cross_device_sync": "Sinkronisasi Lintas Perangkat",
+      "language_support": "Dukungan Bahasa",
+
+      "advertisement": "Iklan",
+
+      "values": {
+        "unlimited": "Tak Terbatas",
+        "last_session": "Sesi Terakhir",
+        "earn": "Dapatkan",
+        "discover_earn": "Temukan & Dapatkan",
+        "ayah_ayah": "Ayat demi Ayat",
+        "word_word": "Kata demi Kata",
+        "basic": "Dasar",
+        "advanced": "Lanjutan",
+        "completion": "Penyelesaian",
+        "mistakes_overview": "Ringkasan\nKesalahan",
+        "no_ads": "Tanpa iklan!",
+        "value_1": "1",
+        "value_3": "3",
+        "value_15": "15"
+      }
+    }
+  }
+}

@@ -28,13 +28,13 @@ class SttPage extends StatelessWidget {
     this.initialWordStatusMap,
     this.resumeSessionId, // ✅ NEW
   }) : assert(
-        (suratId != null ? 1 : 0) +
-                (pageId != null ? 1 : 0) +
-                (juzId != null ? 1 : 0) ==
-            1,
-        'Exactly one of suratId, pageId, or juzId must be provided',
-      ),
-      super(key: key);
+         (suratId != null ? 1 : 0) +
+                 (pageId != null ? 1 : 0) +
+                 (juzId != null ? 1 : 0) ==
+             1,
+         'Exactly one of suratId, pageId, or juzId must be provided',
+       ),
+       super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -137,29 +137,30 @@ class SttPage extends StatelessWidget {
     );
   }
 
-Widget _buildMainContent() {
-  return Consumer<SttController>(
-    builder: (context, controller, child) {
-      return Stack(
-        children: [
-          _buildQuranText(context, controller),
-          const Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: QuranBottomBar(),
-          ),
-          // ✅ TAMBAHKAN INI - Popup Guide
-          const SliderGuidePopup(),
-        ],
-      );
-    },
-  );
-}
+  Widget _buildMainContent() {
+    return Consumer<SttController>(
+      builder: (context, controller, child) {
+        return Stack(
+          children: [
+            _buildQuranText(context, controller),
+            const Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: QuranBottomBar(),
+            ),
+            // ✅ TAMBAHKAN INI - Popup Guide
+            const SliderGuidePopup(),
+          ],
+        );
+      },
+    );
+  }
 
   Widget _buildQuranText(BuildContext context, SttController controller) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final padding = screenWidth * 0.03; // 1% padding to perfectly center the text
+    final padding =
+        screenWidth * 0.03; // 1% padding to perfectly center the text
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: padding),

@@ -1,0 +1,17 @@
+{
+    "app_bar": {
+        "juz_text": "Juz",
+        "ayah_text": "Ayah",
+        "page_text": "Page"
+    },
+    "bottom_bar": {
+        "listen_text": "Listen",
+        "recite_text": "Recite"
+    },
+    "mushaf_view": {
+        "juz_text": "Juz"
+    },
+    "list_view": {
+        "juz_text": "Juz"
+    }
+}
