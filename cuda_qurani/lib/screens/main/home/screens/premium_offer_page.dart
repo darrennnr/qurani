@@ -1,9 +1,11 @@
 // lib/screens/main/home/screens/premium_offer_page.dart
 import 'package:cuda_qurani/screens/main/home/screens/home_page.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
 import 'package:cuda_qurani/core/widgets/app_components.dart';
 import 'package:cuda_qurani/screens/main/home/widgets/navigation_bar.dart';
+import 'package:cuda_qurani/providers/premium_provider.dart';
 
 class PremiumOfferPage extends StatefulWidget {
   const PremiumOfferPage({Key? key}) : super(key: key);
@@ -572,7 +574,15 @@ class _PremiumOfferPageState extends State<PremiumOfferPage> {
   // ==================== SUBSCRIPTION DIALOG ====================
   void _showSubscriptionDialog(BuildContext context) {
     final s = AppDesignSystem.getScaleFactor(context);
+    final premium = context.read<PremiumProvider>();
     
+    // If already premium, show success message
+    if (premium.isPremium) {
+      _showAlreadyPremiumDialog(context, s);
+      return;
+    }
+    
+    // Show subscription info dialog
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -593,8 +603,8 @@ class _PremiumOfferPageState extends State<PremiumOfferPage> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      const Color(0xFFF39C12).withOpacity(0.2),
-                      const Color(0xFFF5B041).withOpacity(0.1),
+                      const Color(0xFFF39C12).withValues(alpha: 0.2),
+                      const Color(0xFFF5B041).withValues(alpha: 0.1),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -612,7 +622,7 @@ class _PremiumOfferPageState extends State<PremiumOfferPage> {
               
               // Title
               Text(
-                'Subscription Coming Soon',
+                'Premium Subscription',
                 style: AppTypography.h3(
                   context,
                   weight: AppTypography.bold,
@@ -624,7 +634,7 @@ class _PremiumOfferPageState extends State<PremiumOfferPage> {
               
               // Message
               Text(
-                'Premium subscription feature is currently under development. Stay tuned for amazing features!',
+                'Payment integration is coming soon! In the meantime, contact support to upgrade your account.',
                 style: AppTypography.body(
                   context,
                   color: AppColors.textSecondary,
@@ -632,44 +642,105 @@ class _PremiumOfferPageState extends State<PremiumOfferPage> {
                 textAlign: TextAlign.center,
               ),
               
+              AppMargin.gap(context),
+              
+              // Benefits preview
+              Container(
+                padding: EdgeInsets.all(12 * s),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceContainerLowest,
+                  borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium * s),
+                ),
+                child: Column(
+                  children: [
+                    _buildBenefitItem(context, s, 'Mistake Detection'),
+                    _buildBenefitItem(context, s, 'Tajweed Analysis'),
+                    _buildBenefitItem(context, s, 'Advanced Analytics'),
+                    _buildBenefitItem(context, s, 'Unlimited Goals'),
+                  ],
+                ),
+              ),
+              
               AppMargin.gapLarge(context),
               
               // Button
               AppButton(
                 text: 'Got it',
-                onPressed: () => Navigator.pushReplacement(
-                context,
-                PageRouteBuilder(
-                  pageBuilder: (context, animation, secondaryAnimation) =>
-                      const HomePage(),
-                  transitionsBuilder:
-                      (context, animation, secondaryAnimation, child) {
-                        const begin = Offset(0.03, 0.0);
-                        const end = Offset.zero;
-                        const curve = Curves.easeInOut;
-                        var tween = Tween(
-                          begin: begin,
-                          end: end,
-                        ).chain(CurveTween(curve: curve));
-                        var offsetAnimation = animation.drive(tween);
-                        var fadeAnimation = animation.drive(
-                          Tween(
-                            begin: 0.0,
-                            end: 1.0,
-                          ).chain(CurveTween(curve: curve)),
-                        );
-
-                        return FadeTransition(
-                          opacity: fadeAnimation,
-                          child: SlideTransition(
-                            position: offsetAnimation,
-                            child: child,
-                          ),
-                        );
-                      },
-                  transitionDuration: AppDesignSystem.durationNormal,
+                onPressed: () => Navigator.pop(context),
+                fullWidth: true,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildBenefitItem(BuildContext context, double s, String text) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 4 * s),
+      child: Row(
+        children: [
+          Icon(
+            Icons.check_circle,
+            color: const Color(0xFF4CAF50),
+            size: 16 * s,
+          ),
+          SizedBox(width: 8 * s),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 13 * s,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  void _showAlreadyPremiumDialog(BuildContext context, double s) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDesignSystem.radiusLarge * s),
+        ),
+        child: Container(
+          padding: AppPadding.all(context, AppDesignSystem.space24),
+          decoration: AppComponentStyles.dialogDecoration(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 64 * s,
+                height: 64 * s,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4CAF50).withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.check_circle,
+                  color: const Color(0xFF4CAF50),
+                  size: 32 * s,
                 ),
               ),
+              AppMargin.gap(context),
+              Text(
+                'You\'re Premium!',
+                style: AppTypography.h3(context, weight: AppTypography.bold),
+                textAlign: TextAlign.center,
+              ),
+              AppMargin.gapSmall(context),
+              Text(
+                'You already have access to all premium features. Enjoy!',
+                style: AppTypography.body(context, color: AppColors.textSecondary),
+                textAlign: TextAlign.center,
+              ),
+              AppMargin.gapLarge(context),
+              AppButton(
+                text: 'Great!',
+                onPressed: () => Navigator.pop(context),
                 fullWidth: true,
               ),
             ],

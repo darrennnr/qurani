@@ -16,6 +16,9 @@ import 'package:cuda_qurani/services/metadata_cache_service.dart';
 // ✅ NEW: Import Language Provider
 import 'package:cuda_qurani/core/providers/language_provider.dart';
 
+// ✅ NEW: Import Premium Provider
+import 'package:cuda_qurani/providers/premium_provider.dart';
+
 // Global flag to track DB initialization
 bool _isDatabaseInitialized = false;
 
@@ -104,6 +107,12 @@ class MainApp extends StatelessWidget {
         // ✅ NEW: Language Provider (lazy: false agar langsung available)
         ChangeNotifierProvider(
           create: (_) => LanguageProvider()..initialize(),
+          lazy: false,
+        ),
+        
+        // ✅ NEW: Premium Provider (lazy: false untuk load plan saat start)
+        ChangeNotifierProvider(
+          create: (_) => PremiumProvider()..initialize(),
           lazy: false,
         ),
         
