@@ -111,33 +111,34 @@ class MushafRenderer {
 
     // Build justified row with proper centering and tight spacing
     return SizedBox(
-      width: maxWidth, // Use full width for proper positioning
-      height: lineH,
-      child: Row(
-        textDirection: TextDirection.rtl,
-        mainAxisAlignment: MainAxisAlignment.center, // Center the text block
-        crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            for (int i = 0; i < wordSpans.length; i++) ...[
-              RichText(
-                textDirection: TextDirection.rtl,
-                overflow: TextOverflow.visible,
-                maxLines: 1,
-                text: wordSpans[i] as TextSpan,
-              ),
-              if (i < wordSpans.length - 1) 
-                SizedBox(
-                  width: () {
-                    final nextSpan = wordSpans[i + 1] as TextSpan;
-                    final isNextArabicNumber = nextSpan.text!.contains(RegExp(r'[٠-٩]'));
-                    return 0.0; // No spacing for any words to prevent overflow
-                  }(),
-                ),
-            ],
-          ],
-        ),
-    );
-  }
+    width: maxWidth, // Use full width for proper positioning
+    height: lineH,
+    child: Row(
+      textDirection: TextDirection.rtl,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween, // ✅ UBAH: dari center jadi spaceBetween
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        for (int i = 0; i < wordSpans.length; i++) ...[
+          RichText(
+            textDirection: TextDirection.rtl,
+            overflow: TextOverflow.visible,
+            maxLines: 1,
+            text: wordSpans[i] as TextSpan,
+          ),
+          if (i < wordSpans.length - 1) 
+            SizedBox(
+              width: () {
+                final nextSpan = wordSpans[i + 1] as TextSpan;
+                final isNextArabicNumber = nextSpan.text!.contains(RegExp(r'[٠-٩]'));
+                return 0.0; // No spacing for any words to prevent overflow
+              }(),
+            ),
+        ],
+      ],
+    ),
+  );
+}
+
 }
 
 class MushafDisplay extends StatefulWidget {
@@ -259,24 +260,25 @@ class MushafPageContent extends StatelessWidget {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    final appBarHeight = kToolbarHeight * 0.95; // Match QuranAppBar height
-
-    return Padding(
-      padding: EdgeInsets.only(
-        top: appBarHeight,
-        left: 4,  // ✅ CHANGE: Minimal side margin (was 0)
-        right: 4, // ✅ CHANGE: Minimal side margin (was 0)
-      ),
-      child: Column(
-        children: [
-          const MushafPageHeader(), // Will be hidden behind AppBar
-          const SizedBox(height: 0),
-          ..._buildPageLines(),
-        ],
-      ),
-    );
-  }
+Widget build(BuildContext context) {
+  final appBarHeight = kToolbarHeight * 0.95;
+  final screenWidth = MediaQuery.of(context).size.width;
+  
+  return Padding(
+    padding: EdgeInsets.only(
+      top: appBarHeight,
+     left: screenWidth * 0,   // 1.5% (dari 0.010)
+   right: screenWidth * 0,  // 1.5% (dari 0.010)
+    ),
+    child: Column(
+      children: [
+        const MushafPageHeader(),
+        const SizedBox(height: 0),
+        ..._buildPageLines(),
+      ],
+    ),
+  );
+}
 
   List<Widget> _buildPageLines() {
     return pageLines.map((line) => _buildMushafLine(line)).toList();
@@ -376,10 +378,9 @@ class _JustifiedAyahLine extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
 
-    // SPECIAL: Slightly larger font for page 1 & 2
     final fontSizeMultiplier = (pageNumber == 1 || pageNumber == 2)
-        ? 0.080
-        : 0.0616; // Reduced from 0.066 to prevent overflow
+       ? 0.080  // Naik dari 0.070
+       : 0.0620; // Naik dari 0.054
         
     final baseFontSize = screenWidth * fontSizeMultiplier;
 
@@ -514,7 +515,7 @@ class _JustifiedAyahLine extends StatelessWidget {
     return MushafRenderer.renderJustifiedLine(
       wordSpans: spans,
       isCentered: line.isCentered,
-      availableWidth: MediaQuery.of(context).size.width - 8, // ✅ CHANGE: Account for left+right padding (was full width)
+      availableWidth: MediaQuery.of(context).size.width, // ✅ CHANGE: Account for left+right padding (was full width)
       context: context,
       allowOverflow: false, // Ensure consistent font sizes
     );
@@ -547,7 +548,7 @@ class MushafPageHeader extends StatelessWidget {
     return Container(
       height: headerHeight,
       color: Colors.white, // ✅ ADD: Background to blend when hidden
-      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.005), // ✅ CHANGE: Minimal horizontal padding (was screenWidth * 0.005)
+      padding: EdgeInsets.zero, // ✅ CHANGE: Minimal horizontal padding (was screenWidth * 0.005)
       alignment: Alignment.center,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
