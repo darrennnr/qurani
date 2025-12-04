@@ -91,36 +91,24 @@ class _RegisterPageState extends State<RegisterPage> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.surface,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        leading: AppIconButton(
-          icon: Icons.arrow_back_ios_new,
-          iconColor: AppColors.textPrimary,
-          size: 40,
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
       body: SafeArea(
         child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
           child: Padding(
-            padding: AppPadding.page(context),
+            padding: AppPadding.horizontal(context, AppDesignSystem.space24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                AppMargin.customGap(context, AppDesignSystem.space40),
                 _buildLogoSection(s),
-                AppMargin.gapXLarge(context),
+                AppMargin.customGap(context, AppDesignSystem.space32),
                 _buildWelcomeSection(),
-                AppMargin.gapLarge(context),
+                AppMargin.customGap(context, AppDesignSystem.space32),
                 _buildForm(s),
                 AppMargin.gapLarge(context),
                 _buildRegisterButton(),
                 AppMargin.gap(context),
-                AppMargin.gap(context),
-                _buildLoginLink(),
-                AppMargin.gapLarge(context),
+                _buildLoginLink(context),
+                AppMargin.customGap(context, AppDesignSystem.space32),
               ],
             ),
           ),
@@ -178,11 +166,13 @@ class _RegisterPageState extends State<RegisterPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Buat Akun Baru', style: AppTypography.displaySmall(context)),
-        AppMargin.gapSmall(context),
         Text(
-          'Daftar untuk memulai perjalanan Quran Anda',
-          style: AppTypography.body(context, color: AppColors.textTertiary),
+          'Register',
+          style: AppTypography.displaySmall(
+            context,
+            color: AppColors.textPrimary,
+            weight: AppTypography.bold,
+          ),
         ),
       ],
     );
@@ -246,12 +236,19 @@ class _RegisterPageState extends State<RegisterPage> {
       controller: controller,
       keyboardType: keyboardType,
       textCapitalization: label == 'Username' ? TextCapitalization.words : TextCapitalization.none,
-      style: AppTypography.body(context),
+      style: AppTypography.body(
+        context,
+        color: AppColors.textPrimary,
+        weight: AppTypography.medium,
+      ),
       decoration: AppComponentStyles.inputDecoration(
         context: context,
         labelText: label,
         prefixIcon: Padding(
-          padding: EdgeInsets.only(left: AppDesignSystem.space12 * s),
+          padding: EdgeInsets.only(
+            left: AppDesignSystem.space16 * s,
+            right: AppDesignSystem.space12 * s,
+          ),
           child: Icon(icon, color: AppColors.textTertiary, size: AppDesignSystem.iconLarge * s),
         ),
       ),
@@ -270,12 +267,19 @@ class _RegisterPageState extends State<RegisterPage> {
     return TextFormField(
       controller: controller,
       obscureText: !isVisible,
-      style: AppTypography.body(context),
+      style: AppTypography.body(
+        context,
+        color: AppColors.textPrimary,
+        weight: AppTypography.medium,
+      ),
       decoration: AppComponentStyles.inputDecoration(
         context: context,
         labelText: label,
         prefixIcon: Padding(
-          padding: EdgeInsets.only(left: AppDesignSystem.space12 * s),
+          padding: EdgeInsets.only(
+            left: AppDesignSystem.space16 * s,
+            right: AppDesignSystem.space12 * s,
+          ),
           child: Icon(Icons.lock_outline_rounded, color: AppColors.textTertiary, size: AppDesignSystem.iconLarge * s),
         ),
         suffixIcon: IconButton(
@@ -298,7 +302,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   Widget _buildTermsCheckbox(double s) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         SizedBox(
           height: 20 * s,
@@ -314,40 +318,37 @@ class _RegisterPageState extends State<RegisterPage> {
         ),
         SizedBox(width: AppDesignSystem.space12 * s),
         Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(top: 1 * s),
-            child: RichText(
-              text: TextSpan(
-                style: AppTypography.bodySmall(context, color: AppColors.textSecondary),
-                children: [
-                  const TextSpan(text: 'Saya menyetujui '),
-                  WidgetSpan(
-                    alignment: PlaceholderAlignment.baseline,
-                    baseline: TextBaseline.alphabetic,
-                    child: GestureDetector(
-                      onTap: () {},
-                      child: Text(
-                        'Syarat dan Ketentuan',
-                        style: AppTypography.bodySmall(context, color: AppColors.primary, weight: AppTypography.semiBold)
-                            .copyWith(decoration: TextDecoration.underline, decorationColor: AppColors.primary),
-                      ),
+          child: RichText(
+            text: TextSpan(
+              style: AppTypography.bodySmall(context, color: AppColors.textSecondary),
+              children: [
+                const TextSpan(text: 'Saya menyetujui '),
+                WidgetSpan(
+                  alignment: PlaceholderAlignment.baseline,
+                  baseline: TextBaseline.alphabetic,
+                  child: GestureDetector(
+                    onTap: () {},
+                    child: Text(
+                      'Syarat dan Ketentuan',
+                      style: AppTypography.bodySmall(context, color: AppColors.primary, weight: AppTypography.semiBold)
+                          .copyWith(decoration: TextDecoration.underline, decorationColor: AppColors.primary),
                     ),
                   ),
-                  const TextSpan(text: ' serta '),
-                  WidgetSpan(
-                    alignment: PlaceholderAlignment.baseline,
-                    baseline: TextBaseline.alphabetic,
-                    child: GestureDetector(
-                      onTap: () {},
-                      child: Text(
-                        'Kebijakan Privasi',
-                        style: AppTypography.bodySmall(context, color: AppColors.primary, weight: AppTypography.semiBold)
-                            .copyWith(decoration: TextDecoration.underline, decorationColor: AppColors.primary),
-                      ),
+                ),
+                const TextSpan(text: ' serta '),
+                WidgetSpan(
+                  alignment: PlaceholderAlignment.baseline,
+                  baseline: TextBaseline.alphabetic,
+                  child: GestureDetector(
+                    onTap: () {},
+                    child: Text(
+                      'Kebijakan Privasi',
+                      style: AppTypography.bodySmall(context, color: AppColors.primary, weight: AppTypography.semiBold)
+                          .copyWith(decoration: TextDecoration.underline, decorationColor: AppColors.primary),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -368,11 +369,16 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  Widget _buildLoginLink() {
+  Widget _buildLoginLink(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
       children: [
-        Text('Sudah punya akun? ', style: AppTypography.body(context, color: AppColors.textSecondary)),
+        Text(
+          'Sudah punya akun? ',
+          style: AppTypography.body(context, color: AppColors.textSecondary),
+        ),
         AppTextButton(
           text: 'Masuk',
           onPressed: () => Navigator.of(context).pop(),

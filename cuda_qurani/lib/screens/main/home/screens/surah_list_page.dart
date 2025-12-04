@@ -670,19 +670,22 @@ class _SurahListPageState extends State<SurahListPage> {
     );
   }
 
-  Widget _buildSurahSearchTile(Map<String, dynamic> r) {
-    return AppListTile(
-      onTap: () => _openSurah(context, r['id'] as int),
-      leading: AppIconContainer(icon: Icons.menu_book_rounded),
-      title: r['name_simple'] as String,
-      subtitle: r['verses_count'] != null ? '${r['verses_count']} Ayat' : null,
-      trailing: Icon(
-        Icons.chevron_right_rounded,
-        color: AppColors.borderDark,
-        size: AppDesignSystem.iconMedium,
-      ),
-    );
-  }
+Widget _buildSurahSearchTile(Map<String, dynamic> r) {
+  final surahId = r['id'] as int;
+  final surahName = r['name_simple'] as String;
+  
+  return AppListTile(
+    onTap: () => _openSurah(context, surahId),
+    leading: AppIconContainer(icon: Icons.menu_book_rounded),
+    title: '$surahName ($surahId)',
+    subtitle: r['verses_count'] != null ? '${r['verses_count']} Ayat' : null,
+    trailing: Icon(
+      Icons.chevron_right_rounded,
+      color: AppColors.borderDark,
+      size: AppDesignSystem.iconMedium,
+    ),
+  );
+}
 
   Widget _buildVerseSearchTile(Map<String, dynamic> r) {
     final s = AppDesignSystem.getScaleFactor(context);
