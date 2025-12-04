@@ -434,51 +434,59 @@ class LocalDatabaseService {
   }
 
   static Future<Map<int, List<int>>> buildPageSurahMapping() async {
-    await _ensureInitialized();
+  await _ensureInitialized();
 
-    try {
-      // Query to get all page-surah relationships
-      final result = await _wordsDb!.rawQuery('''
-        SELECT DISTINCT w.surah, 
-               (SELECT page_number 
-                FROM (SELECT page_number, first_word_id, last_word_id 
-                      FROM pages 
-                      WHERE line_type = 'ayah' 
-                      AND first_word_id IS NOT NULL) p
-                WHERE w.id BETWEEN p.first_word_id AND p.last_word_id
-                LIMIT 1) as page_number
-        FROM words w
-        WHERE w.id IN (
-          SELECT DISTINCT first_word_id FROM pages 
-          WHERE line_type = 'ayah' AND first_word_id IS NOT NULL
-        )
-        ORDER BY page_number, w.surah
-      ''');
+  try {
+    // ✅ Use qpc-v1-ayah-by-ayah-glyphs.db which has page_number + surah in one table
+    final databasesPath = await getDatabasesPath();
+    final glyphsPath = join(databasesPath, 'qpc-v1-ayah-by-ayah-glyphs.db');
+    
+    if (!await File(glyphsPath).exists()) {
+      print('[LocalDB] Glyphs database not found, copying...');
+      final data = await rootBundle.load('assets/data/qpc-v1-ayah-by-ayah-glyphs.db');
+      final bytes = data.buffer.asUint8List();
+      await File(glyphsPath).writeAsBytes(bytes, flush: true);
+    }
 
-      final Map<int, List<int>> mapping = {};
+    final glyphsDb = await openDatabase(glyphsPath, readOnly: true);
+    
+    // Query: Get DISTINCT surah for each page
+    final result = await glyphsDb.rawQuery('''
+      SELECT DISTINCT page_number, surah
+      FROM verses
+      WHERE page_number IS NOT NULL AND surah IS NOT NULL
+      ORDER BY page_number ASC, surah ASC
+    ''');
 
-      for (final row in result) {
-        final page = row['page_number'];
-        final surah = row['surah'] as int;
+    await glyphsDb.close();
 
-        if (page != null) {
-          final pageNum = page is int ? page : int.parse(page.toString());
-
-          if (!mapping.containsKey(pageNum)) {
-            mapping[pageNum] = [];
-          }
-
-          if (!mapping[pageNum]!.contains(surah)) {
-            mapping[pageNum]!.add(surah);
-          }
-        }
-      }
-
-      print('[LocalDB] Built page-surah mapping: ${mapping.length} pages');
-      return mapping;
-    } catch (e) {
-      print('[LocalDB] Error building page-surah mapping: $e');
+    if (result.isEmpty) {
+      print('[LocalDB] No page-surah data found');
       return {};
     }
+
+    // Build mapping: page → [list of surahs]
+    final Map<int, List<int>> mapping = {};
+
+    for (final row in result) {
+      final pageNum = row['page_number'] as int;
+      final surahId = row['surah'] as int;
+
+      if (!mapping.containsKey(pageNum)) {
+        mapping[pageNum] = [];
+      }
+
+      if (!mapping[pageNum]!.contains(surahId)) {
+        mapping[pageNum]!.add(surahId);
+      }
+    }
+
+    print('[LocalDB] Built page-surah mapping: ${mapping.length} pages');
+    return mapping;
+  } catch (e, stackTrace) {
+    print('[LocalDB] Error building page-surah mapping: $e');
+    print('[LocalDB] Stack trace: $stackTrace');
+    return {};
   }
+}
 }

@@ -39,19 +39,33 @@ class MetadataCacheService {
   /// Get primary surah for a page (first surah on that page)
   String getPrimarySurahForPage(int pageNumber) {
     final names = getSurahNamesForPage(pageNumber);
-    return names.isNotEmpty ? names.first : 'Page $pageNumber';
+    if (names.isNotEmpty) return names.first;
+
+    // Fallback: try to get directly from database if cache empty
+    try {
+      final surahIds = _pageSurahMap[pageNumber];
+      if (surahIds != null && surahIds.isNotEmpty) {
+        final surahData = _surahMap[surahIds.first];
+        if (surahData != null) {
+          return surahData['name_simple'] as String? ?? 'Unknown Surah';
+        }
+      }
+    } catch (e) {
+      print(
+        '[MetadataCache] Error getting surah name for page $pageNumber: $e',
+      );
+    }
+
+    return 'Unknown Surah'; // Better fallback
   }
 
   Map<String, dynamic>? getSurah(int surahId) {
-  try {
-    return _allSurahs.firstWhere(
-      (s) => s['id'] == surahId,
-      orElse: () => {},
-    );
-  } catch (e) {
-    return null;
+    try {
+      return _allSurahs.firstWhere((s) => s['id'] == surahId, orElse: () => {});
+    } catch (e) {
+      return null;
+    }
   }
-}
 
   // ==================== INITIALIZATION ====================
 
@@ -82,6 +96,16 @@ class MetadataCacheService {
 
       for (final juz in _allJuz) {
         _juzMap[juz['juz_number'] as int] = juz;
+      }
+
+      // Debug: Check if mapping is populated
+      if (_pageSurahMap.isEmpty) {
+        print('[MetadataCache] ⚠️ WARNING: Page-surah mapping is EMPTY!');
+      } else {
+        print('[MetadataCache] ✅ Page-surah mapping loaded');
+        print(
+          '[MetadataCache] Sample: Page 1 → ${_pageSurahMap[1]}, Page 2 → ${_pageSurahMap[2]}',
+        );
       }
 
       _isInitialized = true;

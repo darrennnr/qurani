@@ -96,7 +96,7 @@ class _LoginPageState extends State<LoginPage> {
                 AppMargin.customGap(context, AppDesignSystem.space40),
 
                 // Logo Section
-                _buildLogoSection(context, s),
+                _buildLogoSection(s),
 
                 AppMargin.customGap(context, AppDesignSystem.space32),
 
@@ -118,7 +118,7 @@ class _LoginPageState extends State<LoginPage> {
                 // Google Sign In Button
                 _buildGoogleButton(context, s),
 
-                AppMargin.customGap(context, AppDesignSystem.space24),
+                AppMargin.gap(context),
 
                 // Register Link
                 _buildRegisterLink(context),
@@ -133,67 +133,45 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   // ==================== LOGO SECTION ====================
-  Widget _buildLogoSection(BuildContext context, double s) {
+  Widget _buildLogoSection(double s) {
     return Center(
       child: Column(
         children: [
-          // Logo container
           Container(
-            width: AppDesignSystem.scale(context, 150),
-            height: AppDesignSystem.scale(context, 150),
+            width: 140 * s,
+            height: 140 * s,
             decoration: BoxDecoration(
-              color: Color.fromARGB(0, 36, 124, 100),
               borderRadius: BorderRadius.circular(AppDesignSystem.radiusLarge * s),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color.fromARGB(0, 36, 124, 100),
-                  blurRadius: AppDesignSystem.scale(context, 16),
-                  offset: Offset(0, AppDesignSystem.scale(context, 4)),
-                ),
-              ],
             ),
             child: Center(
               child: Text(
                 'ﲐ',
                 style: TextStyle(
                   fontFamily: 'surah_names',
-                  fontSize: AppDesignSystem.scale(context, 90),
+                  fontSize: 90 * s,
                   color: AppColors.primary,
+                  height: 1.0,
                 ),
               ),
             ),
           ),
-          
-          AppMargin.customGap(context, AppDesignSystem.space20),
-          
-          // Brand name
+          AppMargin.gap(context),
           Image.asset(
             'assets/images/qurani-white-text.png',
-            height: AppDesignSystem.scale(context, 32),
+            height: 28 * s,
             color: AppColors.primary,
             errorBuilder: (context, error, stackTrace) {
               return Text(
-                'QURANI',
-                style: AppTypography.h2(
-                  context,
-                  color: AppColors.primary,
-                  weight: AppTypography.bold,
-                ),
+                'Qurani',
+                style: AppTypography.h2(context, color: AppColors.primary, weight: AppTypography.bold),
               );
             },
           ),
-          
-          AppMargin.gapSmall(context),
-          
+          SizedBox(height: 4 * s),
           Text(
             'Hafidz',
-            style: AppTypography.label(
-              context,
-              color: AppColors.primary,
-              weight: AppTypography.semiBold,
-            ).copyWith(
-              letterSpacing: AppDesignSystem.scale(context, 2),
-            ),
+            style: AppTypography.label(context, color: AppColors.primary, weight: AppTypography.semiBold)
+                .copyWith(letterSpacing: 2 * s),
           ),
         ],
       ),
@@ -206,19 +184,11 @@ class _LoginPageState extends State<LoginPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Selamat Datang',
+          'Login',
           style: AppTypography.displaySmall(
             context,
             color: AppColors.textPrimary,
             weight: AppTypography.bold,
-          ),
-        ),
-        AppMargin.gapSmall(context),
-        Text(
-          'Masuk untuk melanjutkan perjalanan Quran Anda',
-          style: AppTypography.body(
-            context,
-            color: AppColors.textTertiary,
           ),
         ),
       ],
@@ -451,65 +421,62 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   // ==================== GOOGLE BUTTON ====================
-Widget _buildGoogleButton(BuildContext context, double s) {
-  final double iconSize = 28 * s; // SAMA dengan signup
+  Widget _buildGoogleButton(BuildContext context, double s) {
+    final double iconSize = 28 * s;
 
-  return SizedBox(
-    height: AppDesignSystem.scale(context, AppDesignSystem.buttonHeightLarge),
-    child: OutlinedButton(
-      onPressed: () {
-        // Handle Google sign in
-      },
-      style: AppComponentStyles.secondaryButton(context).copyWith(
-        padding: WidgetStateProperty.all(
-          EdgeInsets.symmetric(
-            horizontal: AppDesignSystem.scale(context, 16),
-          ),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Image.asset(
-            'assets/images/google-icon.jpg',
-            height: iconSize,
-            width: iconSize,
-            errorBuilder: (context, error, stackTrace) {
-              return Icon(
-                Icons.g_mobiledata,
-                size: AppDesignSystem.iconLarge * s,
-                color: AppColors.textPrimary,
-              );
-            },
-          ),
-          SizedBox(width: 12 * s),
-          Text(
-            'Masuk dengan Google',
-            style: AppTypography.label(
-              context,
-              color: AppColors.textPrimary,
-              weight: AppTypography.semiBold,
+    return SizedBox(
+      height: AppDesignSystem.scale(context, AppDesignSystem.buttonHeightLarge),
+      child: OutlinedButton(
+        onPressed: () {
+          // Handle Google sign in
+        },
+        style: AppComponentStyles.secondaryButton(context).copyWith(
+          padding: WidgetStateProperty.all(
+            EdgeInsets.symmetric(
+              horizontal: AppDesignSystem.scale(context, 16),
             ),
           ),
-        ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(
+              'assets/images/google-icon.png',
+              height: iconSize,
+              width: iconSize,
+              errorBuilder: (context, error, stackTrace) {
+                return Icon(
+                  Icons.g_mobiledata,
+                  size: AppDesignSystem.iconLarge * s,
+                  color: AppColors.textPrimary,
+                );
+              },
+            ),
+            SizedBox(width: 12 * s),
+            Text(
+              'Masuk dengan Google',
+              style: AppTypography.label(
+                context,
+                color: AppColors.textPrimary,
+                weight: AppTypography.semiBold,
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
-  );
-}
-
-
+    );
+  }
 
   // ==================== REGISTER LINK ====================
   Widget _buildRegisterLink(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
       children: [
         Text(
           'Belum punya akun? ',
-          style: AppTypography.body(
-            context,
-            color: AppColors.textTertiary,
-          ),
+          style: AppTypography.body(context, color: AppColors.textSecondary),
         ),
         AppTextButton(
           text: 'Daftar Sekarang',
