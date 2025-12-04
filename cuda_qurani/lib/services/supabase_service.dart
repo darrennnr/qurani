@@ -413,4 +413,27 @@ class SupabaseService {
       return null;
     }
   }
+
+  // ============================================================================
+  // COMPLETION PAGE - OPTIMIZED (SINGLE CALL)
+  // ============================================================================
+
+  /// Get ALL completion data in ONE call (fastest)
+  /// Returns: progress (per surah), last_read, stats
+  Future<Map<String, dynamic>?> getCompletionData(String userId) async {
+    try {
+      final response = await Supabase.instance.client.rpc(
+        'get_completion_data',
+        params: {'p_user_id': userId},
+      );
+      
+      if (response != null) {
+        return Map<String, dynamic>.from(response);
+      }
+      return null;
+    } catch (e) {
+      print('❌ Error getting completion data: $e');
+      return null;
+    }
+  }
 }

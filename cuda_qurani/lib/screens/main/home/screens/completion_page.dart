@@ -2,106 +2,50 @@
 
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:async';
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
 import 'package:cuda_qurani/core/widgets/app_components.dart';
 import 'package:cuda_qurani/screens/main/home/widgets/navigation_bar.dart';
 import 'package:cuda_qurani/services/metadata_cache_service.dart';
+import 'package:cuda_qurani/services/supabase_service.dart';
 import 'package:cuda_qurani/screens/main/stt/stt_page.dart';
 
-// ==================== DUMMY COMPLETION SERVICE ====================
-
-class CompletionService {
-  static final CompletionService _instance = CompletionService._internal();
-  factory CompletionService() => _instance;
-
-  // ✅ Dummy data untuk demo (nanti diganti dengan real data dari database)
-  final Map<int, SurahCompletion> _completionData = {
-    1: SurahCompletion(surahId: 1, versesRead: 7, totalVerses: 7, percentage: 100.0),
-    2: SurahCompletion(surahId: 2, versesRead: 5, totalVerses: 286, percentage: 1.7),
-    3: SurahCompletion(surahId: 3, versesRead: 8, totalVerses: 200, percentage: 4.0),
-    5: SurahCompletion(surahId: 5, versesRead: 6, totalVerses: 120, percentage: 5.0),
-    // Sisanya auto-generate di constructor
-  };
-
-  // Last read position untuk "Continue Reading"
-  final Map<String, dynamic> lastRead = {
-    'surah_id': 2,
-    'surah_name': 'Al-Baqarah',
-    'page': 3,
-    'ayah': 6,
-  };
-
-  CompletionService._internal() {
-    _generateDummyData();
-  }
-
-  void _generateDummyData() {
-    // Generate random progress untuk surah lainnya
-    final random = DateTime.now().millisecondsSinceEpoch;
-    for (int i = 4; i <= 114; i++) {
-      if (_completionData.containsKey(i)) continue;
-      
-      // Simulasi: beberapa surah sudah dibaca, sisanya 0%
-      int versesRead = 0;
-      if (i % 7 == 0) versesRead = (i * 0.3).toInt(); // ~30%
-      if (i % 11 == 0) versesRead = (i * 0.5).toInt(); // ~50%
-      
-      _completionData[i] = SurahCompletion(
-        surahId: i,
-        versesRead: versesRead,
-        totalVerses: i * 3, // Dummy total (nanti ambil dari metadata)
-        percentage: versesRead > 0 ? (versesRead / (i * 3) * 100) : 0.0,
-      );
-    }
-  }
-
-  SurahCompletion? getCompletion(int surahId) {
-    return _completionData[surahId];
-  }
-
-  List<SurahCompletion> getAllCompletions() {
-    return _completionData.values.toList();
-  }
-
-  // Calculate overall stats
-  CompletionStats getOverallStats() {
-    const totalPages = 604;
-    int totalCompleted = 0;
-    int totalStarted = 0;
-    
-    for (final completion in _completionData.values) {
-      if (completion.percentage >= 100) totalCompleted++;
-      if (completion.percentage > 0) totalStarted++;
-    }
-
-    // Simulasi pages read (dummy)
-    double pagesRead = totalCompleted * 5.3 + totalStarted * 1.2;
-    double remaining = totalPages - pagesRead;
-    double percentage = (pagesRead / totalPages * 100);
-
-    return CompletionStats(
-      totalPages: totalPages,
-      pagesRead: pagesRead,
-      remainingPages: remaining > 0 ? remaining : 0.1,
-      completions: totalCompleted,
-      percentage: percentage,
-    );
-  }
-}
+// ==================== MODELS ====================
 
 class SurahCompletion {
   final int surahId;
+  final String? surahName;
   final int versesRead;
   final int totalVerses;
   final double percentage;
+  final int? lastAyah;
+  final DateTime? lastSessionAt;
 
   SurahCompletion({
     required this.surahId,
+    this.surahName,
     required this.versesRead,
     required this.totalVerses,
     required this.percentage,
+    this.lastAyah,
+    this.lastSessionAt,
   });
+
+  factory SurahCompletion.fromJson(Map<String, dynamic> json) {
+    return SurahCompletion(
+      surahId: json['surah_id'] as int,
+      surahName: json['surah_name'] as String?,
+      versesRead: json['verses_read'] as int? ?? 0,
+      totalVerses: json['total_ayahs'] as int? ?? 0,
+      percentage: (json['percentage'] as num?)?.toDouble() ?? 0.0,
+      lastAyah: json['last_ayah'] as int?,
+      lastSessionAt: json['last_session_at'] != null 
+          ? DateTime.tryParse(json['last_session_at'].toString())
+          : null,
+    );
+  }
 
   bool get isComplete => percentage >= 100;
   bool get isStarted => percentage > 0;
@@ -109,19 +53,70 @@ class SurahCompletion {
 }
 
 class CompletionStats {
-  final int totalPages;
-  final double pagesRead;
-  final double remainingPages;
-  final int completions;
-  final double percentage;
+  final int completedSurahs;
+  final int inProgressSurahs;
+  final int totalVersesRead;
+  final int totalQuranVerses;
+  final double overallPercentage;
 
   CompletionStats({
-    required this.totalPages,
-    required this.pagesRead,
-    required this.remainingPages,
-    required this.completions,
-    required this.percentage,
+    required this.completedSurahs,
+    required this.inProgressSurahs,
+    required this.totalVersesRead,
+    required this.totalQuranVerses,
+    required this.overallPercentage,
   });
+
+  factory CompletionStats.fromJson(Map<String, dynamic>? json) {
+    if (json == null) {
+      return CompletionStats(
+        completedSurahs: 0,
+        inProgressSurahs: 0,
+        totalVersesRead: 0,
+        totalQuranVerses: 6236,
+        overallPercentage: 0.0,
+      );
+    }
+    return CompletionStats(
+      completedSurahs: json['completed_surahs'] as int? ?? 0,
+      inProgressSurahs: json['in_progress_surahs'] as int? ?? 0,
+      totalVersesRead: json['total_verses_read'] as int? ?? 0,
+      totalQuranVerses: json['total_quran_verses'] as int? ?? 6236,
+      overallPercentage: (json['overall_percentage'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+}
+
+class LastReadPosition {
+  final int surahId;
+  final String surahName;
+  final int ayah;
+  final DateTime? lastSessionAt;
+
+  LastReadPosition({
+    required this.surahId,
+    required this.surahName,
+    required this.ayah,
+    this.lastSessionAt,
+  });
+
+  factory LastReadPosition.fromJson(Map<String, dynamic>? json) {
+    if (json == null) {
+      return LastReadPosition(
+        surahId: 1,
+        surahName: 'Al-Fatihah',
+        ayah: 1,
+      );
+    }
+    return LastReadPosition(
+      surahId: json['surah_id'] as int? ?? 1,
+      surahName: json['surah_name'] as String? ?? 'Al-Fatihah',
+      ayah: json['ayah'] as int? ?? 1,
+      lastSessionAt: json['last_session_at'] != null 
+          ? DateTime.tryParse(json['last_session_at'].toString())
+          : null,
+    );
+  }
 }
 
 // ==================== COMPLETION PAGE ====================
@@ -135,11 +130,10 @@ class CompletionPage extends StatefulWidget {
 
 class _CompletionPageState extends State<CompletionPage> {
   final MetadataCacheService _cache = MetadataCacheService();
-  final CompletionService _completionService = CompletionService();
+  final SupabaseService _supabaseService = SupabaseService();
   final TextEditingController _searchController = TextEditingController();
   
   Timer? _searchDebounce;
-  bool _isSearching = false;
   String _searchQuery = '';
   
   // Filter states
@@ -147,9 +141,16 @@ class _CompletionPageState extends State<CompletionPage> {
   bool _filterIncomplete = true;
   bool _filterStarted = true;
 
+  // Data
   List<Map<String, dynamic>> _allSurahs = [];
   List<Map<String, dynamic>> _filteredSurahs = [];
+  Map<int, SurahCompletion> _completionData = {};
+  CompletionStats _stats = CompletionStats.fromJson(null);
+  LastReadPosition _lastRead = LastReadPosition.fromJson(null);
+  
   bool _isInitialized = false;
+  bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -166,19 +167,55 @@ class _CompletionPageState extends State<CompletionPage> {
   }
 
   Future<void> _loadData() async {
-    if (_cache.isInitialized) {
-      setState(() {
-        _allSurahs = _cache.allSurahs;
-        _applyFilters();
-        _isInitialized = true;
-      });
-    } else {
-      await _cache.initialize();
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // Load surah metadata
+      if (!_cache.isInitialized) {
+        await _cache.initialize();
+      }
+      _allSurahs = _cache.allSurahs;
+
+      // Get current user
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user != null) {
+        // Fetch completion data from Supabase (1 call)
+        final data = await _supabaseService.getCompletionData(user.id);
+        
+        if (data != null) {
+          // Parse progress data
+          final progressList = data['progress'] as List? ?? [];
+          _completionData = {};
+          for (final item in progressList) {
+            final completion = SurahCompletion.fromJson(item as Map<String, dynamic>);
+            _completionData[completion.surahId] = completion;
+          }
+          
+          // Parse stats
+          _stats = CompletionStats.fromJson(data['stats'] as Map<String, dynamic>?);
+          
+          // Parse last read
+          _lastRead = LastReadPosition.fromJson(data['last_read'] as Map<String, dynamic>?);
+        }
+      }
+
       if (mounted) {
         setState(() {
-          _allSurahs = _cache.allSurahs;
-          _applyFilters();
           _isInitialized = true;
+          _isLoading = false;
+          _applyFilters();
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Failed to load data: $e';
+          _isInitialized = true;
+          _applyFilters();
         });
       }
     }
@@ -190,11 +227,14 @@ class _CompletionPageState extends State<CompletionPage> {
       if (mounted) {
         setState(() {
           _searchQuery = _searchController.text.trim().toLowerCase();
-          _isSearching = _searchQuery.isNotEmpty;
           _applyFilters();
         });
       }
     });
+  }
+
+  SurahCompletion? _getCompletion(int surahId) {
+    return _completionData[surahId];
   }
 
   void _applyFilters() {
@@ -215,8 +255,12 @@ class _CompletionPageState extends State<CompletionPage> {
 
     // Apply completion filters
     filtered = filtered.where((surah) {
-      final completion = _completionService.getCompletion(surah['id'] as int);
-      if (completion == null) return _filterIncomplete; // Default: treat as incomplete
+      final completion = _getCompletion(surah['id'] as int);
+      
+      // If no completion data, treat as not started
+      if (completion == null) {
+        return _filterIncomplete; // Show in incomplete if filter is on
+      }
 
       final isComplete = completion.isComplete;
       final isStarted = completion.isStarted;
@@ -225,8 +269,8 @@ class _CompletionPageState extends State<CompletionPage> {
       if (_filterComplete && _filterIncomplete && _filterStarted) return true;
       
       if (_filterComplete && isComplete) return true;
-      if (_filterIncomplete && isIncomplete) return true;
-      if (_filterStarted && isStarted) return true;
+      if (_filterIncomplete && !isStarted) return true; // Not started = incomplete
+      if (_filterStarted && isIncomplete) return true; // Started but not complete
       
       return false;
     }).toList();
@@ -263,17 +307,16 @@ class _CompletionPageState extends State<CompletionPage> {
 
   Future<void> _continueReading() async {
     AppHaptics.medium();
-    final lastRead = _completionService.lastRead;
     await Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (_) => SttPage(pageId: lastRead['page'] as int),
+        builder: (_) => SttPage(suratId: _lastRead.surahId),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    if (!_isInitialized) {
+    if (_isLoading) {
       return Scaffold(
         backgroundColor: AppColors.surfaceVariant,
         appBar: MenuAppBar(selectedIndex: 2),
@@ -281,55 +324,93 @@ class _CompletionPageState extends State<CompletionPage> {
       );
     }
 
-    final stats = _completionService.getOverallStats();
-
     return Scaffold(
       backgroundColor: AppColors.surfaceVariant,
       appBar: MenuAppBar(selectedIndex: 2),
       body: SafeArea(
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            // Top Section: Progress Circle + Stats
-            SliverToBoxAdapter(
-              child: Column(
-                children: [
-                  _buildProgressSection(stats),
-                  _buildContinueReading(),
-                  _buildFilterSection(),
-                ],
-              ),
+        child: RefreshIndicator(
+          onRefresh: _loadData,
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
             ),
+            slivers: [
+              // Error message if any
+              if (_errorMessage != null)
+                SliverToBoxAdapter(
+                  child: _buildErrorBanner(),
+                ),
 
-            // List Section: Surah Completion List
-            SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  if (index == 0) {
-                    return _buildSectionHeader();
-                  }
-                  
-                  final surah = _filteredSurahs[index - 1];
-                  return _buildSurahCompletionTile(surah);
-                },
-                childCount: _filteredSurahs.length + 1,
+              // Top Section: Progress Circle + Stats
+              SliverToBoxAdapter(
+                child: Column(
+                  children: [
+                    _buildProgressSection(),
+                    _buildContinueReading(),
+                    _buildFilterSection(),
+                  ],
+                ),
               ),
-            ),
 
-            // Bottom padding
-            SliverToBoxAdapter(
-              child: SizedBox(height: AppDesignSystem.space32),
-            ),
-          ],
+              // List Section: Surah Completion List
+              SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    if (index == 0) {
+                      return _buildSectionHeader();
+                    }
+                    
+                    final surah = _filteredSurahs[index - 1];
+                    return _buildSurahCompletionTile(surah);
+                  },
+                  childCount: _filteredSurahs.length + 1,
+                ),
+              ),
+
+              // Bottom padding
+              SliverToBoxAdapter(
+                child: SizedBox(height: AppDesignSystem.space32),
+              ),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  // ==================== ERROR BANNER ====================
+
+  Widget _buildErrorBanner() {
+    final s = AppDesignSystem.getScaleFactor(context);
+    
+    return Container(
+      margin: EdgeInsets.all(AppDesignSystem.space16 * s),
+      padding: EdgeInsets.all(AppDesignSystem.space12 * s),
+      decoration: BoxDecoration(
+        color: AppColors.error.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(AppDesignSystem.radiusSmall * s),
+        border: Border.all(color: AppColors.error.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.warning_rounded, color: AppColors.error, size: 20 * s),
+          SizedBox(width: AppDesignSystem.space8 * s),
+          Expanded(
+            child: Text(
+              'Using offline data. Pull to refresh.',
+              style: AppTypography.caption(context, color: AppColors.error),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   // ==================== PROGRESS CIRCLE SECTION ====================
 
-  Widget _buildProgressSection(CompletionStats stats) {
+  Widget _buildProgressSection() {
     final s = AppDesignSystem.getScaleFactor(context);
+    final percentage = _stats.overallPercentage;
 
     return Container(
       margin: EdgeInsets.all(AppDesignSystem.space16 * s),
@@ -347,13 +428,13 @@ class _CompletionPageState extends State<CompletionPage> {
                   PieChartData(
                     sections: [
                       PieChartSectionData(
-                        value: stats.percentage,
+                        value: percentage > 0 ? percentage : 0.1,
                         color: AppColors.primary,
                         radius: 24 * s,
                         showTitle: false,
                       ),
                       PieChartSectionData(
-                        value: 100 - stats.percentage,
+                        value: percentage < 100 ? (100 - percentage) : 0.1,
                         color: AppColors.primaryWithOpacity(0.15),
                         radius: 24 * s,
                         showTitle: false,
@@ -368,7 +449,7 @@ class _CompletionPageState extends State<CompletionPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      '${stats.percentage.toStringAsFixed(0)}%',
+                      '${percentage.toStringAsFixed(1)}%',
                       style: AppTypography.h2(
                         context,
                         weight: AppTypography.bold,
@@ -397,22 +478,22 @@ class _CompletionPageState extends State<CompletionPage> {
             children: [
               Expanded(
                 child: _buildStatCard(
-                  label: 'Total Pages',
-                  value: stats.totalPages.toString(),
+                  label: 'Verses Read',
+                  value: _stats.totalVersesRead.toString(),
                 ),
               ),
               SizedBox(width: AppDesignSystem.space8 * s),
               Expanded(
                 child: _buildStatCard(
-                  label: 'Remaining Pages',
-                  value: stats.remainingPages.toStringAsFixed(1),
+                  label: 'Remaining',
+                  value: (_stats.totalQuranVerses - _stats.totalVersesRead).toString(),
                 ),
               ),
               SizedBox(width: AppDesignSystem.space8 * s),
               Expanded(
                 child: _buildStatCard(
-                  label: 'Completions',
-                  value: stats.completions.toString(),
+                  label: 'Completed',
+                  value: '${_stats.completedSurahs} Surah',
                 ),
               ),
             ],
@@ -464,7 +545,11 @@ class _CompletionPageState extends State<CompletionPage> {
 
   Widget _buildContinueReading() {
     final s = AppDesignSystem.getScaleFactor(context);
-    final lastRead = _completionService.lastRead;
+
+    // Don't show if no reading history
+    if (_completionData.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: AppDesignSystem.space16 * s),
@@ -492,18 +577,18 @@ class _CompletionPageState extends State<CompletionPage> {
                 ),
                 child: Row(
                   children: [
-                      Icon(
-                        Icons.auto_stories,
-                        color: Colors.white,
-                        size: AppDesignSystem.iconXLarge * s,
-                      ),
+                    Icon(
+                      Icons.auto_stories,
+                      color: Colors.white,
+                      size: AppDesignSystem.iconXLarge * s,
+                    ),
                     SizedBox(width: AppDesignSystem.space12 * s),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '${lastRead['surah_name']}, ${lastRead['ayah']}',
+                            '${_lastRead.surahName}, Ayah ${_lastRead.ayah}',
                             style: AppTypography.body(
                               context,
                               color: Colors.white,
@@ -512,7 +597,7 @@ class _CompletionPageState extends State<CompletionPage> {
                           ),
                           SizedBox(height: AppDesignSystem.space2 * s),
                           Text(
-                            'Page ${lastRead['page']}',
+                            'Surah ${_lastRead.surahId}',
                             style: AppTypography.captionSmall(
                               context,
                               color: Colors.white.withOpacity(0.9),
@@ -607,15 +692,15 @@ class _CompletionPageState extends State<CompletionPage> {
               ),
               SizedBox(width: AppDesignSystem.space8 * s),
               _buildFilterToggle(
-                label: 'Incomplete',
-                isSelected: _filterIncomplete,
-                onTap: () => _toggleFilter('incomplete'),
+                label: 'In Progress',
+                isSelected: _filterStarted,
+                onTap: () => _toggleFilter('started'),
               ),
               SizedBox(width: AppDesignSystem.space8 * s),
               _buildFilterToggle(
-                label: 'Started',
-                isSelected: _filterStarted,
-                onTap: () => _toggleFilter('started'),
+                label: 'Not Started',
+                isSelected: _filterIncomplete,
+                onTap: () => _toggleFilter('incomplete'),
               ),
             ],
           ),
@@ -707,20 +792,16 @@ class _CompletionPageState extends State<CompletionPage> {
     final String name = surah['name_simple'] ?? 'Surah $id';
     final int totalVerses = surah['verses_count'] ?? 0;
     
-    final completion = _completionService.getCompletion(id);
+    final completion = _getCompletion(id);
     final percentage = completion?.percentage ?? 0.0;
     final versesRead = completion?.versesRead ?? 0;
 
     // Calculate remaining ranges
-    String remainingText = 'Remaining: 1-$totalVerses';
+    String remainingText = 'Not started';
     if (versesRead > 0 && versesRead < totalVerses) {
-      if (versesRead == totalVerses - 1) {
-        remainingText = 'Remaining: $totalVerses';
-      } else {
-        remainingText = 'Remaining: ${versesRead + 1}-$totalVerses';
-      }
+      remainingText = 'Remaining: ${versesRead + 1}-$totalVerses';
     } else if (versesRead >= totalVerses) {
-      remainingText = 'None remaining';
+      remainingText = 'Completed';
     }
 
     return Material(
@@ -783,10 +864,10 @@ class _CompletionPageState extends State<CompletionPage> {
                     percentage >= 100
                         ? AppColors.success
                         : percentage >= 50
-                        ? AppColors.primary
-                        : percentage > 0
-                        ? AppColors.warning
-                        : AppColors.borderLight,
+                            ? AppColors.primary
+                            : percentage > 0
+                                ? AppColors.warning
+                                : AppColors.borderLight,
                   ),
                 ),
               ),

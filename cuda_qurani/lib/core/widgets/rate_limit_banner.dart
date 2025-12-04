@@ -1,0 +1,559 @@
+// lib/core/widgets/rate_limit_banner.dart
+
+import 'package:flutter/material.dart';
+
+/// Red banner widget to show rate limit warnings
+class RateLimitBanner extends StatelessWidget {
+  final int current;
+  final int limit;
+  final int remaining;
+  final String resetTime;
+  final String plan;
+  final bool isExceeded;
+  final VoidCallback? onUpgradePressed;
+  final VoidCallback? onDismiss;
+
+  const RateLimitBanner({
+    super.key,
+    required this.current,
+    required this.limit,
+    required this.remaining,
+    required this.resetTime,
+    required this.plan,
+    this.isExceeded = false,
+    this.onUpgradePressed,
+    this.onDismiss,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (isExceeded) {
+      return _buildExceededBanner(context);
+    }
+    
+    // Show warning when only 1 session remaining
+    if (remaining <= 1 && remaining > 0) {
+      return _buildWarningBanner(context);
+    }
+    
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildExceededBanner(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.red.shade700,
+            Colors.red.shade900,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.red.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.block_rounded,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Batas Harian Tercapai',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Reset dalam $resetTime',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (onUpgradePressed != null)
+              TextButton(
+                onPressed: onUpgradePressed,
+                style: TextButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.red.shade700,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                child: const Text(
+                  'Upgrade',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWarningBanner(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.orange.shade600,
+            Colors.orange.shade800,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Row(
+          children: [
+            Icon(
+              Icons.warning_amber_rounded,
+              color: Colors.white.withOpacity(0.9),
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Sisa $remaining dari $limit sesi hari ini',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            if (onUpgradePressed != null)
+              GestureDetector(
+                onTap: onUpgradePressed,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Text(
+                    'Upgrade',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            if (onDismiss != null) ...[
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: onDismiss,
+                child: Icon(
+                  Icons.close,
+                  color: Colors.white.withOpacity(0.7),
+                  size: 18,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Small badge showing session count (for non-intrusive display)
+class RateLimitBadge extends StatelessWidget {
+  final int current;
+  final int limit;
+  final String plan;
+  final VoidCallback? onTap;
+
+  const RateLimitBadge({
+    super.key,
+    required this.current,
+    required this.limit,
+    required this.plan,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isLow = (limit - current) <= 1;
+    
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isLow 
+              ? Colors.red.shade100 
+              : Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isLow 
+                ? Colors.red.shade300 
+                : Colors.grey.shade400,
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isLow ? Icons.warning_amber_rounded : Icons.layers_outlined,
+              size: 14,
+              color: isLow ? Colors.red.shade700 : Colors.grey.shade700,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '$current/$limit',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: isLow ? Colors.red.shade700 : Colors.grey.shade700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Full-screen overlay when rate limit is exceeded
+class RateLimitExceededOverlay extends StatelessWidget {
+  final int limit;
+  final String resetTime;
+  final String plan;
+  final VoidCallback? onUpgradePressed;
+  final VoidCallback? onClose;
+
+  const RateLimitExceededOverlay({
+    super.key,
+    required this.limit,
+    required this.resetTime,
+    required this.plan,
+    this.onUpgradePressed,
+    this.onClose,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.black.withOpacity(0.85),
+      child: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade700,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.hourglass_empty_rounded,
+                    color: Colors.white,
+                    size: 48,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'Batas Harian Tercapai',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Kamu sudah menggunakan $limit sesi hari ini.\nReset dalam $resetTime.',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.8),
+                    fontSize: 16,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 32),
+                if (onUpgradePressed != null) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: onUpgradePressed,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.star_rounded, size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            'Upgrade ke Premium',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Sesi unlimited & fitur premium lainnya',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.6),
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+                if (onClose != null)
+                  TextButton(
+                    onPressed: onClose,
+                    child: Text(
+                      'Kembali',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.7),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+// =====================================================
+// DURATION LIMIT WIDGETS
+// =====================================================
+
+/// Banner untuk warning durasi (3 menit tersisa)
+class DurationWarningBanner extends StatelessWidget {
+  final String warningMessage;
+  final VoidCallback? onDismiss;
+
+  const DurationWarningBanner({
+    super.key,
+    required this.warningMessage,
+    this.onDismiss,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.orange.shade600,
+            Colors.orange.shade800,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Row(
+          children: [
+            const Icon(
+              Icons.timer_outlined,
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                warningMessage,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            if (onDismiss != null)
+              GestureDetector(
+                onTap: onDismiss,
+                child: Icon(
+                  Icons.close,
+                  color: Colors.white.withOpacity(0.7),
+                  size: 18,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Full-screen overlay ketika durasi limit tercapai
+class DurationLimitExceededOverlay extends StatelessWidget {
+  final String message;
+  final VoidCallback? onUpgradePressed;
+  final VoidCallback? onClose;
+
+  const DurationLimitExceededOverlay({
+    super.key,
+    required this.message,
+    this.onUpgradePressed,
+    this.onClose,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.black.withOpacity(0.85),
+      child: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade700,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.timer_off_outlined,
+                    color: Colors.white,
+                    size: 48,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'Waktu Habis',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  message,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.8),
+                    fontSize: 16,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Upgrade ke Premium untuk sesi tanpa batas waktu',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.6),
+                    fontSize: 14,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 32),
+                if (onUpgradePressed != null) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: onUpgradePressed,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.all_inclusive, size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            'Upgrade ke Premium',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+                if (onClose != null)
+                  TextButton(
+                    onPressed: onClose,
+                    child: Text(
+                      'Selesai',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.7),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

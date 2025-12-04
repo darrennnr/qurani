@@ -10,7 +10,9 @@ import 'widgets/mushaf_view.dart';
 import 'widgets/list_view.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cuda_qurani/core/widgets/achievement_popup.dart'; // ✅ NEW
+import 'package:cuda_qurani/core/widgets/achievement_popup.dart';
+import 'package:cuda_qurani/core/widgets/rate_limit_banner.dart';
+import 'package:cuda_qurani/screens/main/home/screens/premium_offer_page.dart'; // ✅ NEW: Rate Limit
 
 class SttPage extends StatefulWidget {
   final int? suratId;
@@ -184,9 +186,73 @@ class _SttPageState extends State<SttPage> {
             ),
             // ✅ TAMBAHKAN INI - Popup Guide
             const SliderGuidePopup(),
+            
+            // ✅ NEW: Rate Limit Warning Banner (at top)
+            if (controller.rateLimit != null && 
+                controller.rateLimitRemaining <= 1 && 
+                controller.rateLimitRemaining > 0 &&
+                !controller.isRateLimitExceeded)
+              Positioned(
+                top: kToolbarHeight + MediaQuery.of(context).padding.top,
+                left: 0,
+                right: 0,
+                child: RateLimitBanner(
+                  current: controller.rateLimitCurrent,
+                  limit: controller.rateLimitMax,
+                  remaining: controller.rateLimitRemaining,
+                  resetTime: controller.rateLimitResetFormatted,
+                  plan: controller.rateLimitPlan,
+                  isExceeded: false,
+                  onUpgradePressed: () => _navigateToPremium(context),
+                ),
+              ),
+            
+            // ✅ NEW: Rate Limit Exceeded Overlay (full screen)
+            if (controller.isRateLimitExceeded)
+              Positioned.fill(
+                child: RateLimitExceededOverlay(
+                  limit: controller.rateLimitMax,
+                  resetTime: controller.rateLimitResetFormatted,
+                  plan: controller.rateLimitPlan,
+                  onUpgradePressed: () => _navigateToPremium(context),
+                  onClose: () => Navigator.of(context).pop(),
+                ),
+              ),
+            
+            // ⏳ NEW: Duration Warning Banner (3 menit tersisa)
+            if (controller.isDurationWarningActive && 
+                !controller.isDurationLimitExceeded &&
+                !controller.isDurationUnlimited)
+              Positioned(
+                top: kToolbarHeight + MediaQuery.of(context).padding.top,
+                left: 0,
+                right: 0,
+                child: DurationWarningBanner(
+                  warningMessage: controller.durationWarning,
+                  onDismiss: () {
+                    // Optional: dismiss warning
+                  },
+                ),
+              ),
+            
+            // ⏳ NEW: Duration Limit Exceeded Overlay
+            if (controller.isDurationLimitExceeded)
+              Positioned.fill(
+                child: DurationLimitExceededOverlay(
+                  message: controller.durationWarning,
+                  onUpgradePressed: () => _navigateToPremium(context),
+                  onClose: () => Navigator.of(context).pop(),
+                ),
+              ),
           ],
         );
       },
+    );
+  }
+  
+  void _navigateToPremium(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const PremiumOfferPage()),
     );
   }
 

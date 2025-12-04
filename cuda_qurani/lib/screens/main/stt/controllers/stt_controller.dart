@@ -134,6 +134,43 @@ class SttController with ChangeNotifier {
   List<Map<String, dynamic>> _newlyEarnedAchievements = [];
   List<Map<String, dynamic>> get newlyEarnedAchievements => _newlyEarnedAchievements;
 
+  // ✅ NEW: Rate Limit System
+  Map<String, dynamic>? _rateLimit;
+  bool _isRateLimitExceeded = false;
+  String _rateLimitPlan = 'free';
+  
+  Map<String, dynamic>? get rateLimit => _rateLimit;
+  bool get isRateLimitExceeded => _isRateLimitExceeded;
+  String get rateLimitPlan => _rateLimitPlan;
+  int get rateLimitCurrent => _rateLimit?['current'] ?? 0;
+  int get rateLimitMax => _rateLimit?['limit'] ?? 3;
+  int get rateLimitRemaining => _rateLimit?['remaining'] ?? 0;
+  int get rateLimitResetSeconds => _rateLimit?['reset_in_seconds'] ?? 0;
+  
+  String get rateLimitResetFormatted {
+    final seconds = rateLimitResetSeconds;
+    if (seconds <= 0) return '';
+    final hours = seconds ~/ 3600;
+    final mins = (seconds % 3600) ~/ 60;
+    if (hours > 0) {
+      return '$hours jam $mins menit';
+    }
+    return '$mins menit';
+  }
+
+  // ⏳ NEW: Duration Limit System
+  String _durationWarning = '';
+  bool _isDurationWarningActive = false;
+  bool _isDurationLimitExceeded = false;
+  Map<String, dynamic>? _durationLimit;
+  
+  String get durationWarning => _durationWarning;
+  bool get isDurationWarningActive => _isDurationWarningActive;
+  bool get isDurationLimitExceeded => _isDurationLimitExceeded;
+  Map<String, dynamic>? get durationLimit => _durationLimit;
+  int get durationMaxMinutes => _durationLimit?['max_minutes'] ?? 15;
+  bool get isDurationUnlimited => _durationLimit?['is_unlimited'] ?? false;
+
   // Getters for recording state
   bool get isRecording => _isRecording;
   bool get isConnected => _isConnected;
@@ -1668,6 +1705,22 @@ class SttController with ChangeNotifier {
         _expectedAyah = message['expected_ayah'] ?? 1;
         _sessionId = message['session_id'];
         final int startedSurah = message['surah'] ?? suratId ?? 1;
+        
+        // ✅ Handle rate_limit info from backend
+        if (message['rate_limit'] != null) {
+          _rateLimit = Map<String, dynamic>.from(message['rate_limit']);
+          _rateLimitPlan = _rateLimit?['plan'] ?? 'free';
+          _isRateLimitExceeded = false;
+          print('📊 Rate Limit: ${_rateLimit?['current']}/${_rateLimit?['limit']} sessions (${_rateLimitPlan})');
+        }
+        
+        // ⏳ Handle duration_limit info from backend
+        if (message['duration_limit'] != null) {
+          _durationLimit = Map<String, dynamic>.from(message['duration_limit']);
+          _isDurationLimitExceeded = false;
+          _isDurationWarningActive = false;
+          print('⏳ Duration Limit: ${_durationLimit?['max_minutes']} min (unlimited: ${_durationLimit?['is_unlimited']})');
+        }
 
         // ✅ RESTORE word_status_map dari backend (jika ada session sebelumnya)
         // Key format: "surahId:ayahNumber" untuk hindari collision antar surah
@@ -1707,7 +1760,40 @@ class SttController with ChangeNotifier {
         break;
 
       case 'error':
+        final errorCode = message['code'];
         _errorMessage = message['message'];
+        
+        // ✅ Handle RATE_LIMIT_EXCEEDED error
+        if (errorCode == 'RATE_LIMIT_EXCEEDED') {
+          _isRateLimitExceeded = true;
+          if (message['rate_limit'] != null) {
+            _rateLimit = Map<String, dynamic>.from(message['rate_limit']);
+            _rateLimitPlan = _rateLimit?['plan'] ?? 'free';
+          }
+          print('🚫 Rate Limit Exceeded: ${_rateLimit?['current']}/${_rateLimit?['limit']}');
+          print('   Reset in: ${rateLimitResetFormatted}');
+        }
+        
+        notifyListeners();
+        break;
+
+      // ⏳ NEW: Handle duration warning (3 minutes remaining)
+      case 'duration_warning':
+        final remainingSeconds = message['remaining_seconds'] ?? 0;
+        final remainingFormatted = message['remaining_formatted'] ?? '';
+        _durationWarning = 'Sisa waktu $remainingFormatted';
+        _isDurationWarningActive = true;
+        print('⚠️ Duration warning: $remainingFormatted remaining');
+        notifyListeners();
+        break;
+
+      // ⏳ NEW: Handle duration limit exceeded
+      case 'duration_limit':
+        final elapsedFormatted = message['elapsed_formatted'] ?? '15:00';
+        _isDurationLimitExceeded = true;
+        _durationWarning = 'Batas waktu 15 menit tercapai';
+        _isRecording = false;
+        print('🛑 Duration limit reached: $elapsedFormatted');
         notifyListeners();
         break;
 
