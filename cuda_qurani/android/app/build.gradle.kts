@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.cuda_qurani"
+    namespace = "com.myqurani.hafidz"
     compileSdk = 36
     ndkVersion = "27.3.13750724"
 
@@ -21,7 +21,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.cuda_qurani"
+        applicationId = "com.myqurani.hafidz"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 24
