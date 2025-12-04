@@ -2,6 +2,7 @@ import 'package:cuda_qurani/screens/main/stt/database/db_helper.dart';
 import 'package:cuda_qurani/services/local_database_service.dart';
 import 'package:cuda_qurani/services/reciter_database_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'providers/recitation_provider.dart';
 import 'screens/main/home/services/juz_service.dart';
@@ -37,6 +38,11 @@ void main() async {
   
   // ✅ NEW: Initialize Language Service
   await _initializeLanguageService();
+
+    await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,      // portrait normal
+    // DeviceOrientation.portraitDown, // kalau mau ijinkan portrait terbalik
+  ]);
   
   runApp(const MainApp());
 }

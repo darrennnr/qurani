@@ -285,7 +285,9 @@ class _QuranBottomBarState extends State<QuranBottomBar>
         context,
         PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) =>
-              const PlaybackSettingsPage(),
+              PlaybackSettingsPage(
+          currentPage: controller.currentPage, // ✅ BENAR
+        ),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             const begin = Offset(0.0, 0.3);
             const end = Offset.zero;
@@ -543,7 +545,9 @@ class _QuranBottomBarState extends State<QuranBottomBar>
                           PageRouteBuilder(
                             pageBuilder:
                                 (context, animation, secondaryAnimation) =>
-                                    const PlaybackSettingsPage(),
+                                    PlaybackSettingsPage(
+                                      currentPage: controller.currentPage
+                                    ),
                             transitionsBuilder:
                                 (
                                   context,
