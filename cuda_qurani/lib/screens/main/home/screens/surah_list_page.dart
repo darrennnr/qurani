@@ -181,15 +181,15 @@ class _SurahListPageState extends State<SurahListPage> {
   // ==================== NAVIGATION ====================
 
   Future<void> _openSurah(BuildContext context, int surahId) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => SttPage(suratId: surahId)),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => SttPage(suratId: surahId)));
   }
 
   Future<void> _openPage(BuildContext context, int pageNumber) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => SttPage(pageId: pageNumber)),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => SttPage(pageId: pageNumber)));
   }
 
   Future<void> _openSurahAtAyah(
@@ -208,9 +208,9 @@ class _SurahListPageState extends State<SurahListPage> {
     int juzNumber,
     String firstVerseKey,
   ) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => SttPage(juzId: juzNumber)),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => SttPage(juzId: juzNumber)));
   }
 
   // ==================== BUILD ====================
@@ -247,91 +247,86 @@ class _SurahListPageState extends State<SurahListPage> {
     final s = AppDesignSystem.getScaleFactor(context);
 
     return Container(
-  color: AppColors.surface,
-  padding: EdgeInsets.symmetric(
-    horizontal: AppDesignSystem.space20 * s,
-    vertical: AppDesignSystem.space20 * s,
-  ),
-  child: Container(
-    height: 38 * s,
-    decoration: BoxDecoration(
-      color: AppColors.surfaceContainerLowest,
-      borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium * s),
-      border: Border.all(
-        color: _searchController.text.isNotEmpty
-            ? AppColors.borderFocus
-            : Colors.transparent,
-        width: AppDesignSystem.borderThick * s,
+      color: AppColors.surface,
+      padding: EdgeInsets.symmetric(
+        horizontal: AppDesignSystem.space20 * s,
+        vertical: AppDesignSystem.space20 * s,
       ),
-    ),
-    child: TextField(
-      controller: _searchController,
-      style: AppTypography.body(context, color: AppColors.textPrimary),
-      textAlignVertical: TextAlignVertical.center, // teks center VERTIKAL
-      decoration: InputDecoration(
-        isDense: true,
-        border: InputBorder.none,
-        contentPadding: EdgeInsets.zero, // wajib supaya vertical center akurat
-
-        hintText: 'Search surah, juz, or page...',
-        hintStyle: AppTypography.body(
-          context,
-          color: AppColors.textHint,
-          weight: AppTypography.regular,
-        ),
-
-        // PREFIX ICON - IKON CENTER SECARA VERTIKAL
-        prefixIcon: Padding(
-          padding: EdgeInsets.only(left: AppDesignSystem.space12 * s),
-          child: Icon(
-            Icons.search_rounded,
+      child: Container(
+        height: 38 * s,
+        decoration: BoxDecoration(
+          color: AppColors.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium * s),
+          border: Border.all(
             color: _searchController.text.isNotEmpty
-                ? AppColors.primary
-                : AppColors.textTertiary,
-            size: AppDesignSystem.iconMedium * s,
+                ? AppColors.borderFocus
+                : Colors.transparent,
+            width: AppDesignSystem.borderThick * s,
           ),
         ),
+        child: TextField(
+          controller: _searchController,
+          style: AppTypography.body(context, color: AppColors.textPrimary),
+          textAlignVertical: TextAlignVertical.center,
+          decoration: InputDecoration(
+            isDense: true,
+            border: InputBorder.none,
+            // ✅ FIX: Gunakan padding vertikal yang responsif
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 0,
+              vertical:
+                  (32 * s - (AppTypography.body(context).fontSize ?? 14)) / 2,
+            ),
+            hintText: 'Search surah, juz, or page...',
+            hintStyle: AppTypography.body(
+              context,
+              color: AppColors.textHint,
+              weight: AppTypography.regular,
+            ),
 
-        // agar prefixIcon tidak ter-stretch tinggi
-        prefixIconConstraints: BoxConstraints(
-          minWidth: 0,
-          minHeight: 0,
-        ),
+            // PREFIX ICON
+            prefixIcon: Padding(
+              padding: EdgeInsets.only(left: AppDesignSystem.space12 * s),
+              child: Icon(
+                Icons.search_rounded,
+                color: _searchController.text.isNotEmpty
+                    ? AppColors.primary
+                    : AppColors.textTertiary,
+                size: AppDesignSystem.iconMedium * s,
+              ),
+            ),
+            prefixIconConstraints: BoxConstraints(minWidth: 0, minHeight: 0),
 
-        // SUFFIX ICON - CLEAR BUTTON CENTER VERTIKAL
-        suffixIcon: _searchController.text.isNotEmpty
-            ? Padding(
-                padding: EdgeInsets.only(right: AppDesignSystem.space12 * s),
-                child: IconButton(
-                  icon: Icon(
-                    Icons.close_rounded,
-                    color: AppColors.textTertiary,
-                    size: AppDesignSystem.iconMedium * s,
-                  ),
-                  onPressed: () {
-                    AppHaptics.light();
-                    _searchController.clear();
-                    setState(() {
-                      _isSearching = false;
-                      _searchResults = [];
-                    });
-                  },
-                  padding: EdgeInsets.zero,
-                  splashRadius: 20 * s,
-                ),
-              )
-            : null,
-
-        suffixIconConstraints: BoxConstraints(
-          minWidth: 0,
-          minHeight: 0,
+            // SUFFIX ICON
+            suffixIcon: _searchController.text.isNotEmpty
+                ? Padding(
+                    padding: EdgeInsets.only(
+                      right: AppDesignSystem.space12 * s,
+                    ),
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.close_rounded,
+                        color: AppColors.textTertiary,
+                        size: AppDesignSystem.iconMedium * s,
+                      ),
+                      onPressed: () {
+                        AppHaptics.light();
+                        _searchController.clear();
+                        setState(() {
+                          _isSearching = false;
+                          _searchResults = [];
+                        });
+                      },
+                      padding: EdgeInsets.zero,
+                      splashRadius: 20 * s,
+                    ),
+                  )
+                : null,
+            suffixIconConstraints: BoxConstraints(minWidth: 0, minHeight: 0),
+          ),
         ),
       ),
-    ),
-  ),
-);
-
-
+    );
   }
 
   // ==================== SEGMENTED BUTTON TAB BAR ====================
@@ -341,9 +336,7 @@ class _SurahListPageState extends State<SurahListPage> {
 
     return Container(
       color: AppColors.surface,
-      padding: EdgeInsets.symmetric(
-        horizontal: AppDesignSystem.space20 * s,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: AppDesignSystem.space20 * s),
       child: Column(
         children: [
           // Segmented Button

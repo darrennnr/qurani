@@ -31,9 +31,9 @@ class SttController with ChangeNotifier {
   int? _determinedSurahId;
 
   SttController({
-    this.suratId, 
-    this.pageId, 
-    this.juzId, 
+    this.suratId,
+    this.pageId,
+    this.juzId,
     this.isFromHistory = false,
     this.initialWordStatusMap,
     this.resumeSessionId, // ✅ NEW
@@ -47,9 +47,11 @@ class SttController with ChangeNotifier {
     );
     try {
       _initializeWebSocket();
-      
+
       // ✅ NEW: Apply initial word status map immediately (for resume from history)
-      if (initialWordStatusMap != null && initialWordStatusMap!.isNotEmpty && suratId != null) {
+      if (initialWordStatusMap != null &&
+          initialWordStatusMap!.isNotEmpty &&
+          suratId != null) {
         _applyInitialWordStatusMap(suratId!, initialWordStatusMap!);
       }
       print('âœ… SttController: _initializeWebSocket() completed');
@@ -58,12 +60,12 @@ class SttController with ChangeNotifier {
       print('Stack trace: $stack');
     }
   }
-  
+
   // ✅ NEW: Apply word status map from Supabase data
   void _applyInitialWordStatusMap(int surahId, Map<String, dynamic> wordMap) {
     print('🎨 Applying initial word status map for surah $surahId');
     print('   Input data: $wordMap');
-    
+
     _wordStatusMap.clear();
     wordMap.forEach((ayahKey, wordData) {
       final int ayahNum = int.tryParse(ayahKey) ?? -1;
@@ -78,7 +80,7 @@ class SttController with ChangeNotifier {
         });
       }
     });
-    
+
     print('✅ Applied word status: ${_wordStatusMap.length} ayahs colored');
     print('   Word status map: $_wordStatusMap');
     notifyListeners();
@@ -132,7 +134,8 @@ class SttController with ChangeNotifier {
 
   // ✅ NEW: Achievement system
   List<Map<String, dynamic>> _newlyEarnedAchievements = [];
-  List<Map<String, dynamic>> get newlyEarnedAchievements => _newlyEarnedAchievements;
+  List<Map<String, dynamic>> get newlyEarnedAchievements =>
+      _newlyEarnedAchievements;
 
   // Getters for recording state
   bool get isRecording => _isRecording;
@@ -297,116 +300,151 @@ class SttController with ChangeNotifier {
 
       // 🎧 Subscribe to verse changes
       _verseChangeSubscription = _listeningAudioService!.currentVerseStream?.listen((
-  verse,
-) async { // ✅ TAMBAH async
-  print('📖 Now playing: ${verse.surahId}:${verse.verseNumber}');
+        verse,
+      ) async {
+        // ✅ TAMBAH async
+        print('📖 Now playing: ${verse.surahId}:${verse.verseNumber}');
 
-  if (verse.surahId == -999 && verse.verseNumber == -999) {
-    print('🏁 Listening completed - resetting state');
-    _handleListeningCompletion();
-    return;
-  }
+        if (verse.surahId == -999 && verse.verseNumber == -999) {
+          print('🏁 Listening completed - resetting state');
+          _handleListeningCompletion();
+          return;
+        }
 
-  // ✅ NEW: Check if verse is on different page
-  try {
-    final targetPage = await LocalDatabaseService.getPageNumber(
-      verse.surahId,
-      verse.verseNumber,
-    );
+        // ✅ NEW: Check if verse is on different page
+        try {
+          final targetPage = await LocalDatabaseService.getPageNumber(
+            verse.surahId,
+            verse.verseNumber,
+          );
 
-    if (targetPage != _currentPage) {
-      print('📄 Auto-navigating: Page $_currentPage → $targetPage (for ${verse.surahId}:${verse.verseNumber})');
-      
-      // ✅ Navigate before updating ayat index (instant page load)
-      await _navigateToPageForListening(targetPage, verse.surahId);
-      
-      print('✅ Navigation complete, page now: $_currentPage');
-    }
-  } catch (e) {
-    print('⚠️ Failed to get page number for ${verse.surahId}:${verse.verseNumber}: $e');
-  }
+          if (targetPage != _currentPage) {
+            print(
+              '📄 Auto-navigating: Page $_currentPage → $targetPage (for ${verse.surahId}:${verse.verseNumber})',
+            );
 
-  // ✅ FIX: Find ayat in _ayatList (might be filtered by suratId)
-  final ayatIndex = _ayatList.indexWhere(
-    (a) => a.surah_id == verse.surahId && a.ayah == verse.verseNumber,
-  );
+            // ✅ Navigate before updating ayat index (instant page load)
+            await _navigateToPageForListening(targetPage, verse.surahId);
 
-  if (ayatIndex >= 0) {
-    if (_currentAyatIndex >= 0 && _currentAyatIndex < _ayatList.length) {
-      final previousAyat = _ayatList[_currentAyatIndex];
-      final previousKey = _wordKey(
-        previousAyat.surah_id,
-        previousAyat.ayah,
-      );
-      _wordStatusMap[previousKey]?.clear();
-    }
+            print('✅ Navigation complete, page now: $_currentPage');
+          }
+        } catch (e) {
+          print(
+            '⚠️ Failed to get page number for ${verse.surahId}:${verse.verseNumber}: $e',
+          );
+        }
 
-    _currentAyatIndex = ayatIndex;
-    notifyListeners();
-  } else {
-    // ✅ CRITICAL: Ayat not found in filtered list - use currentPageAyats
-    print(
-      '⚠️ Ayat ${verse.surahId}:${verse.verseNumber} not in _ayatList, checking currentPageAyats...',
-    );
+        // ✅ FIX: Find ayat in _ayatList (might be filtered by suratId)
+        final ayatIndex = _ayatList.indexWhere(
+          (a) => a.surah_id == verse.surahId && a.ayah == verse.verseNumber,
+        );
 
-    final pageAyatIndex = _currentPageAyats.indexWhere(
-      (a) => a.surah_id == verse.surahId && a.ayah == verse.verseNumber,
-    );
+        if (ayatIndex >= 0) {
+          if (_currentAyatIndex >= 0 && _currentAyatIndex < _ayatList.length) {
+            final previousAyat = _ayatList[_currentAyatIndex];
+            final previousKey = _wordKey(
+              previousAyat.surah_id,
+              previousAyat.ayah,
+            );
+            _wordStatusMap[previousKey]?.clear();
+          }
 
-    if (pageAyatIndex >= 0) {
-      print('✅ Found in currentPageAyats at index $pageAyatIndex');
-      // Don't update _currentAyatIndex (keep it for processed list)
-      // Just rely on currentPageAyats for UI rendering
-    }
-  }
-});
+          _currentAyatIndex = ayatIndex;
+          notifyListeners();
+        } else {
+          // ✅ CRITICAL: Ayat not found in filtered list - use currentPageAyats
+          print(
+            '⚠️ Ayat ${verse.surahId}:${verse.verseNumber} not in _ayatList, checking currentPageAyats...',
+          );
+
+          final pageAyatIndex = _currentPageAyats.indexWhere(
+            (a) => a.surah_id == verse.surahId && a.ayah == verse.verseNumber,
+          );
+
+          if (pageAyatIndex >= 0) {
+            print('✅ Found in currentPageAyats at index $pageAyatIndex');
+            // Don't update _currentAyatIndex (keep it for processed list)
+            // Just rely on currentPageAyats for UI rendering
+          }
+        }
+      });
 
       // 🎨 Subscribe to word highlights
-      _wordHighlightSubscription = _listeningAudioService!.wordHighlightStream
-          ?.listen((wordIndex) {
-            if (wordIndex == -1) return;
+      // 🎨 Subscribe to word highlights
+      _wordHighlightSubscription = _listeningAudioService!.wordHighlightStream?.listen((
+        wordIndex,
+      ) {
+        print('🎨 Word highlight event received: $wordIndex');
 
-            // ✅ FIX: Use currentPageAyats for word highlighting (not filtered _ayatList)
-            if (_currentPageAyats.isNotEmpty) {
-              // Find current verse in currentPageAyats
-              final currentVerse = _playbackSettings != null
-                  ? _listeningAudioService!.player.processingState
-                  : null;
+        // ✅ FIX: Handle reset signal (-1)
+        if (wordIndex == -1) {
+          print('🔄 Reset signal received, clearing highlights');
+          // Clear previous ayah highlights
+          if (_currentAyatIndex >= 0 &&
+              _currentAyatIndex < _currentPageAyats.length) {
+            final previousAyat = _currentPageAyats[_currentAyatIndex];
+            final previousKey = _wordKey(
+              previousAyat.surah_id,
+              previousAyat.ayah,
+            );
+            _wordStatusMap[previousKey]?.clear();
+            print(
+              '   Cleared highlights for ${previousAyat.surah_id}:${previousAyat.ayah}',
+            );
+          }
+          notifyListeners();
+          return;
+        }
 
-              // Get current ayat from listening service state
-              final currentAyat =
-                  _currentAyatIndex >= 0 && _currentAyatIndex < _ayatList.length
-                  ? _ayatList[_currentAyatIndex]
-                  : (_currentPageAyats.isNotEmpty
-                        ? _currentPageAyats.first
-                        : null);
+        // ✅ FIX: Find current ayat from BOTH _ayatList AND _currentPageAyats
+        AyatData? currentAyat;
 
-              if (currentAyat != null) {
-                final currentKey = _wordKey(
-                  currentAyat.surah_id,
-                  currentAyat.ayah,
-                );
-                final words = currentAyat.words;
+        // Try _ayatList first (filtered list)
+        if (_currentAyatIndex >= 0 && _currentAyatIndex < _ayatList.length) {
+          currentAyat = _ayatList[_currentAyatIndex];
+        }
 
-                if (!_wordStatusMap.containsKey(currentKey)) {
-                  _wordStatusMap[currentKey] = {};
-                }
+        // Fallback: find in currentPageAyats
+        if (currentAyat == null && _currentPageAyats.isNotEmpty) {
+          // Get current verse from listening service
+          final playbackSettings = _playbackSettings;
+          if (playbackSettings != null) {
+            // Find the ayat being played
+            currentAyat = _currentPageAyats.firstWhere(
+              (a) =>
+                  a.surah_id >= playbackSettings.startSurahId &&
+                  a.surah_id <= playbackSettings.endSurahId,
+              orElse: () => _currentPageAyats.first,
+            );
+          }
+        }
 
-                // Update word status for UI
-                for (int i = 0; i < words.length; i++) {
-                  if (i == wordIndex) {
-                    _wordStatusMap[currentKey]![i] = WordStatus.processing;
-                  } else if (i < wordIndex) {
-                    _wordStatusMap[currentKey]![i] = WordStatus.pending;
-                  } else {
-                    _wordStatusMap[currentKey]![i] = WordStatus.pending;
-                  }
-                }
+        if (currentAyat != null) {
+          final currentKey = _wordKey(currentAyat.surah_id, currentAyat.ayah);
+          final words = currentAyat.words;
 
-                notifyListeners();
-              }
+          if (!_wordStatusMap.containsKey(currentKey)) {
+            _wordStatusMap[currentKey] = {};
+          }
+
+          // Update word status for UI - highlight ONLY current word
+          for (int i = 0; i < words.length; i++) {
+            if (i == wordIndex) {
+              _wordStatusMap[currentKey]![i] = WordStatus.processing;
+              print(
+                '   ✨ Highlighted word $i in ${currentAyat.surah_id}:${currentAyat.ayah}',
+              );
+            } else {
+              // Clear other words
+              _wordStatusMap[currentKey]![i] = WordStatus.pending;
             }
-          });
+          }
+
+          notifyListeners();
+        } else {
+          print('⚠️ Current ayat not found for word highlighting');
+        }
+      });
 
       // ▶️ Start playback
       await _listeningAudioService!.startPlayback();
@@ -2017,13 +2055,13 @@ class SttController with ChangeNotifier {
     try {
       print('🏆 Checking for new achievements...');
       final achievements = await _supabaseService.checkNewAchievements(userId);
-      
+
       if (achievements.isNotEmpty) {
         print('🎉 New achievements earned: ${achievements.length}');
         for (final a in achievements) {
           print('   ${a['newly_earned_emoji']} ${a['newly_earned_title']}');
         }
-        
+
         _newlyEarnedAchievements = achievements;
         notifyListeners();
       } else {
@@ -2265,7 +2303,8 @@ class SttController with ChangeNotifier {
         juzId: juzId,
         ayah: firstAyah,
         isFromHistory: isFromHistory,
-        sessionId: resumeSessionId, // ✅ NEW: Pass existing session_id for resume
+        sessionId:
+            resumeSessionId, // ✅ NEW: Pass existing session_id for resume
       );
 
       print('ðŸŽ™ï¸ startRecording(): Starting audio recording...');
@@ -2330,44 +2369,46 @@ class SttController with ChangeNotifier {
     notifyListeners();
   }
 
- // REPLACE method updateVisiblePage dengan:
+  // REPLACE method updateVisiblePage dengan:
   void updateVisiblePage(int pageNumber) {
-  if (_currentPage != pageNumber) {
-    appLogger.log(
-      'VISIBLE_PAGE',
-      'Updating visible page: $_currentPage → $pageNumber',
-    );
-
-    _currentPage = pageNumber;
-
-    if (!_isQuranMode) {
-      _listViewCurrentPage = pageNumber;
-      appLogger.log('VISIBLE_PAGE', 'List view position saved: $pageNumber');
-    }
-
-    _updateSurahNameForPage(pageNumber);
-
-    if (_ayatList.isNotEmpty) {
-      final firstAyatOnPage = _ayatList.firstWhere(
-        (a) => a.page == pageNumber,
-        orElse: () => _ayatList.first,
+    if (_currentPage != pageNumber) {
+      appLogger.log(
+        'VISIBLE_PAGE',
+        'Updating visible page: $_currentPage → $pageNumber',
       );
-      final newIndex = _ayatList.indexOf(firstAyatOnPage);
-      if (newIndex >= 0) {
-        _currentAyatIndex = newIndex;
-        appLogger.log('VISIBLE_PAGE', 'Updated ayat index to: $_currentAyatIndex');
+
+      _currentPage = pageNumber;
+
+      if (!_isQuranMode) {
+        _listViewCurrentPage = pageNumber;
+        appLogger.log('VISIBLE_PAGE', 'List view position saved: $pageNumber');
       }
+
+      _updateSurahNameForPage(pageNumber);
+
+      if (_ayatList.isNotEmpty) {
+        final firstAyatOnPage = _ayatList.firstWhere(
+          (a) => a.page == pageNumber,
+          orElse: () => _ayatList.first,
+        );
+        final newIndex = _ayatList.indexOf(firstAyatOnPage);
+        if (newIndex >= 0) {
+          _currentAyatIndex = newIndex;
+          appLogger.log(
+            'VISIBLE_PAGE',
+            'Updated ayat index to: $_currentAyatIndex',
+          );
+        }
+      }
+
+      // ✅ FIX: Don't preload if scrolling (prevents database lock)
+      if (!_isQuranMode) {
+        Future.microtask(() => _preloadAdjacentPagesAggressively());
+      }
+
+      notifyListeners();
     }
-
-    // ✅ FIX: Don't preload if scrolling (prevents database lock)
-    if (!_isQuranMode) {
-  Future.microtask(() => _preloadAdjacentPagesAggressively());
-}
-
-    notifyListeners();
   }
-}
-
 
   // ===== DISPOSAL =====
   @override

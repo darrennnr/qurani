@@ -134,148 +134,151 @@ class ListeningAudioService {
   // REPLACE method _playNextTrack() di listening_audio_services.txt dengan kode ini:
 
   // Play next track
-  Future<void> _playNextTrack() async {
-    if (!_isPlaying || _currentTrackIndex >= _playlist.length) {
-      // Range completed, check repeat
-      if (_shouldRepeatRange()) {
-        _currentRangeRepeat++;
-        _currentTrackIndex = 0;
-        _currentVerseRepeat = 0;
-        print(
-          '🔁 Repeating range (${_currentRangeRepeat}/${_currentSettings!.rangeRepeat})',
-        );
-        await _playNextTrack();
-      } else {
-        print('🏁 Playback completed');
-        _isPlaying = false;
-        _isPaused = false;
-        await _player.stop();
-        _currentVerseController?.add(
-          VerseReference(surahId: -999, verseNumber: -999),
-        );
-        print('✅ Listening mode fully stopped');
-      }
-      return;
+  // Play next track
+Future<void> _playNextTrack() async {
+  if (!_isPlaying || _currentTrackIndex >= _playlist.length) {
+    // Range completed, check repeat
+    if (_shouldRepeatRange()) {
+      _currentRangeRepeat++;
+      _currentTrackIndex = 0;
+      _currentVerseRepeat = 0;
+      print(
+        '🔁 Repeating range (${_currentRangeRepeat}/${_currentSettings!.rangeRepeat})',
+      );
+      await _playNextTrack();
+    } else {
+      print('🏁 Playback completed');
+      _isPlaying = false;
+      _isPaused = false;
+      await _player.stop();
+      _currentVerseController?.add(
+        VerseReference(surahId: -999, verseNumber: -999),
+      );
+      print('✅ Listening mode fully stopped');
     }
+    return;
+  }
 
-    final currentAudio = _playlist[_currentTrackIndex];
-    final surahNum = currentAudio['surah_number'] as int;
-    final ayahNum = currentAudio['ayah_number'] as int;
+  final currentAudio = _playlist[_currentTrackIndex];
+  final surahNum = currentAudio['surah_number'] as int;
+  final ayahNum = currentAudio['ayah_number'] as int;
 
-    // Notify current verse
-    _currentVerseController?.add(
-      VerseReference(surahId: surahNum, verseNumber: ayahNum),
-    );
+  // ✅ FIX: Reset highlight SEBELUM notifikasi ayat baru
+  _wordHighlightController?.add(-1);
+  print('🔄 Reset word highlight before starting new ayah');
 
-    print('🎵 Playing: $surahNum:$ayahNum (repeat ${_currentVerseRepeat + 1})');
+  // Notify current verse
+  _currentVerseController?.add(
+    VerseReference(surahId: surahNum, verseNumber: ayahNum),
+  );
 
-    // Get cached file path (download if not exists)
-    final audioUrl = currentAudio['audio_url'] as String;
-    String? filePath = await AudioDownloadService.getCachedFilePath(
+  print('🎵 Playing: $surahNum:$ayahNum (repeat ${_currentVerseRepeat + 1})');
+
+  // Get cached file path (download if not exists)
+  final audioUrl = currentAudio['audio_url'] as String;
+  String? filePath = await AudioDownloadService.getCachedFilePath(
+    _reciterIdentifier!,
+    audioUrl,
+  );
+
+  // If not cached, download it
+  if (filePath == null) {
+    print('📥 Audio not cached, downloading...');
+    filePath = await AudioDownloadService.downloadAudio(
       _reciterIdentifier!,
       audioUrl,
     );
-
-    // If not cached, download it
-    if (filePath == null) {
-      print('📥 Audio not cached, downloading...');
-      filePath = await AudioDownloadService.downloadAudio(
-        _reciterIdentifier!,
-        audioUrl,
-      );
-    }
-
-    if (filePath == null) {
-      print('⚠️ Audio file not available, skipping...');
-      _moveToNextTrack();
-      return;
-    }
-
-    try {
-      // Load audio file
-      await _player.setFilePath(filePath);
-
-      // ✅ FIX: Parse segments dari database
-      final segmentsJson = currentAudio['segments'] as String?;
-      List<Map<String, dynamic>> segments = [];
-
-      if (segmentsJson != null && segmentsJson.isNotEmpty) {
-        try {
-          final List<dynamic> segmentsList = jsonDecode(segmentsJson);
-          segments = segmentsList
-              .map(
-                (s) => {
-                  'word_index': s[0] as int,
-                  'start_ms': s[2] as int,
-                  'end_ms': s[3] as int,
-                },
-              )
-              .toList();
-
-          print('🎯 Loaded ${segments.length} word segments for ayah $ayahNum');
-        } catch (e) {
-          print('⚠️ Error parsing segments: $e');
-        }
-      }
-
-      // ✅ FIX: Start word highlighting SEBELUM play
-      StreamSubscription? positionSubscription;
-
-      if (segments.isNotEmpty) {
-        int currentHighlightedWord = -1;
-
-        positionSubscription = _player.positionStream.listen((position) {
-          final positionMs = position.inMilliseconds;
-
-          // Find which word is currently playing
-          for (int i = 0; i < segments.length; i++) {
-            final segment = segments[i];
-            final startMs = segment['start_ms'] as int;
-            final endMs = segment['end_ms'] as int;
-
-            if (positionMs >= startMs && positionMs <= endMs) {
-              final wordIndex = segment['word_index'] as int;
-
-              // Only emit if word changed (avoid spam)
-              if (wordIndex != currentHighlightedWord) {
-                currentHighlightedWord = wordIndex;
-                _wordHighlightController?.add(wordIndex);
-                print('✨ Highlighting word $wordIndex at ${positionMs}ms');
-              }
-              break;
-            }
-          }
-        });
-      }
-
-      // Start playback
-      await _player.play();
-
-      // Wait for audio to finish
-      await _player.playerStateStream.firstWhere(
-        (state) => state.processingState == ProcessingState.completed,
-      );
-
-      // ✅ Cancel position subscription
-      await positionSubscription?.cancel();
-
-      // ✅ Reset highlight setelah ayah selesai
-      _wordHighlightController?.add(-1);
-      print('🔄 Reset word highlight after ayah completed');
-
-      // Check verse repeat
-      if (_shouldRepeatVerse()) {
-        _currentVerseRepeat++;
-        await _playNextTrack();
-      } else {
-        _currentVerseRepeat = 0;
-        _moveToNextTrack();
-      }
-    } catch (e) {
-      print('❌ Error playing track: $e');
-      _moveToNextTrack();
-    }
   }
+
+  if (filePath == null) {
+    print('⚠️ Audio file not available, skipping...');
+    _moveToNextTrack();
+    return;
+  }
+
+  try {
+    // Load audio file
+    await _player.setFilePath(filePath);
+
+    // ✅ FIX: Parse segments dari database
+    final segmentsJson = currentAudio['segments'] as String?;
+    List<Map<String, dynamic>> segments = [];
+
+    if (segmentsJson != null && segmentsJson.isNotEmpty) {
+      try {
+        final List<dynamic> segmentsList = jsonDecode(segmentsJson);
+        segments = segmentsList
+            .map(
+              (s) => {
+                'word_index': s[0] as int,
+                'start_ms': s[2] as int,
+                'end_ms': s[3] as int,
+              },
+            )
+            .toList();
+
+        print('🎯 Loaded ${segments.length} word segments for $surahNum:$ayahNum');
+      } catch (e) {
+        print('⚠️ Error parsing segments: $e');
+      }
+    }
+
+    // ✅ FIX: Start word highlighting SEBELUM play
+    StreamSubscription? positionSubscription;
+
+    if (segments.isNotEmpty) {
+      int currentHighlightedWord = -1;
+
+      positionSubscription = _player.positionStream.listen((position) {
+        final positionMs = position.inMilliseconds;
+
+        // Find which word is currently playing
+        for (int i = 0; i < segments.length; i++) {
+          final segment = segments[i];
+          final startMs = segment['start_ms'] as int;
+          final endMs = segment['end_ms'] as int;
+
+          if (positionMs >= startMs && positionMs <= endMs) {
+            final wordIndex = segment['word_index'] as int;
+
+            // Only emit if word changed (avoid spam)
+            if (wordIndex != currentHighlightedWord) {
+              currentHighlightedWord = wordIndex;
+              _wordHighlightController?.add(wordIndex);
+              print('✨ Highlighting word $wordIndex at ${positionMs}ms (Surah $surahNum:$ayahNum)');
+            }
+            break;
+          }
+        }
+      });
+    }
+
+    // Start playback
+    await _player.play();
+
+    // Wait for audio to finish
+    await _player.playerStateStream.firstWhere(
+      (state) => state.processingState == ProcessingState.completed,
+    );
+
+    // ✅ Cancel position subscription
+    await positionSubscription?.cancel();
+
+    print('✅ Ayah $surahNum:$ayahNum completed');
+
+    // Check verse repeat
+    if (_shouldRepeatVerse()) {
+      _currentVerseRepeat++;
+      await _playNextTrack();
+    } else {
+      _currentVerseRepeat = 0;
+      _moveToNextTrack();
+    }
+  } catch (e) {
+    print('❌ Error playing track: $e');
+    _moveToNextTrack();
+  }
+}
 
   void _moveToNextTrack() {
     _currentTrackIndex++;
