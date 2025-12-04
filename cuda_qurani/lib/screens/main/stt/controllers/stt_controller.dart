@@ -114,6 +114,7 @@ class SttController with ChangeNotifier {
   int _currentPage = 1;
   int _listViewCurrentPage = 1;
   bool _isDataLoaded = false; // Prevent unnecessary reloads
+  bool _isDisposed = false; // FIX: Track disposal state to prevent background task errors
   List<AyatData> _currentPageAyats = [];
   final ScrollController _scrollController = ScrollController();
 
@@ -209,8 +210,11 @@ class SttController with ChangeNotifier {
   String? get errorMessage => _errorMessage;
   List<AyatData> get ayatList => _ayatList;
   int get currentAyatIndex => _currentAyatIndex;
+  // FIX: Check both list not empty AND index is valid (>= 0)
   int get currentAyatNumber =>
-      _ayatList.isNotEmpty ? _ayatList[_currentAyatIndex].ayah : 1;
+      _ayatList.isNotEmpty && _currentAyatIndex >= 0 && _currentAyatIndex < _ayatList.length
+          ? _ayatList[_currentAyatIndex].ayah
+          : 1;
   String get suratNameSimple => _suratNameSimple;
   String get suratVersesCount => _suratVersesCount;
   DateTime? get sessionStartTime => _sessionStartTime;

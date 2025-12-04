@@ -254,8 +254,10 @@ class _HomePageState extends State<HomePage> {
       );
     }
 
-    // ✅ Extract session data from backend
+    // ✅ Extract session data from backend (now includes surah_name from view)
     final surahId = _latestSession!['surah_id'] ?? 0;
+    final surahName = _latestSession!['surah_name'] ?? 'Surah $surahId';
+    final totalAyahs = _latestSession!['total_ayahs'] ?? 0;
     final ayah = _latestSession!['ayah'] ?? 0;
     final position = _latestSession!['position'] ?? 0;
     final status = _latestSession!['status'] ?? 'unknown';
@@ -371,14 +373,14 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
               AppMargin.gap(context),
-              // Surah Title
+              // Surah Title - Now shows actual name from database
               Text(
-                'Surah $surahId',
+                surahName,
                 style: AppTypography.h2(context, weight: AppTypography.bold),
               ),
               AppMargin.gapSmall(context),
               Text(
-                'Ayah $ayah, Word ${position + 1} · $timeAgo',
+                'Ayah $ayah${totalAyahs > 0 ? '/$totalAyahs' : ''}, Word ${position + 1} · $timeAgo',
                 style: AppTypography.caption(context),
               ),
               AppMargin.gap(context),

@@ -132,11 +132,12 @@ class SupabaseService {
         query += '&status=in.(${statuses.join(',')})';
       }
       
-      print('🔍 Query: $supabaseUrl/rest/v1/live_sessions?$query&order=updated_at.desc&limit=1');
+      // Use view with surah name joined
+      print('🔍 Query: $supabaseUrl/rest/v1/live_sessions_with_surah?$query&order=updated_at.desc&limit=1');
       
       final response = await http.get(
         Uri.parse(
-          '$supabaseUrl/rest/v1/live_sessions?$query&order=updated_at.desc&limit=1',
+          '$supabaseUrl/rest/v1/live_sessions_with_surah?$query&order=updated_at.desc&limit=1',
         ),
         headers: _headers,
       );
@@ -433,6 +434,29 @@ class SupabaseService {
       return null;
     } catch (e) {
       print('❌ Error getting completion data: $e');
+      return null;
+    }
+  }
+
+  // ============================================================================
+  // ACHIEVEMENTS PAGE - OPTIMIZED (SINGLE CALL)
+  // ============================================================================
+
+  /// Get ALL achievements data in ONE call
+  /// Returns: latest_badge, earned_badges, remaining_badges, stats
+  Future<Map<String, dynamic>?> getAchievementsData(String userId) async {
+    try {
+      final response = await Supabase.instance.client.rpc(
+        'get_achievements_data',
+        params: {'p_user_id': userId},
+      );
+      
+      if (response != null) {
+        return Map<String, dynamic>.from(response);
+      }
+      return null;
+    } catch (e) {
+      print('❌ Error getting achievements data: $e');
       return null;
     }
   }

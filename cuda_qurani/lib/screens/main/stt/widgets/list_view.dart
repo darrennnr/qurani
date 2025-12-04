@@ -569,7 +569,9 @@ class _CompleteAyahWidget extends StatelessWidget {
     double screenHeight,
   ) {
     return segment.words.map((word) {
-      final wordIndex = word.wordNumber - 1;
+      // FIX: Ensure wordIndex is never negative
+      final rawIndex = word.wordNumber - 1;
+      final wordIndex = rawIndex < 0 ? 0 : (rawIndex >= segment.words.length ? segment.words.length - 1 : rawIndex);
       final wordStatus = state.wordStatusMap?[wordIndex];
       Color wordBg = Colors.transparent;
       double opacity = 1.0;

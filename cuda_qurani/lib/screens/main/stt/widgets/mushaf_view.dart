@@ -407,12 +407,13 @@ class _JustifiedAyahLine extends StatelessWidget {
         final word = segment.words[i];
 
         // Use wordNumber - 1 as index (wordNumber is 1-indexed, backend uses 0-indexed)
-        final wordIndex = word.wordNumber - 1;
+        // FIX: Ensure wordIndex is never negative
+        final rawIndex = word.wordNumber - 1;
+        final wordIndex = rawIndex < 0 ? 0 : (rawIndex >= segment.words.length ? segment.words.length - 1 : rawIndex);
 
         // Get word status dari wordStatusMap (key = "surahId:ayahNumber")
         final wordStatusKey = '${segment.surahId}:${segment.ayahNumber}';
-        final wordStatus =
-            controller.wordStatusMap[wordStatusKey]?[wordIndex];
+        final wordStatus = controller.wordStatusMap[wordStatusKey]?[wordIndex];
 
         // 🎥 DEBUG: Print word status dan warna yang akan diapply
         if (controller.isRecording &&
