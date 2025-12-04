@@ -65,6 +65,30 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^5.0.0
 
+  # Icon App
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  image_path: "assets/icon/icon_app.jpg"
+
+  android: true
+  ios: true
+  remove_alpha_ios: true
+
+  web:
+    generate: true
+    image_path: "assets/icon/icon_app.jpg"
+    background_color: "#ffffff"
+    theme_color: "#ffffff"
+
+  windows:
+    generate: true
+    image_path: "assets/icon/icon_app.jpg"
+
+  macos:
+    generate: true
+    image_path: "assets/icon/icon_app.jpg"
+
 dependency_overrides:
   vector_math: ^2.2.0
 
@@ -77,6 +101,7 @@ flutter:
     - assets/images/qurani-white-text.png
     - assets/images/qurani-icon-green.png
     - assets/images/sliderbutton_guide.jpeg
+    - assets/images/google-icon.jpg
 
     - assets/data/quran-metadata-surah-name.sqlite
     - assets/data/qpc-v1-15-lines.db
