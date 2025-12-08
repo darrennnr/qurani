@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "963510462224",
+    "project_id": "qurani-mobile",
+    "storage_bucket": "qurani-mobile.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:963510462224:android:9ab817199ebb04d47d2795",
+        "android_client_info": {
+          "package_name": "com.myqurani.hafidz"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "963510462224-r22lhlh7135ae54rihbdradjiedfssgd.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.myqurani.hafidz",
+            "certificate_hash": "0283f7a147c6abfee25637c45e749b85cb73a46c"
+          }
+        },
+        {
+          "client_id": "963510462224-7nda8gb5kp9mljc55fotckce6s98fogn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAcKxPPjP1dwGZN53OkB-clEB2z6YQZ6y8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "963510462224-7nda8gb5kp9mljc55fotckce6s98fogn.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

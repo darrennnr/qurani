@@ -5,6 +5,7 @@ import 'package:cuda_qurani/screens/main/home/screens/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../providers/auth_provider.dart';
+import '../../../../services/auth_service.dart';
 import '../../../../core/design_system/app_design_system.dart';
 import '../../../../core/widgets/app_components.dart';
 
@@ -22,6 +23,13 @@ class _LoginPageState extends State<LoginPage> {
   bool _isPasswordVisible = false;
   bool _isLoading = false;
   bool _rememberMe = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Warm up Google Sign In early to reduce chooser delay
+    AuthService().warmUpGoogleSignIn();
+  }
 
   @override
   void dispose() {
@@ -79,6 +87,130 @@ class _LoginPageState extends State<LoginPage> {
       );
     }
   }
+
+  Future<void> _handleGoogleSignIn() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+    print('🔐 LoginPage: ===== STARTING Google Sign In =====');
+    
+    setState(() {
+      _isLoading = true;
+    });
+
+    print('🔐 LoginPage: Button clicked, calling authProvider.signInWithGoogle()...');
+
+    try {
+      print('🔐 LoginPage: Waiting for Google Sign In to complete...');
+      final success = await authProvider.signInWithGoogle();
+      print('🔐 LoginPage: Google Sign In completed! Result: $success');
+
+      if (!mounted) {
+        print('⚠️ LoginPage: Widget not mounted after sign in, skipping navigation');
+        return;
+      }
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      print('🔐 LoginPage: ===== SIGN IN RESULT =====');
+      print('   - Success: $success');
+      print('   - Error message: ${authProvider.errorMessage ?? "null"}');
+      print('   - Is authenticated: ${authProvider.isAuthenticated}');
+      print('   - Current user: ${authProvider.currentUser?.email ?? "null"}');
+      print('   - User ID: ${authProvider.userId ?? "null"}');
+
+      if (success) {
+        print('✅ LoginPage: Google Sign In SUCCESS! Preparing navigation...');
+
+        // Double check authentication status
+        bool isAuth = authProvider.isAuthenticated;
+        print('   - Initial isAuthenticated check: $isAuth');
+        
+        if (!isAuth) {
+          print('⚠️ isAuthenticated is false, waiting for state update...');
+          // Wait a bit longer for auth state to update
+          for (int i = 0; i < 5; i++) {
+            await Future.delayed(const Duration(milliseconds: 200));
+            isAuth = authProvider.isAuthenticated;
+            print('   - Check ${i + 1}/5: isAuthenticated = $isAuth');
+            if (isAuth) break;
+          }
+        }
+
+        if (!mounted) {
+          print('⚠️ LoginPage: Widget not mounted before navigation');
+          return;
+        }
+
+        print('✅ LoginPage: Showing success message...');
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppComponentStyles.successSnackBar(
+            message: 'Login berhasil!',
+            duration: const Duration(seconds: 1),
+          ),
+        );
+
+        print('✅ LoginPage: Navigating to HomePage...');
+        // Navigate to HomePage - navigate even if isAuthenticated check fails
+        // because success=true means Supabase auth was successful
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (context) => const HomePage(),
+          ),
+          (route) => false,
+        );
+
+        print('✅ LoginPage: ===== NAVIGATION COMPLETED =====');
+      } else {
+        print('❌ LoginPage: ===== SIGN IN FAILED =====');
+        print('   - Success: $success');
+        print('   - Is authenticated: ${authProvider.isAuthenticated}');
+        print('   - Error: ${authProvider.errorMessage ?? "No error message"}');
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppComponentStyles.errorSnackBar(
+            message: authProvider.errorMessage ?? 'Google Sign In gagal. Silakan coba lagi.',
+          ),
+        );
+      }
+    } catch (e, stackTrace) {
+      print('❌ LoginPage: ===== EXCEPTION CAUGHT =====');
+      print('   - Error: $e');
+      print('   - Type: ${e.runtimeType}');
+      print('   - Stack trace: $stackTrace');
+      
+      if (!mounted) {
+        print('⚠️ LoginPage: Widget not mounted in catch block');
+        return;
+      }
+      
+      setState(() {
+        _isLoading = false;
+      });
+      
+      String errorMessage = 'Terjadi kesalahan saat login dengan Google';
+      
+      // Handle specific errors
+      final errorString = e.toString().toLowerCase();
+      if (errorString.contains('dibatalkan') || errorString.contains('cancelled')) {
+        errorMessage = 'Login dibatalkan';
+      } else if (errorString.contains('network') || errorString.contains('connection')) {
+        errorMessage = 'Periksa koneksi internet Anda';
+      } else if (errorString.contains('id token')) {
+        errorMessage = 'Gagal mendapatkan token. Pastikan konfigurasi Google Sign In sudah benar.';
+      } else if (errorString.contains('supabase')) {
+        errorMessage = 'Gagal menghubungkan ke server. Silakan coba lagi.';
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        AppComponentStyles.errorSnackBar(
+          message: errorMessage,
+        ),
+      );
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -422,50 +554,57 @@ class _LoginPageState extends State<LoginPage> {
 
   // ==================== GOOGLE BUTTON ====================
   Widget _buildGoogleButton(BuildContext context, double s) {
-    final double iconSize = 28 * s;
+  final double iconSize = 28 * s;
 
-    return SizedBox(
-      height: AppDesignSystem.scale(context, AppDesignSystem.buttonHeightLarge),
-      child: OutlinedButton(
-        onPressed: () {
-          // Handle Google sign in
-        },
-        style: AppComponentStyles.secondaryButton(context).copyWith(
-          padding: WidgetStateProperty.all(
-            EdgeInsets.symmetric(
-              horizontal: AppDesignSystem.scale(context, 16),
-            ),
+  return SizedBox(
+    height: AppDesignSystem.scale(context, AppDesignSystem.buttonHeightLarge),
+    child: OutlinedButton(
+      onPressed: _isLoading ? null : _handleGoogleSignIn, // ✅ Updated
+      style: AppComponentStyles.secondaryButton(context).copyWith(
+        padding: WidgetStateProperty.all(
+          EdgeInsets.symmetric(
+            horizontal: AppDesignSystem.scale(context, 16),
           ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(
-              'assets/images/google-icon.png',
-              height: iconSize,
-              width: iconSize,
-              errorBuilder: (context, error, stackTrace) {
-                return Icon(
-                  Icons.g_mobiledata,
-                  size: AppDesignSystem.iconLarge * s,
-                  color: AppColors.textPrimary,
-                );
-              },
-            ),
-            SizedBox(width: 12 * s),
-            Text(
-              'Masuk dengan Google',
-              style: AppTypography.label(
-                context,
-                color: AppColors.textPrimary,
-                weight: AppTypography.semiBold,
-              ),
-            ),
-          ],
-        ),
       ),
-    );
-  }
+      child: _isLoading // ✅ Show loading when signing in
+          ? SizedBox(
+              height: AppDesignSystem.scale(context, 20),
+              width: AppDesignSystem.scale(context, 20),
+              child: const CircularProgressIndicator(
+                strokeWidth: 2.5,
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF247C64)),
+              ),
+            )
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset(
+                  'assets/images/google-icon.png',
+                  height: iconSize,
+                  width: iconSize,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(
+                      Icons.g_mobiledata,
+                      size: AppDesignSystem.iconLarge * s,
+                      color: AppColors.textPrimary,
+                    );
+                  },
+                ),
+                SizedBox(width: 12 * s),
+                Text(
+                  'Masuk dengan Google',
+                  style: AppTypography.label(
+                    context,
+                    color: AppColors.textPrimary,
+                    weight: AppTypography.semiBold,
+                  ),
+                ),
+              ],
+            ),
+    ),
+  );
+}
 
   // ==================== REGISTER LINK ====================
   Widget _buildRegisterLink(BuildContext context) {
