@@ -29,7 +29,19 @@ class _HomePageState extends State<HomePage> {
   String _engagementTime = "0:00:00";
   bool _isLoadingStats = true;
 
-  // ✅ NEW: Backend integration
+  // Today's Goal data
+  String _goalType = 'verses';
+  int _goalTarget = 1;
+  int _goalCurrent = 0;
+  bool _goalCompleted = false;
+  bool _hasGoal = false;
+
+  // Recent badges for preview
+  List<Map<String, dynamic>> _recentBadges = [];
+  int _earnedBadgesCount = 0;
+  int _totalBadgesCount = 0;
+
+  // ✅ Backend integration
   final SupabaseService _supabaseService = SupabaseService();
   final AuthService _authService = AuthService();
   Map<String, dynamic>? _latestSession;
@@ -39,11 +51,11 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _loadLatestSession();
-    _loadUserStats(); // ✅ Load real stats from database
+    _loadHomePageData(); // ✅ Single optimized call
   }
 
-  /// ✅ NEW: Load user stats from database (streak, time, ayahs)
-  Future<void> _loadUserStats() async {
+  /// ✅ OPTIMIZED: Load ALL home page data in ONE call
+  Future<void> _loadHomePageData() async {
     final userUuid = _authService.userId;
     if (userUuid == null) {
       if (mounted) setState(() => _isLoadingStats = false);
@@ -51,38 +63,52 @@ class _HomePageState extends State<HomePage> {
     }
 
     try {
-      // Fetch streak and stats in parallel
-      final results = await Future.wait([
-        _supabaseService.getUserStreak(userUuid),
-        _supabaseService.getUserStats(userUuid),
-      ]);
+      final data = await _supabaseService.getHomePageData(userUuid);
 
-      if (!mounted) return; // ✅ FIX: Check mounted before setState
+      if (!mounted) return;
 
-      final streak = results[0] as Map<String, int>;
-      final stats = results[1] as Map<String, dynamic>;
+      if (data != null) {
+        // Parse streak
+        final streak = data['streak'] as Map<String, dynamic>? ?? {};
+        _currentStreak = streak['current'] ?? 0;
+        _longestStreak = streak['longest'] ?? 0;
 
-      setState(() {
-        _currentStreak = streak['current_streak'] ?? 0;
-        _longestStreak = streak['longest_streak'] ?? 0;
+        // Parse stats
+        final stats = data['stats'] as Map<String, dynamic>? ?? {};
         _versesRecited = stats['total_ayahs_read'] ?? 0;
-
-        // Format time
         final totalSeconds = stats['total_time_seconds'] ?? 0;
         final hours = totalSeconds ~/ 3600;
         final minutes = (totalSeconds % 3600) ~/ 60;
         final seconds = totalSeconds % 60;
         _engagementTime = '$hours:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-
-        // Calculate completion (total 6236 ayat dalam Quran)
         _completionPercentage = ((_versesRecited / 6236) * 100).round();
 
-        _isLoadingStats = false;
-      });
+        // Parse today's goal
+        final goal = data['today_goal'] as Map<String, dynamic>?;
+        if (goal != null) {
+          _goalType = goal['goal_type'] ?? 'verses';
+          _goalTarget = goal['target_value'] ?? 1;
+          _goalCurrent = goal['current_value'] ?? 0;
+          _goalCompleted = goal['is_completed'] ?? false;
+          _hasGoal = goal['has_goal'] ?? false;
+        }
 
-      print('✅ HOME: Stats loaded - streak: $_currentStreak, time: $_engagementTime, verses: $_versesRecited');
+        // Parse recent badges
+        final badges = data['recent_badges'] as List? ?? [];
+        _recentBadges = badges.map((b) => Map<String, dynamic>.from(b)).toList();
+
+        // Parse badges count
+        final badgesCount = data['badges_count'] as Map<String, dynamic>? ?? {};
+        _earnedBadgesCount = badgesCount['earned'] ?? 0;
+        _totalBadgesCount = badgesCount['total'] ?? 0;
+
+        setState(() => _isLoadingStats = false);
+        print('✅ HOME: Data loaded - streak: $_currentStreak, badges: $_earnedBadgesCount/$_totalBadgesCount');
+      } else {
+        setState(() => _isLoadingStats = false);
+      }
     } catch (e) {
-      print('❌ HOME: Error loading stats: $e');
+      print('❌ HOME: Error loading data: $e');
       if (mounted) setState(() => _isLoadingStats = false);
     }
   }
@@ -137,29 +163,34 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: AppColors.backgroundLight,
       appBar: const MenuAppBar(selectedIndex: 0),
       body: SafeArea(
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            SliverPadding(
-              padding: AppPadding.section(context),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  _buildGreetingHeader(context),
-                  AppMargin.gapLarge(context),
-                  _buildLatestSession(context),
-                  AppMargin.gapXLarge(context),
-                  _buildStreakSection(context),
-                  AppMargin.gapXLarge(context),
-                  _buildProgressSection(context),
-                  AppMargin.gapXLarge(context),
-                  _buildTodayGoal(context),
-                  AppMargin.gapXLarge(context),
-                  _buildAchievements(context),
-                  AppMargin.customGap(context, AppDesignSystem.space40),
-                ]),
+        // ✅ Pull to Refresh
+        child: RefreshIndicator(
+          onRefresh: _refreshAllData,
+          color: AppColors.primary,
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+            slivers: [
+              SliverPadding(
+                padding: AppPadding.section(context),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    _buildGreetingHeader(context),
+                    AppMargin.gapLarge(context),
+                    _buildLatestSession(context),
+                    AppMargin.gapXLarge(context),
+                    _buildStreakSection(context),
+                    AppMargin.gapXLarge(context),
+                    _buildProgressSection(context),
+                    AppMargin.gapXLarge(context),
+                    _buildTodayGoal(context),
+                    AppMargin.gapXLarge(context),
+                    _buildAchievements(context),
+                    AppMargin.customGap(context, AppDesignSystem.space40),
+                  ]),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -417,7 +448,16 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  /// ✅ NEW: Resume session action
+  /// ✅ Refresh all data (for pull-to-refresh and auto-refresh)
+  Future<void> _refreshAllData() async {
+    setState(() => _isLoadingStats = true);
+    await Future.wait([
+      _loadHomePageData(),
+      _loadLatestSession(),
+    ]);
+  }
+
+  /// ✅ Resume session action
   Future<void> _resumeSession() async {
     if (_latestSession == null) return;
 
@@ -451,6 +491,12 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       );
+      
+      // ✅ Auto-refresh data after returning from recording
+      if (mounted) {
+        print('🔄 HOME: Auto-refreshing after recording...');
+        _refreshAllData();
+      }
     } catch (e) {
       print('❌ Failed to resume session: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -632,6 +678,21 @@ class _HomePageState extends State<HomePage> {
 
   // ==================== TODAY'S GOAL ====================
   Widget _buildTodayGoal(BuildContext context) {
+    // Goal type labels
+    String goalLabel = 'Verses Goal';
+    String goalIcon = '📖';
+    if (_goalType == 'minutes') {
+      goalLabel = 'Time Goal';
+      goalIcon = '⏱️';
+    } else if (_goalType == 'pages') {
+      goalLabel = 'Pages Goal';
+      goalIcon = '📄';
+    }
+
+    // Progress text
+    String progressText = '$_goalCurrent/$_goalTarget ${_goalType == 'minutes' ? 'min' : _goalType}';
+    double progressPercent = _goalTarget > 0 ? (_goalCurrent / _goalTarget).clamp(0.0, 1.0) : 0.0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -645,7 +706,7 @@ class _HomePageState extends State<HomePage> {
           child: InkWell(
             onTap: () {
               AppHaptics.light();
-              // Navigate to goal
+              // TODO: Navigate to goal settings
             },
             borderRadius: BorderRadius.circular(AppDesignSystem.radiusLarge),
             splashColor: AppComponentStyles.rippleColor,
@@ -658,50 +719,78 @@ class _HomePageState extends State<HomePage> {
                 borderWidth: AppDesignSystem.borderNormal,
                 shadow: false,
               ),
-              child: Row(
-                children: [
-                  Container(
-                    width: AppDesignSystem.iconHuge,
-                    height: AppDesignSystem.iconHuge,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(
-                        AppDesignSystem.radiusMedium,
-                      ),
-                    ),
-                    child: Icon(
-                      Icons.wb_sunny_rounded,
-                      color: Colors.white,
-                      size: AppDesignSystem.iconLarge,
-                    ),
-                  ),
-                  AppMargin.gapH(context),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              child: _hasGoal
+                  ? Column(
                       children: [
-                        Text(
-                          'Ayah a Day',
-                          style: AppTypography.title(
-                            context,
-                            weight: AppTypography.semiBold,
+                        Row(
+                          children: [
+                            Container(
+                              width: AppDesignSystem.iconHuge,
+                              height: AppDesignSystem.iconHuge,
+                              decoration: BoxDecoration(
+                                color: _goalCompleted ? AppColors.success : AppColors.primary,
+                                borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium),
+                              ),
+                              child: Center(
+                                child: Text(goalIcon, style: TextStyle(fontSize: AppDesignSystem.scale(context, 24))),
+                              ),
+                            ),
+                            AppMargin.gapH(context),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(goalLabel, style: AppTypography.title(context, weight: AppTypography.semiBold)),
+                                  AppMargin.gapSmall(context),
+                                  Text(progressText, style: AppTypography.caption(context, color: _goalCompleted ? AppColors.success : AppColors.textTertiary)),
+                                ],
+                              ),
+                            ),
+                            if (_goalCompleted)
+                              Icon(Icons.check_circle_rounded, color: AppColors.success, size: AppDesignSystem.iconLarge)
+                            else
+                              Icon(Icons.arrow_forward_ios_rounded, size: AppDesignSystem.iconSmall, color: AppColors.textDisabled),
+                          ],
+                        ),
+                        if (!_goalCompleted) ...[
+                          AppMargin.gap(context),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(AppDesignSystem.radiusSmall),
+                            child: LinearProgressIndicator(
+                              value: progressPercent,
+                              backgroundColor: AppColors.borderLight,
+                              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                              minHeight: AppDesignSystem.scale(context, 6),
+                            ),
+                          ),
+                        ],
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        Container(
+                          width: AppDesignSystem.iconHuge,
+                          height: AppDesignSystem.iconHuge,
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceContainerLow,
+                            borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium),
+                          ),
+                          child: Icon(Icons.add_rounded, color: AppColors.textTertiary, size: AppDesignSystem.iconLarge),
+                        ),
+                        AppMargin.gapH(context),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Set a Goal', style: AppTypography.title(context, weight: AppTypography.semiBold)),
+                              AppMargin.gapSmall(context),
+                              Text('Tap to create daily goal', style: AppTypography.caption(context)),
+                            ],
                           ),
                         ),
-                        AppMargin.gapSmall(context),
-                        Text(
-                          "Al-Waqi'ah 12",
-                          style: AppTypography.caption(context),
-                        ),
+                        Icon(Icons.arrow_forward_ios_rounded, size: AppDesignSystem.iconSmall, color: AppColors.textDisabled),
                       ],
                     ),
-                  ),
-                  Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    size: AppDesignSystem.iconSmall,
-                    color: AppColors.textDisabled,
-                  ),
-                ],
-              ),
             ),
           ),
         ),
@@ -717,106 +806,93 @@ class _HomePageState extends State<HomePage> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Achievements',
-              style: AppTypography.titleLarge(
-                context,
-                weight: AppTypography.bold,
-              ),
+            Row(
+              children: [
+                Text(
+                  'Achievements',
+                  style: AppTypography.titleLarge(context, weight: AppTypography.bold),
+                ),
+                if (_earnedBadgesCount > 0) ...[
+                  AppMargin.gapHSmall(context),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: AppDesignSystem.space6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryContainer,
+                      borderRadius: BorderRadius.circular(AppDesignSystem.radiusSmall),
+                    ),
+                    child: Text(
+                      '$_earnedBadgesCount/$_totalBadgesCount',
+                      style: AppTypography.captionSmall(context, color: AppColors.primary, weight: AppTypography.bold),
+                    ),
+                  ),
+                ],
+              ],
             ),
-
-            // 👉 NEW: TextButton di sisi kanan
             TextButton(
               onPressed: () {
                 Navigator.push(
                   context,
                   PageRouteBuilder(
-                    pageBuilder: (context, animation, secondaryAnimation) =>
-                        const AchievementPage(),
-                    transitionsBuilder:
-                        (context, animation, secondaryAnimation, child) {
-                          const begin = Offset(-0.03, 0.0);
-                          const end = Offset.zero;
-                          const curve = Curves.easeInOut;
-                          var tween = Tween(
-                            begin: begin,
-                            end: end,
-                          ).chain(CurveTween(curve: curve));
-                          var offsetAnimation = animation.drive(tween);
-                          var fadeAnimation = animation.drive(
-                            Tween(
-                              begin: 0.0,
-                              end: 1.0,
-                            ).chain(CurveTween(curve: curve)),
-                          );
-
-                          return FadeTransition(
-                            opacity: fadeAnimation,
-                            child: SlideTransition(
-                              position: offsetAnimation,
-                              child: child,
-                            ),
-                          );
-                        },
+                    pageBuilder: (context, animation, secondaryAnimation) => const AchievementPage(),
+                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                      const begin = Offset(-0.03, 0.0);
+                      const end = Offset.zero;
+                      const curve = Curves.easeInOut;
+                      var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                      var offsetAnimation = animation.drive(tween);
+                      var fadeAnimation = animation.drive(Tween(begin: 0.0, end: 1.0).chain(CurveTween(curve: curve)));
+                      return FadeTransition(opacity: fadeAnimation, child: SlideTransition(position: offsetAnimation, child: child));
+                    },
                     transitionDuration: AppDesignSystem.durationNormal,
                   ),
                 );
               },
               style: TextButton.styleFrom(
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppDesignSystem.space8,
-                  vertical: AppDesignSystem.space4,
-                ),
-                minimumSize: Size(0, 0), // biar mepet, tidak melebar
+                padding: EdgeInsets.symmetric(horizontal: AppDesignSystem.space8, vertical: AppDesignSystem.space4),
+                minimumSize: Size(0, 0),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: Text(
-                'More',
-                style: AppTypography.caption(
-                  context,
-                  color: AppColors.textPrimary,
-                ),
-              ),
+              child: Text('More', style: AppTypography.caption(context, color: AppColors.textPrimary)),
             ),
           ],
         ),
-
         AppMargin.gap(context),
-
         SizedBox(
           height: AppDesignSystem.scale(context, 100),
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            children: [
-              _buildAchievementBadge(
-                context: context,
-                emoji: '🔍',
-                label: 'Explorer',
-                count: 10,
-              ),
-              _buildAchievementBadge(
-                context: context,
-                emoji: '📱',
-                label: 'Social',
-                count: null,
-              ),
-              _buildAchievementBadge(
-                context: context,
-                emoji: '🎯',
-                label: 'Reminder',
-                count: 1,
-              ),
-              _buildAchievementBadge(
-                context: context,
-                emoji: '🧠',
-                label: 'Memory',
-                count: null,
-              ),
-            ],
-          ),
+          child: _recentBadges.isEmpty
+              ? _buildEmptyBadges(context)
+              : ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: _recentBadges.length,
+                  itemBuilder: (context, index) {
+                    final badge = _recentBadges[index];
+                    return _buildAchievementBadge(
+                      context: context,
+                      emoji: badge['emoji'] ?? '🏆',
+                      label: badge['title'] ?? 'Badge',
+                      count: null,
+                    );
+                  },
+                ),
         ),
       ],
+    );
+  }
+
+  Widget _buildEmptyBadges(BuildContext context) {
+    return Center(
+      child: Container(
+        padding: AppPadding.card(context),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.emoji_events_outlined, color: AppColors.textDisabled, size: AppDesignSystem.iconLarge),
+            AppMargin.gapHSmall(context),
+            Text('Complete sessions to earn badges', style: AppTypography.caption(context, color: AppColors.textTertiary)),
+          ],
+        ),
+      ),
     );
   }
 

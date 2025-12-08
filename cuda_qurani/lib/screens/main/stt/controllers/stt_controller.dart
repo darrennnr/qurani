@@ -175,6 +175,17 @@ class SttController with ChangeNotifier {
   int get durationMaxMinutes => _durationLimit?['max_minutes'] ?? 15;
   bool get isDurationUnlimited => _durationLimit?['is_unlimited'] ?? false;
 
+  // // 🚨 NEW: Surah Mismatch Detection
+  // // bool _isSurahMismatch = false;
+  // String? _surahMismatchWarning;
+  // int? _detectedMismatchSurah;
+  // String? _detectedMismatchSurahName;
+  
+  // // bool get isSurahMismatch => _isSurahMismatch;
+  // String? get surahMismatchWarning => _surahMismatchWarning;
+  // int? get detectedMismatchSurah => _detectedMismatchSurah;
+  // String? get detectedMismatchSurahName => _detectedMismatchSurahName;
+
   // Getters for recording state
   bool get isRecording => _isRecording;
   bool get isConnected => _isConnected;
@@ -1559,10 +1570,11 @@ class SttController with ChangeNotifier {
       },
     );
 
-    print('âœ… SttController: WebSocket subscriptions initialized');
-
-    // Auto-connect
-    _connectWebSocket();
+    print('✅ SttController: WebSocket subscriptions initialized');
+    
+    // ✅ OPTIMIZED: NO pre-connect - WebSocket connects ONLY when user slides button
+    // This makes page load faster and lighter
+    print('💡 WebSocket will connect when user starts recording');
   }
 
   Future<void> _connectWebSocket() async {
@@ -1574,6 +1586,54 @@ class SttController with ChangeNotifier {
     } catch (e) {
       appLogger.log('WEBSOCKET_ERROR', 'Connection failed: $e');
     }
+  }
+  
+  /// Ensure WebSocket is connected (with timeout)
+  /// ✅ IMPROVED: Force reconnect jika connection stale (backend restart)
+  Future<bool> _ensureConnected({int timeoutMs = 1500, bool forceNew = false}) async {
+    // ✅ Force new connection jika diminta (setelah backend restart)
+    if (forceNew) {
+      print('🔄 Force reconnecting WebSocket...');
+      await _webSocketService.forceReconnect();
+      _isConnected = _webSocketService.isConnected;
+      return _isConnected;
+    }
+    
+    if (_webSocketService.isConnected) {
+      print('⚡ WebSocket already connected!');
+      return true;
+    }
+    
+    print('🔌 Connecting WebSocket...');
+    final connectStart = DateTime.now();
+    
+    await _connectWebSocket();
+    
+    // Fast polling with timeout
+    final stopwatch = Stopwatch()..start();
+    while (!_webSocketService.isConnected && stopwatch.elapsedMilliseconds < timeoutMs) {
+      await Future.delayed(const Duration(milliseconds: 20));
+    }
+    
+    final elapsed = DateTime.now().difference(connectStart).inMilliseconds;
+    _isConnected = _webSocketService.isConnected;
+    
+    if (_isConnected) {
+      print('✅ WebSocket connected in ${elapsed}ms');
+    } else {
+      // ✅ NEW: Try force reconnect if normal connect failed
+      print('⚠️ Normal connect failed, trying force reconnect...');
+      await _webSocketService.forceReconnect();
+      _isConnected = _webSocketService.isConnected;
+      
+      if (_isConnected) {
+        print('✅ Force reconnect succeeded!');
+      } else {
+        print('❌ WebSocket timeout after ${elapsed}ms');
+      }
+    }
+    
+    return _isConnected;
   }
 
   Future<void> _handleWebSocketMessage(Map<String, dynamic> message) async {
@@ -1838,6 +1898,35 @@ class SttController with ChangeNotifier {
         print('🛑 Duration limit reached: $elapsedFormatted');
         notifyListeners();
         break;
+
+      // // 🚨 NEW: Handle surah mismatch warning
+      // case 'surah_mismatch':
+      //   final expectedSurah = message['expected_surah'] ?? 0;
+      //   final detectedSurah = message['detected_surah'] ?? 0;
+      //   final detectedSurahName = message['detected_surah_name'] ?? 'Surah $detectedSurah';
+      //   final mismatchMessage = message['message'] ?? 'Surah tidak sesuai';
+        
+      //   print('🚨 SURAH MISMATCH DETECTED!');
+      //   print('   Expected: Surah $expectedSurah');
+      //   print('   Detected: $detectedSurahName (Surah $detectedSurah)');
+        
+      //   // Set warning message to display in UI
+      //   // _surahMismatchWarning = mismatchMessage;
+      //   // _isSurahMismatch = true;
+      //   // _detectedMismatchSurah = detectedSurah;
+      //   // _detectedMismatchSurahName = detectedSurahName;
+        
+      //   notifyListeners();
+        
+      //   // Auto-clear warning after 10 seconds
+      //   // Future.delayed(const Duration(seconds: 10), () {
+      //   //   if (_isSurahMismatch) {
+      //   //     _isSurahMismatch = false;
+      //   //     _surahMismatchWarning = null;
+      //   //     notifyListeners();
+      //   //   }
+      //   // });
+      //   // break;
 
       // ✅ NEW: Handle paused message from backend
       case 'paused':
@@ -2319,26 +2408,19 @@ class SttController with ChangeNotifier {
   }
 
   Future<void> startRecording() async {
-    // âœ… FIX: Sync provider flag from service FIRST
-    final serviceConnected = _webSocketService.isConnected;
-    _isConnected = serviceConnected;
-    print('ðŸŽ¤ startRecording(): Called.');
-    print('   - _isConnected (cached) = $_isConnected');
-    print('   - service.isConnected (fresh) = $serviceConnected');
-
-    if (!_isConnected) {
-      print('âš ï¸ startRecording(): Not connected, attempting to connect...');
-      _errorMessage = 'Connecting...';
+    print('🎤 startRecording(): Checking WebSocket...');
+    
+    // ✅ OPTIMIZED: Fast connection check
+    // WebSocket sudah pre-connected di background saat page load
+    // Jika belum ready, tunggu max 2 detik
+    final isReady = await _ensureConnected(timeoutMs: 2000);
+    if (!isReady) {
+      print('❌ startRecording(): WebSocket not ready!');
+      _errorMessage = 'Cannot connect to server';
       notifyListeners();
-      await _connectWebSocket();
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (!_isConnected) {
-        print('âŒ startRecording(): Connect failed!');
-        _errorMessage = 'Cannot connect to server';
-        notifyListeners();
-        return;
-      }
+      return;
     }
+    print('✅ startRecording(): WebSocket ready!');
 
     try {
       print('âœ… startRecording(): Connected, clearing state...');
@@ -2526,3 +2608,5 @@ class SttController with ChangeNotifier {
     super.dispose();
   }
 }
+
+

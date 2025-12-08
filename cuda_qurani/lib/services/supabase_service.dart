@@ -460,4 +460,27 @@ class SupabaseService {
       return null;
     }
   }
+
+  // ============================================================================
+  // HOME PAGE - OPTIMIZED (SINGLE CALL)
+  // ============================================================================
+
+  /// Get ALL home page data in ONE call (lightweight)
+  /// Returns: today_goal, recent_badges, streak, stats, badges_count
+  Future<Map<String, dynamic>?> getHomePageData(String userId) async {
+    try {
+      final response = await Supabase.instance.client.rpc(
+        'get_home_page_data',
+        params: {'p_user_id': userId},
+      );
+      
+      if (response != null) {
+        return Map<String, dynamic>.from(response);
+      }
+      return null;
+    } catch (e) {
+      print('❌ Error getting home page data: $e');
+      return null;
+    }
+  }
 }

@@ -295,11 +295,7 @@ class WebSocketService {
       if (_authService.isAuthenticated) {
         messageData['user_uuid'] = _authService.userId ?? '';
         messageData['user_email'] = _authService.currentUser?.email ?? '';
-        print('🔐 WebSocket: Including user info in START message');
-        print('   UUID: ${_authService.userId}');
-        print('   Email: ${_authService.currentUser?.email}');
-      } else {
-        print('⚠️ WebSocket: Anonymous session (no user info)');
+        messageData['user_name'] = _authService.currentUser?.fullName ?? '';
       }
       
       final message = jsonEncode(messageData);
@@ -419,25 +415,45 @@ class WebSocketService {
   }
 
   void disconnect() {
-    // 🔍 DEBUG: Print stack trace to find WHO called disconnect
     print('🔌 WebSocket: Disconnecting...');
-    print('📍 DISCONNECT CALLED FROM:');
-    print(StackTrace.current);
     
     _shouldAutoReconnect = false;
     _reconnectTimer?.cancel();
-    _stopHeartbeat();  // ✅ Stop heartbeat timer
+    _stopHeartbeat();
     _channel?.sink.close();
-    _channel = null;  // ✅ Clear channel reference
+    _channel = null;
     _isConnected = false;
     _isReconnecting = false;
-    _reconnectAttempts = 0;  // ✅ Reset reconnect counter
+    _reconnectAttempts = 0;
     
-    // ✅ FIX: Only add event if controller is not closed
     if (!_connectionStatusController.isClosed) {
       _connectionStatusController.add(false);
     }
     print('🔌 WebSocket: Disconnected and cleaned up');
+  }
+  
+  /// ✅ NEW: Force reconnect - disconnect then connect fresh
+  /// Use this after backend restart or when connection is stale
+  Future<void> forceReconnect() async {
+    print('🔄 WebSocket: Force reconnecting...');
+    
+    // Disconnect existing connection
+    _reconnectTimer?.cancel();
+    _stopHeartbeat();
+    _channel?.sink.close();
+    _channel = null;
+    _isConnected = false;
+    _isReconnecting = false;
+    _reconnectAttempts = 0;
+    
+    // Small delay to ensure cleanup
+    await Future.delayed(const Duration(milliseconds: 100));
+    
+    // Connect fresh
+    _shouldAutoReconnect = true;
+    await connect();
+    
+    print('🔄 WebSocket: Force reconnect complete, connected: $_isConnected');
   }
 
   void dispose() {

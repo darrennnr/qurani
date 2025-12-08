@@ -137,6 +137,48 @@ class _ActivityPageState extends State<ActivityPage> {
     return maxY + 5;
   }
 
+  // Get accuracy chart key based on timeframe
+  String _getAccuracyChartKey(String timeframe) {
+    switch (timeframe) {
+      case 'day': return 'accuracy_day';
+      case 'week': return 'accuracy_week';
+      case 'month': return 'accuracy_month';
+      default: return 'accuracy_day';
+    }
+  }
+
+  // Get accuracy chart data based on selected timeframe
+  List<FlSpot> _getAccuracyChartData() {
+    if (_activityData == null) return [const FlSpot(0, 0)];
+    
+    final chartKey = _getAccuracyChartKey(_engagementTimeframe);
+    final chartData = _activityData![chartKey] as List? ?? [];
+    if (chartData.isEmpty) return [const FlSpot(0, 0)];
+    
+    final spots = <FlSpot>[];
+    for (int i = 0; i < chartData.length; i++) {
+      final accuracy = (chartData[i]['accuracy'] as num?)?.toDouble() ?? 0.0;
+      spots.add(FlSpot(i.toDouble(), accuracy));
+    }
+    return spots.isEmpty ? [const FlSpot(0, 0)] : spots;
+  }
+
+  List<String> _getAccuracyXLabels() {
+    if (_activityData == null) return [''];
+    
+    final chartKey = _getAccuracyChartKey(_engagementTimeframe);
+    final chartData = _activityData![chartKey] as List? ?? [];
+    if (chartData.isEmpty) return [''];
+    
+    return chartData.map((d) {
+      return d['activity_date']?.toString() ?? '';
+    }).toList();
+  }
+
+  double _getAccuracyMaxY() {
+    return 100.0; // Accuracy is always 0-100%
+  }
+
   // Get pages chart data (currently only day view available)
   List<FlSpot> _getPagesChartData() {
     if (_activityData == null) return [const FlSpot(0, 0)];
@@ -187,7 +229,9 @@ class _ActivityPageState extends State<ActivityPage> {
     final badgeCount = badges[periodKey] as int? ?? 0;
     
     final durationSeconds = periodStats['duration_seconds'] as int? ?? 0;
+    final reciteTimeSeconds = periodStats['recite_time_seconds'] as int? ?? 0;
     final verses = periodStats['verses'] as int? ?? 0;
+    final accuracy = (periodStats['accuracy'] as num?)?.toDouble() ?? 0.0;
     final completion = (verses / _totalQuranAyahs * 100);
     final deeds = verses * 10;
     
@@ -195,7 +239,8 @@ class _ActivityPageState extends State<ActivityPage> {
       'engagement': _formatDuration(durationSeconds),
       'completion': '${completion.toStringAsFixed(completion < 1 ? 2 : 1)}%',
       'verses': verses,
-      'recitation': _formatDuration(0), // Will be available after backend deploy
+      'recitation': _formatDuration(reciteTimeSeconds),
+      'accuracy': accuracy,
       'badges': badgeCount,
       'deeds': _formatNumber(deeds),
       'searches': 0,
@@ -209,6 +254,7 @@ class _ActivityPageState extends State<ActivityPage> {
       'completion': '0%',
       'verses': 0,
       'recitation': '00:00',
+      'accuracy': 0.0,
       'badges': 0,
       'deeds': '0',
       'searches': 0,
@@ -329,6 +375,8 @@ class _ActivityPageState extends State<ActivityPage> {
                     AppMargin.gapLarge(context),
                     _buildEngagementChart(context),
                     AppMargin.gapLarge(context),
+                    _buildAccuracyChart(context),
+                    AppMargin.gapLarge(context),
                     _buildStatistics(context),
                   ]),
                 ),
@@ -446,6 +494,102 @@ class _ActivityPageState extends State<ActivityPage> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildAccuracyChart(BuildContext context) {
+    final s = AppDesignSystem.getScaleFactor(context);
+    final spots = _getAccuracyChartData();
+    final labels = _getAccuracyXLabels();
+    final maxY = _getAccuracyMaxY();
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.only(bottom: 12 * s),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Accuracy (%)', style: TextStyle(fontSize: 16 * s, fontWeight: FontWeight.w700, color: AppColors.textPrimary, letterSpacing: -0.3)),
+              _buildTimeframeSelector(_engagementTimeframe, false, context),
+            ],
+          ),
+        ),
+        AppCard(
+          padding: EdgeInsets.all(16 * s),
+          shadow: false,
+          borderColor: AppColors.borderLight,
+          child: SizedBox(
+            height: 180 * s,
+            child: _isLoading
+                ? _buildChartSkeleton(context)
+                : (spots.length <= 1 && spots.first.y == 0)
+                    ? _buildEmptyChart(context, 'No accuracy data yet')
+                    : _buildAccuracyLineChart(spots, maxY, labels, context),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAccuracyLineChart(List<FlSpot> spots, double maxY, List<String> xLabels, BuildContext context) {
+    final s = AppDesignSystem.getScaleFactor(context);
+    return LineChart(
+      LineChartData(
+        minY: 0,
+        maxY: maxY,
+        lineBarsData: [
+          LineChartBarData(
+            spots: spots,
+            isCurved: false,
+            color: AppColors.success, // Green for accuracy
+            barWidth: 2 * s,
+            dotData: FlDotData(
+              show: true,
+              getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(radius: 3 * s, color: AppColors.success, strokeWidth: 0),
+            ),
+            belowBarData: BarAreaData(show: true, color: AppColors.success.withOpacity(0.08)),
+          ),
+        ],
+        titlesData: FlTitlesData(
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 28 * s,
+              interval: 25, // 0, 25, 50, 75, 100
+              getTitlesWidget: (value, meta) => Text('${value.toInt()}', style: TextStyle(fontSize: 9 * s, color: AppColors.textTertiary, fontWeight: FontWeight.w500)),
+            ),
+          ),
+          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 24 * s,
+              interval: 1,
+              getTitlesWidget: (value, meta) {
+                final index = value.toInt();
+                if (index >= 0 && index < xLabels.length) {
+                  return Padding(
+                    padding: EdgeInsets.only(top: 6 * s),
+                    child: Text(xLabels[index], style: TextStyle(fontSize: 8.5 * s, color: AppColors.success.withOpacity(0.7), fontWeight: FontWeight.w600)),
+                  );
+                }
+                return const SizedBox();
+              },
+            ),
+          ),
+        ),
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          horizontalInterval: 25,
+          getDrawingHorizontalLine: (value) => FlLine(color: AppColors.borderLight, strokeWidth: 1 * s),
+        ),
+        borderData: FlBorderData(show: false),
+        lineTouchData: const LineTouchData(enabled: false),
+      ),
     );
   }
 
@@ -623,6 +767,9 @@ class _ActivityPageState extends State<ActivityPage> {
     final periodKey = _mapTabToKey(_statisticsTimeframe);
     final data = _getStatsForPeriod(periodKey);
 
+    final accuracy = (data['accuracy'] as num?)?.toDouble() ?? 0.0;
+    final accuracyStr = accuracy > 0 ? '${accuracy.toStringAsFixed(1)}%' : '0%';
+    
     return Column(
       children: [
         Row(children: [
@@ -634,13 +781,19 @@ class _ActivityPageState extends State<ActivityPage> {
         Row(children: [
           Expanded(child: _buildStatCard(data['verses'].toString(), 'Verses Recited', Icons.menu_book_rounded, AppColors.info, context)),
           SizedBox(width: 10 * s),
-          Expanded(child: _buildStatCard(data['recitation'].toString(), 'Recitation Time', Icons.timer_outlined, AppColors.accent, context, subtitle: 'Coming soon')),
+          Expanded(child: _buildStatCard(data['recitation'].toString(), 'Recitation Time', Icons.timer_outlined, AppColors.accent, context)),
         ]),
         SizedBox(height: 10 * s),
         Row(children: [
-          Expanded(child: _buildStatCard(data['badges'].toString(), 'Earned Badges', Icons.emoji_events_outlined, AppColors.warning, context)),
+          Expanded(child: _buildStatCard(accuracyStr, 'Accuracy', Icons.analytics_outlined, AppColors.secondary, context)),
           SizedBox(width: 10 * s),
+          Expanded(child: _buildStatCard(data['badges'].toString(), 'Earned Badges', Icons.emoji_events_outlined, AppColors.warning, context)),
+        ]),
+        SizedBox(height: 10 * s),
+        Row(children: [
           Expanded(child: _buildStatCard(data['deeds'].toString(), 'Deeds Estimated', Icons.favorite_border_rounded, AppColors.error, context)),
+          SizedBox(width: 10 * s),
+          const Expanded(child: SizedBox()), // Placeholder for future stat
         ]),
       ],
     );

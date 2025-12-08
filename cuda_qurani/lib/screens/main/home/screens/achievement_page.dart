@@ -174,21 +174,25 @@ class _AchievementPageState extends State<AchievementPage> {
       body: SafeArea(
         child: _isLoading 
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              padding: EdgeInsets.only(bottom: AppDesignSystem.space40 * s),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildLatestBadgeSection(context, s),
-                  AppMargin.gapXLarge(context),
-                  if (_earnedBadges.isNotEmpty) ...[
-                    _buildEarnedBadgesSection(context, s),
-                    AppMargin.gapLarge(context),
+          : RefreshIndicator(
+              onRefresh: _loadAchievements,
+              color: AppColors.primary,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                padding: EdgeInsets.only(bottom: AppDesignSystem.space40 * s),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildLatestBadgeSection(context, s),
+                    AppMargin.gapXLarge(context),
+                    if (_earnedBadges.isNotEmpty) ...[
+                      _buildEarnedBadgesSection(context, s),
+                      AppMargin.gapLarge(context),
+                    ],
+                    _buildInfoBanner(context, s),
+                    _buildRemainingBadgesSection(context, s),
                   ],
-                  _buildInfoBanner(context, s),
-                  _buildRemainingBadgesSection(context, s),
-                ],
+                ),
               ),
             ),
       ),

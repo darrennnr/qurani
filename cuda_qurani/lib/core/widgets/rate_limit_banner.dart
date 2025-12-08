@@ -377,6 +377,102 @@ class RateLimitExceededOverlay extends StatelessWidget {
 
 
 // =====================================================
+// SURAH MISMATCH WARNING WIDGET
+// =====================================================
+
+/// Banner to warn user when they're reading a different surah than selected
+// class SurahMismatchBanner extends StatelessWidget {
+//   final String warningMessage;
+//   final String? detectedSurahName;
+//   final VoidCallback? onDismiss;
+
+//   const SurahMismatchBanner({
+//     super.key,
+//     required this.warningMessage,
+//     this.detectedSurahName,
+//     this.onDismiss,
+//   });
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Container(
+//       width: double.infinity,
+//       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+//       decoration: BoxDecoration(
+//         gradient: LinearGradient(
+//           colors: [
+//             Colors.purple.shade600,
+//             Colors.purple.shade800,
+//           ],
+//         ),
+//         boxShadow: [
+//           BoxShadow(
+//             color: Colors.purple.withOpacity(0.3),
+//             blurRadius: 8,
+//             offset: const Offset(0, 2),
+//           ),
+//         ],
+//       ),
+//       child: SafeArea(
+//         bottom: false,
+//         child: Row(
+//           children: [
+//             Container(
+//               padding: const EdgeInsets.all(8),
+//               decoration: BoxDecoration(
+//                 color: Colors.white.withOpacity(0.2),
+//                 borderRadius: BorderRadius.circular(8),
+//               ),
+//               child: const Icon(
+//                 Icons.warning_amber_rounded,
+//                 color: Colors.white,
+//                 size: 24,
+//               ),
+//             ),
+//             const SizedBox(width: 12),
+//             Expanded(
+//               child: Column(
+//                 crossAxisAlignment: CrossAxisAlignment.start,
+//                 mainAxisSize: MainAxisSize.min,
+//                 children: [
+//                   const Text(
+//                     'Surah Tidak Sesuai',
+//                     style: TextStyle(
+//                       color: Colors.white,
+//                       fontWeight: FontWeight.bold,
+//                       fontSize: 14,
+//                     ),
+//                   ),
+//                   const SizedBox(height: 2),
+//                   Text(
+//                     warningMessage,
+//                     style: TextStyle(
+//                       color: Colors.white.withOpacity(0.9),
+//                       fontSize: 12,
+//                     ),
+//                     maxLines: 2,
+//                     overflow: TextOverflow.ellipsis,
+//                   ),
+//                 ],
+//               ),
+//             ),
+//             if (onDismiss != null)
+//               GestureDetector(
+//                 onTap: onDismiss,
+//                 child: Icon(
+//                   Icons.close,
+//                   color: Colors.white.withOpacity(0.7),
+//                   size: 20,
+//                 ),
+//               ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+// }
+
+// =====================================================
 // DURATION LIMIT WIDGETS
 // =====================================================
 
