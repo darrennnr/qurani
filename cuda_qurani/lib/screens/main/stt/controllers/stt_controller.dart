@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:cuda_qurani/models/playback_settings_model.dart';
 import 'package:cuda_qurani/models/quran_models.dart';
 import 'package:cuda_qurani/screens/main/home/services/juz_service.dart';
+import 'package:cuda_qurani/services/global_ayat_services.dart';
 import 'package:cuda_qurani/services/listening_audio_services.dart';
 import 'package:cuda_qurani/services/local_database_service.dart';
 import 'package:cuda_qurani/services/reciter_database_service.dart';
@@ -141,7 +142,7 @@ class SttController with ChangeNotifier {
   Map<String, dynamic>? _rateLimit;
   bool _isRateLimitExceeded = false;
   String _rateLimitPlan = 'free';
-  
+
   Map<String, dynamic>? get rateLimit => _rateLimit;
   bool get isRateLimitExceeded => _isRateLimitExceeded;
   String get rateLimitPlan => _rateLimitPlan;
@@ -149,7 +150,7 @@ class SttController with ChangeNotifier {
   int get rateLimitMax => _rateLimit?['limit'] ?? 3;
   int get rateLimitRemaining => _rateLimit?['remaining'] ?? 0;
   int get rateLimitResetSeconds => _rateLimit?['reset_in_seconds'] ?? 0;
-  
+
   String get rateLimitResetFormatted {
     final seconds = rateLimitResetSeconds;
     if (seconds <= 0) return '';
@@ -166,7 +167,7 @@ class SttController with ChangeNotifier {
   bool _isDurationWarningActive = false;
   bool _isDurationLimitExceeded = false;
   Map<String, dynamic>? _durationLimit;
-  
+
   String get durationWarning => _durationWarning;
   bool get isDurationWarningActive => _isDurationWarningActive;
   bool get isDurationLimitExceeded => _isDurationLimitExceeded;
@@ -190,10 +191,23 @@ class SttController with ChangeNotifier {
   String _wordKey(int surahId, int ayahNumber) => '$surahId:$ayahNumber';
 
   // ✅ Helper: Get word status for specific surah:ayah:word
-  WordStatus? getWordStatus(int surahId, int ayahNumber, int wordIndex) {
-    final key = _wordKey(surahId, ayahNumber);
-    return _wordStatusMap[key]?[wordIndex];
+WordStatus? getWordStatus(int surahId, int ayahNumber, int wordIndex) {
+  final key = _wordKey(surahId, ayahNumber);
+  final wordMap = _wordStatusMap[key];
+  
+  if (wordMap == null) {
+    print('⚠️ getWordStatus: No word map for $surahId:$ayahNumber');
+    return null;
   }
+  
+  // ✅ CRITICAL: Return null for invalid index (prevent RangeError)
+  if (wordIndex < 0 || !wordMap.containsKey(wordIndex)) {
+    print('⚠️ getWordStatus: Invalid wordIndex $wordIndex for $surahId:$ayahNumber (has ${wordMap.length} words)');
+    return null;
+  }
+  
+  return wordMap[wordIndex];
+}
 
   List<WordFeedback> get currentWords =>
       _currentWords; // âœ… ADD: Getter for currentWords
@@ -336,11 +350,13 @@ class SttController with ChangeNotifier {
       print('🎧 Starting Listening Mode (Passive - No Backend Detection)');
 
       // 🎧 Subscribe to verse changes
+      // 🎧 Subscribe to verse changes
       _verseChangeSubscription = _listeningAudioService!.currentVerseStream?.listen((
         verse,
       ) async {
-        // ✅ TAMBAH async
-        print('📖 Now playing: ${verse.surahId}:${verse.verseNumber}');
+        print(
+          '📖 [VERSE CHANGE] Now playing: ${verse.surahId}:${verse.verseNumber}',
+        );
 
         if (verse.surahId == -999 && verse.verseNumber == -999) {
           print('🏁 Listening completed - resetting state');
@@ -348,7 +364,7 @@ class SttController with ChangeNotifier {
           return;
         }
 
-        // ✅ NEW: Check if verse is on different page
+        // ✅ Check if verse is on different page
         try {
           final targetPage = await LocalDatabaseService.getPageNumber(
             verse.surahId,
@@ -359,10 +375,7 @@ class SttController with ChangeNotifier {
             print(
               '📄 Auto-navigating: Page $_currentPage → $targetPage (for ${verse.surahId}:${verse.verseNumber})',
             );
-
-            // ✅ Navigate before updating ayat index (instant page load)
             await _navigateToPageForListening(targetPage, verse.surahId);
-
             print('✅ Navigation complete, page now: $_currentPage');
           }
         } catch (e) {
@@ -371,42 +384,117 @@ class SttController with ChangeNotifier {
           );
         }
 
-        // ✅ FIX: Find ayat in _ayatList (might be filtered by suratId)
-        final ayatIndex = _ayatList.indexWhere(
+        // ✅ CRITICAL: Clear ALL highlights before updating index
+        final allKeys = _wordStatusMap.keys.toList();
+        for (final key in allKeys) {
+          _wordStatusMap[key]?.clear();
+        }
+        print('   🧹 Cleared all highlights (${allKeys.length} ayahs)');
+
+        // ✅ CRITICAL: Update _currentAyatIndex using _currentPageAyats
+        final ayatIndex = _currentPageAyats.indexWhere(
           (a) => a.surah_id == verse.surahId && a.ayah == verse.verseNumber,
         );
 
         if (ayatIndex >= 0) {
-          if (_currentAyatIndex >= 0 && _currentAyatIndex < _ayatList.length) {
-            final previousAyat = _ayatList[_currentAyatIndex];
-            final previousKey = _wordKey(
-              previousAyat.surah_id,
-              previousAyat.ayah,
-            );
-            _wordStatusMap[previousKey]?.clear();
-          }
-
           _currentAyatIndex = ayatIndex;
+
+          final currentAyat = _currentPageAyats[ayatIndex];
+          print(
+            '✅ [VERSE CHANGE] Updated index: $ayatIndex → ${verse.surahId}:${verse.verseNumber} (${currentAyat.words.length} words)',
+          );
+
+          // ✅ CRITICAL: Initialize word status map for NEW ayat
+          final currentKey = _wordKey(verse.surahId, verse.verseNumber);
+          _wordStatusMap[currentKey] = {};
+          for (int i = 0; i < currentAyat.words.length; i++) {
+            _wordStatusMap[currentKey]![i] = WordStatus.pending;
+          }
+          print(
+            '   🎨 Initialized ${currentAyat.words.length} words for highlighting',
+          );
+
           notifyListeners();
         } else {
-          // ✅ CRITICAL: Ayat not found in filtered list - use currentPageAyats
           print(
-            '⚠️ Ayat ${verse.surahId}:${verse.verseNumber} not in _ayatList, checking currentPageAyats...',
+            '⚠️ CRITICAL: Ayat ${verse.surahId}:${verse.verseNumber} NOT FOUND!',
           );
-
-          final pageAyatIndex = _currentPageAyats.indexWhere(
-            (a) => a.surah_id == verse.surahId && a.ayah == verse.verseNumber,
+          print(
+            '   Available: ${_currentPageAyats.map((a) => "${a.surah_id}:${a.ayah}").join(", ")}',
           );
-
-          if (pageAyatIndex >= 0) {
-            print('✅ Found in currentPageAyats at index $pageAyatIndex');
-            // Don't update _currentAyatIndex (keep it for processed list)
-            // Just rely on currentPageAyats for UI rendering
-          }
         }
       });
 
       // 🎨 Subscribe to word highlights
+      _wordHighlightSubscription = _listeningAudioService!.wordHighlightStream?.listen((
+        wordIndex,
+      ) {
+        print('🎨 [WORD HIGHLIGHT] Received: $wordIndex');
+
+        // ✅ Handle reset signal (-1)
+        if (wordIndex == -1) {
+          print('🔄 [RESET] Clearing highlights');
+          final allKeys = _wordStatusMap.keys.toList();
+          for (final key in allKeys) {
+            _wordStatusMap[key]?.clear();
+          }
+          notifyListeners();
+          return;
+        }
+
+        // ✅ CRITICAL: Validate _currentAyatIndex FIRST
+        if (_currentAyatIndex < 0 ||
+            _currentAyatIndex >= _currentPageAyats.length) {
+          print(
+            '⚠️ [WORD HIGHLIGHT] Invalid index: $_currentAyatIndex (max: ${_currentPageAyats.length - 1})',
+          );
+          return;
+        }
+
+        // ✅ Get current ayat
+        final currentAyat = _currentPageAyats[_currentAyatIndex];
+        final currentKey = _wordKey(currentAyat.surah_id, currentAyat.ayah);
+        final wordCount = currentAyat.words.length;
+
+        print(
+          '   📍 Target: ${currentAyat.surah_id}:${currentAyat.ayah} (has $wordCount words)',
+        );
+
+        // ✅ CRITICAL: Validate wordIndex against CURRENT ayat
+        if (wordIndex < 0 || wordIndex >= wordCount) {
+          print(
+            '⚠️ [WORD HIGHLIGHT] Invalid wordIndex: $wordIndex for ayat ${currentAyat.surah_id}:${currentAyat.ayah} (max: ${wordCount - 1})',
+          );
+          print('   🚫 SKIPPING - likely from previous ayat');
+          return; // ✅ CRITICAL: Skip invalid word index
+        }
+
+        // ✅ Initialize map if not exists
+        if (!_wordStatusMap.containsKey(currentKey)) {
+          _wordStatusMap[currentKey] = {};
+        }
+
+        // ✅ Clear OTHER ayahs (prevent stuck highlights)
+        final otherKeys = _wordStatusMap.keys
+            .where((k) => k != currentKey)
+            .toList();
+        for (final key in otherKeys) {
+          _wordStatusMap[key]?.clear();
+        }
+
+        // ✅ Update word statuses
+        for (int i = 0; i < wordCount; i++) {
+          _wordStatusMap[currentKey]![i] = (i == wordIndex)
+              ? WordStatus.processing
+              : WordStatus.pending;
+        }
+
+        print(
+          '   ✨ [WORD HIGHLIGHT] Applied: word $wordIndex in ${currentAyat.surah_id}:${currentAyat.ayah}',
+        );
+        notifyListeners();
+      });
+
       // 🎨 Subscribe to word highlights
       _wordHighlightSubscription = _listeningAudioService!.wordHighlightStream?.listen((
         wordIndex,
@@ -416,52 +504,56 @@ class SttController with ChangeNotifier {
         // ✅ FIX: Handle reset signal (-1)
         if (wordIndex == -1) {
           print('🔄 Reset signal received, clearing highlights');
-          // Clear previous ayah highlights
-          if (_currentAyatIndex >= 0 &&
-              _currentAyatIndex < _currentPageAyats.length) {
-            final previousAyat = _currentPageAyats[_currentAyatIndex];
-            final previousKey = _wordKey(
-              previousAyat.surah_id,
-              previousAyat.ayah,
-            );
-            _wordStatusMap[previousKey]?.clear();
-            print(
-              '   Cleared highlights for ${previousAyat.surah_id}:${previousAyat.ayah}',
-            );
+
+          // Clear ALL word status maps to prevent stuck highlights
+          final allKeys = _wordStatusMap.keys.toList();
+          for (final key in allKeys) {
+            _wordStatusMap[key]?.clear();
           }
+          print('   Cleared all word highlights (${allKeys.length} ayahs)');
           notifyListeners();
           return;
         }
 
-        // ✅ FIX: Find current ayat from BOTH _ayatList AND _currentPageAyats
+        // ✅ CRITICAL FIX: Find current ayat from currentPageAyats using verse change state
         AyatData? currentAyat;
 
-        // Try _ayatList first (filtered list)
-        if (_currentAyatIndex >= 0 && _currentAyatIndex < _ayatList.length) {
-          currentAyat = _ayatList[_currentAyatIndex];
-        }
-
-        // Fallback: find in currentPageAyats
-        if (currentAyat == null && _currentPageAyats.isNotEmpty) {
-          // Get current verse from listening service
-          final playbackSettings = _playbackSettings;
-          if (playbackSettings != null) {
-            // Find the ayat being played
-            currentAyat = _currentPageAyats.firstWhere(
-              (a) =>
-                  a.surah_id >= playbackSettings.startSurahId &&
-                  a.surah_id <= playbackSettings.endSurahId,
-              orElse: () => _currentPageAyats.first,
-            );
-          }
+        // Use _currentAyatIndex which is updated by verse change subscription
+        if (_currentAyatIndex >= 0 &&
+            _currentAyatIndex < _currentPageAyats.length) {
+          currentAyat = _currentPageAyats[_currentAyatIndex];
+          print(
+            '   Current ayat: ${currentAyat.surah_id}:${currentAyat.ayah} (${currentAyat.words.length} words)',
+          );
+        } else {
+          print(
+            '⚠️ Invalid _currentAyatIndex: $_currentAyatIndex (pageAyats: ${_currentPageAyats.length})',
+          );
+          return; // ✅ EXIT early if invalid index
         }
 
         if (currentAyat != null) {
           final currentKey = _wordKey(currentAyat.surah_id, currentAyat.ayah);
           final words = currentAyat.words;
 
+          // ✅ CRITICAL: Validate wordIndex before accessing array
+          if (wordIndex < 0 || wordIndex >= words.length) {
+            print(
+              '⚠️ Invalid wordIndex: $wordIndex for ayat ${currentAyat.surah_id}:${currentAyat.ayah} (has ${words.length} words)',
+            );
+            return; // ✅ EXIT early if invalid word index
+          }
+
           if (!_wordStatusMap.containsKey(currentKey)) {
             _wordStatusMap[currentKey] = {};
+          }
+
+          // ✅ CRITICAL: Clear ALL other ayahs' highlights first (prevent stuck colors)
+          final allKeys = _wordStatusMap.keys
+              .where((k) => k != currentKey)
+              .toList();
+          for (final key in allKeys) {
+            _wordStatusMap[key]?.clear();
           }
 
           // Update word status for UI - highlight ONLY current word
@@ -472,14 +564,11 @@ class SttController with ChangeNotifier {
                 '   ✨ Highlighted word $i in ${currentAyat.surah_id}:${currentAyat.ayah}',
               );
             } else {
-              // Clear other words
               _wordStatusMap[currentKey]![i] = WordStatus.pending;
             }
           }
 
           notifyListeners();
-        } else {
-          print('⚠️ Current ayat not found for word highlighting');
         }
       });
 
@@ -1743,21 +1832,25 @@ class SttController with ChangeNotifier {
         _expectedAyah = message['expected_ayah'] ?? 1;
         _sessionId = message['session_id'];
         final int startedSurah = message['surah'] ?? suratId ?? 1;
-        
+
         // ✅ Handle rate_limit info from backend
         if (message['rate_limit'] != null) {
           _rateLimit = Map<String, dynamic>.from(message['rate_limit']);
           _rateLimitPlan = _rateLimit?['plan'] ?? 'free';
           _isRateLimitExceeded = false;
-          print('📊 Rate Limit: ${_rateLimit?['current']}/${_rateLimit?['limit']} sessions (${_rateLimitPlan})');
+          print(
+            '📊 Rate Limit: ${_rateLimit?['current']}/${_rateLimit?['limit']} sessions (${_rateLimitPlan})',
+          );
         }
-        
+
         // ⏳ Handle duration_limit info from backend
         if (message['duration_limit'] != null) {
           _durationLimit = Map<String, dynamic>.from(message['duration_limit']);
           _isDurationLimitExceeded = false;
           _isDurationWarningActive = false;
-          print('⏳ Duration Limit: ${_durationLimit?['max_minutes']} min (unlimited: ${_durationLimit?['is_unlimited']})');
+          print(
+            '⏳ Duration Limit: ${_durationLimit?['max_minutes']} min (unlimited: ${_durationLimit?['is_unlimited']})',
+          );
         }
 
         // ✅ RESTORE word_status_map dari backend (jika ada session sebelumnya)
@@ -1800,7 +1893,7 @@ class SttController with ChangeNotifier {
       case 'error':
         final errorCode = message['code'];
         _errorMessage = message['message'];
-        
+
         // ✅ Handle RATE_LIMIT_EXCEEDED error
         if (errorCode == 'RATE_LIMIT_EXCEEDED') {
           _isRateLimitExceeded = true;
@@ -1808,10 +1901,12 @@ class SttController with ChangeNotifier {
             _rateLimit = Map<String, dynamic>.from(message['rate_limit']);
             _rateLimitPlan = _rateLimit?['plan'] ?? 'free';
           }
-          print('🚫 Rate Limit Exceeded: ${_rateLimit?['current']}/${_rateLimit?['limit']}');
+          print(
+            '🚫 Rate Limit Exceeded: ${_rateLimit?['current']}/${_rateLimit?['limit']}',
+          );
           print('   Reset in: ${rateLimitResetFormatted}');
         }
-        
+
         notifyListeners();
         break;
 
