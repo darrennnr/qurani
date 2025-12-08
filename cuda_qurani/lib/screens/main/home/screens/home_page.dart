@@ -41,6 +41,10 @@ class _HomePageState extends State<HomePage> {
   int _earnedBadgesCount = 0;
   int _totalBadgesCount = 0;
 
+  // ✅ NEW: Continue Reading & Recent Progress
+  Map<String, dynamic>? _continueReading;
+  List<Map<String, dynamic>> _recentProgress = [];
+
   // ✅ Backend integration
   final SupabaseService _supabaseService = SupabaseService();
   final AuthService _authService = AuthService();
@@ -102,8 +106,16 @@ class _HomePageState extends State<HomePage> {
         _earnedBadgesCount = badgesCount['earned'] ?? 0;
         _totalBadgesCount = badgesCount['total'] ?? 0;
 
+        // ✅ NEW: Parse continue reading
+        final continueReading = data['continue_reading'] as Map<String, dynamic>?;
+        _continueReading = continueReading;
+
+        // ✅ NEW: Parse recent progress
+        final recentProgress = data['recent_progress'] as List? ?? [];
+        _recentProgress = recentProgress.map((p) => Map<String, dynamic>.from(p)).toList();
+
         setState(() => _isLoadingStats = false);
-        print('✅ HOME: Data loaded - streak: $_currentStreak, badges: $_earnedBadgesCount/$_totalBadgesCount');
+        print('✅ HOME: Data loaded - streak: $_currentStreak, badges: $_earnedBadgesCount/$_totalBadgesCount, progress: ${_recentProgress.length} surahs');
       } else {
         setState(() => _isLoadingStats = false);
       }
