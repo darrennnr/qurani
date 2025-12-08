@@ -235,6 +235,21 @@ class _SttPageState extends State<SttPage> {
                 ),
               ),
             
+            // // 🚨 NEW: Surah Mismatch Warning Banner
+            // if (controller.isSurahMismatch && controller.surahMismatchWarning != null)
+            //   Positioned(
+            //     top: kToolbarHeight + MediaQuery.of(context).padding.top,
+            //     left: 0,
+            //     right: 0,
+            //     child: SurahMismatchBanner(
+            //       warningMessage: controller.surahMismatchWarning!,
+            //       detectedSurahName: controller.detectedMismatchSurahName,
+            //       onDismiss: () {
+            //         // Will auto-dismiss after 10 seconds
+            //       },
+            //     ),
+            //   ),
+            
             // ⏳ NEW: Duration Limit Exceeded Overlay
             if (controller.isDurationLimitExceeded)
               Positioned.fill(
