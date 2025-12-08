@@ -375,152 +375,131 @@ class _JustifiedAyahLine extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
+Widget build(BuildContext context) {
+  final screenWidth = MediaQuery.of(context).size.width;
 
-    final fontSizeMultiplier = (pageNumber == 1 || pageNumber == 2)
-       ? 0.080  // Naik dari 0.070
-       : 0.0620; // Naik dari 0.054
-        
-    final baseFontSize = screenWidth * fontSizeMultiplier;
+  final fontSizeMultiplier = (pageNumber == 1 || pageNumber == 2)
+     ? 0.080
+     : 0.0620;
+      
+  final baseFontSize = screenWidth * fontSizeMultiplier;
+  final lastWordFontMultiplier = 0.9;
 
-    // OPTIMIZATION: Font size untuk kata terakhir ayat (angka ayat)
-    final lastWordFontMultiplier = 0.9; // Same size as regular words for consistency
+  if (line.ayahSegments == null || line.ayahSegments!.isEmpty) {
+    return SizedBox(height: MushafRenderer.lineHeight(context));
+  }
+  
+  final controller = context.watch<SttController>();
+  List<InlineSpan> spans = [];
 
-    if (line.ayahSegments == null || line.ayahSegments!.isEmpty) {
-      return SizedBox(height: MushafRenderer.lineHeight(context));
-    }
-    final controller = context.watch<SttController>();
-    List<InlineSpan> spans = [];
+  final fontFamily = 'p$pageNumber';
 
-    // Font family berdasarkan mode
-    final fontFamily = 'p$pageNumber';
+  for (final segment in line.ayahSegments!) {
+    final ayatIndex = controller.ayatList.indexWhere(
+      (a) => a.surah_id == segment.surahId && a.ayah == segment.ayahNumber,
+    );
+    final isCurrentAyat =
+        ayatIndex >= 0 && ayatIndex == controller.currentAyatIndex;
 
-    for (final segment in line.ayahSegments!) {
-      final ayatIndex = controller.ayatList.indexWhere(
-        (a) => a.surah_id == segment.surahId && a.ayah == segment.ayahNumber,
-      );
-      final isCurrentAyat =
-          ayatIndex >= 0 && ayatIndex == controller.currentAyatIndex;
+    for (int i = 0; i < segment.words.length; i++) {
+      final word = segment.words[i];
+      final wordIndex = word.wordNumber - 1;
 
-      for (int i = 0; i < segment.words.length; i++) {
-        final word = segment.words[i];
+      // ✅ CRITICAL FIX: Use ACTUAL surah:ayah from segment, not hardcoded
+      final wordStatusKey = '${segment.surahId}:${segment.ayahNumber}';
+      final wordStatus = controller.wordStatusMap[wordStatusKey]?[wordIndex];
 
-        // Use wordNumber - 1 as index (wordNumber is 1-indexed, backend uses 0-indexed)
-        // FIX: Ensure wordIndex is never negative
-        final rawIndex = word.wordNumber - 1;
-        final wordIndex = rawIndex < 0 ? 0 : (rawIndex >= segment.words.length ? segment.words.length - 1 : rawIndex);
+      // 🎥 DEBUG: Only log if listening mode is active
+      if (controller.isListeningMode && isCurrentAyat) {
+        print(
+          '🎨 UI RENDER: Ayah ${segment.surahId}:${segment.ayahNumber}, Word[$wordIndex] (loop $i) = $wordStatus',
+        );
+        print(
+          '   Full wordStatusMap[$wordStatusKey] = ${controller.wordStatusMap[wordStatusKey]}',
+        );
+      }
 
-        // Get word status dari wordStatusMap (key = "surahId:ayahNumber")
-        final wordStatusKey = '${segment.surahId}:${segment.ayahNumber}';
-        final wordStatus = controller.wordStatusMap[wordStatusKey]?[wordIndex];
+      final wordSegments = controller.segmentText(word.text);
+      final hasArabicNumber = wordSegments.any((s) => s.isArabicNumber);
 
-        // 🎥 DEBUG: Print word status dan warna yang akan diapply
-        if (controller.isRecording &&
-            segment.ayahNumber == controller.currentAyatNumber) {
-          print(
-            '🎨 UI RENDER: Ayah ${segment.ayahNumber}, Word[$wordIndex] (loop $i) = $wordStatus',
-          );
-          print(
-            '   Full wordStatusMap[$wordStatusKey] = ${controller.wordStatusMap[wordStatusKey]}',
-          );
-        }
+      Color wordBg = Colors.transparent;
+      double wordOpacity = 1.0;
 
-        final wordSegments = controller.segmentText(word.text);
-        final hasArabicNumber = wordSegments.any((s) => s.isArabicNumber);
+      final isLastWordInAyah =
+          segment.isEndOfAyah && i == (segment.words.length - 1);
 
-        Color wordBg = Colors.transparent;
-        double wordOpacity = 1.0;
-
-        // Cek apakah kata terakhir ayat
-        final isLastWordInAyah =
-            segment.isEndOfAyah && i == (segment.words.length - 1);
-
-        // ========== PRIORITAS 1: Background color dari wordStatus ==========
-        // SKIP highlighting for Arabic numbers (ayah end markers like ١ ٢ ٣)
-        if (wordStatus != null && !hasArabicNumber) {
-          switch (wordStatus) {
-            case WordStatus.matched:
-              wordBg = correctColor.withOpacity(0.4); // 🟩 HIJAU - BENAR
-              break;
-            case WordStatus.mismatched:
-            case WordStatus.skipped:
-              wordBg = errorColor.withOpacity(0.4); // 🟥 MERAH - SALAH
-              break;
-            case WordStatus.processing:
-              // ✅ ONLY in listening mode: DARK GRAY highlight
-              // ✅ In reciting mode: transparent (no highlight)
-              if (controller.isListeningMode) {
-                wordBg = Colors.grey.withOpacity(0.5); // ⬛ Abu-abu gelap (listening)
-              } else {
-                wordBg = Colors.transparent; // Transparent (reciting)
-              }
-              break;
-            case WordStatus.pending:
-            default:
+      // ========== PRIORITAS 1: Background color dari wordStatus ==========
+      // SKIP highlighting for Arabic numbers (ayah end markers)
+      if (wordStatus != null && !hasArabicNumber) {
+        switch (wordStatus) {
+          case WordStatus.matched:
+            wordBg = correctColor.withOpacity(0.4);
+            break;
+          case WordStatus.mismatched:
+          case WordStatus.skipped:
+            wordBg = errorColor.withOpacity(0.4);
+            break;
+          case WordStatus.processing:
+            if (controller.isListeningMode) {
+              wordBg = Colors.grey.withOpacity(0.5);
+            } else {
               wordBg = Colors.transparent;
-              break;
-          }
-        }
-
-        // ========== PRIORITAS 2: Logika Opacity (hideUnread) ==========
-        if (controller.hideUnreadAyat) {
-          // CASE 1: Kata yang SUDAH DIPROSES (ada wordStatus & bukan pending)
-          if (wordStatus != null && wordStatus != WordStatus.pending) {
-            wordOpacity = 1.0; // ✅ SELALU VISIBLE (ada blok warna)
-          }
-          // CASE 2: Ayat SEDANG DIBACA - sembunyikan kata yang belum diproses
-          else if (isCurrentAyat) {
-            // Tampilkan HANYA: angka Arab atau kata terakhir ayat
-            wordOpacity = (hasArabicNumber || isLastWordInAyah) ? 1.0 : 0.0;
-          }
-          // CASE 3: Ayat BELUM/SUDAH SELESAI DIBACA
-          else {
-            // Tampilkan HANYA: angka Arab atau kata terakhir ayat
-            wordOpacity = (hasArabicNumber || isLastWordInAyah) ? 1.0 : 0.0;
-          }
-        }
-
-        final segments = controller.segmentText(word.text);
-
-        // ✅ OPTIMIZATION: Hitung font size & spacing berdasarkan posisi kata
-        final isLastWord = isLastWordInAyah;
-        final effectiveFontSize = isLastWord
-            ? baseFontSize * lastWordFontMultiplier
-            : baseFontSize;
-
-        for (final textSegment in segments) {
-          spans.add(
-            TextSpan(
-              text: textSegment.text,
-              style: TextStyle(
-                fontSize: effectiveFontSize,
-                fontFamily: fontFamily,
-                color: _getWordColor(isCurrentAyat).withOpacity(wordOpacity),
-                backgroundColor: wordBg,
-                fontWeight: FontWeight.w400,
-
-                // ✅ Underline tipis (kecuali kata terakhir ayat)
-                decoration: (controller.hideUnreadAyat && !isLastWord)
-                    ? TextDecoration.underline
-                    : null,
-                decorationColor: Colors.black.withOpacity(0.15),
-                decorationThickness: 0.3,
-              ),
-            ),
-          );
+            }
+            break;
+          case WordStatus.pending:
+          default:
+            wordBg = Colors.transparent;
+            break;
         }
       }
-    }
 
-    return MushafRenderer.renderJustifiedLine(
-      wordSpans: spans,
-      isCentered: line.isCentered,
-      availableWidth: MediaQuery.of(context).size.width, // ✅ CHANGE: Account for left+right padding (was full width)
-      context: context,
-      allowOverflow: false, // Ensure consistent font sizes
-    );
+      // ========== PRIORITAS 2: Logika Opacity (hideUnread) ==========
+      if (controller.hideUnreadAyat) {
+        if (wordStatus != null && wordStatus != WordStatus.pending) {
+          wordOpacity = 1.0;
+        } else if (isCurrentAyat) {
+          wordOpacity = (hasArabicNumber || isLastWordInAyah) ? 1.0 : 0.0;
+        } else {
+          wordOpacity = (hasArabicNumber || isLastWordInAyah) ? 1.0 : 0.0;
+        }
+      }
+
+      final segments = controller.segmentText(word.text);
+      final isLastWord = isLastWordInAyah;
+      final effectiveFontSize = isLastWord
+          ? baseFontSize * lastWordFontMultiplier
+          : baseFontSize;
+
+      for (final textSegment in segments) {
+        spans.add(
+          TextSpan(
+            text: textSegment.text,
+            style: TextStyle(
+              fontSize: effectiveFontSize,
+              fontFamily: fontFamily,
+              color: _getWordColor(isCurrentAyat).withOpacity(wordOpacity),
+              backgroundColor: wordBg,
+              fontWeight: FontWeight.w400,
+              decoration: (controller.hideUnreadAyat && !isLastWord)
+                  ? TextDecoration.underline
+                  : null,
+              decorationColor: Colors.black.withOpacity(0.15),
+              decorationThickness: 0.3,
+            ),
+          ),
+        );
+      }
+    }
   }
+
+  return MushafRenderer.renderJustifiedLine(
+    wordSpans: spans,
+    isCentered: line.isCentered,
+    availableWidth: MediaQuery.of(context).size.width,
+    context: context,
+    allowOverflow: false,
+  );
+}
 
   // Methods tetap sama
   Color _getWordColor(bool isCurrentWord) {

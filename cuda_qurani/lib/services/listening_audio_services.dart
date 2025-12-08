@@ -36,7 +36,7 @@ class ListeningAudioService {
     PlaybackSettings settings,
     String reciterIdentifier,
   ) async {
-    print('🎵 ListeningAudioService: Initializing...');
+    print('ðŸŽµ ListeningAudioService: Initializing...');
     print('   Reciter: $reciterIdentifier');
 
     _currentSettings = settings;
@@ -55,7 +55,7 @@ class ListeningAudioService {
     // Load playlist
     await _loadPlaylist();
 
-    print('✅ Initialized with ${_playlist.length} tracks');
+    print('âœ… Initialized with ${_playlist.length} tracks');
   }
 
   Future<void> _loadPlaylist() async {
@@ -64,10 +64,10 @@ class ListeningAudioService {
     if (_currentSettings == null || _reciterIdentifier == null) return;
 
     print(
-      '📋 Loading playlist (GLOBAL): ${_currentSettings!.startSurahId}:${_currentSettings!.startVerse} - ${_currentSettings!.endSurahId}:${_currentSettings!.endVerse}',
+      'ðŸ“‹ Loading playlist (GLOBAL): ${_currentSettings!.startSurahId}:${_currentSettings!.startVerse} - ${_currentSettings!.endSurahId}:${_currentSettings!.endVerse}',
     );
 
-    // ✅ Convert start/end ke GLOBAL ayat
+    // âœ… Convert start/end ke GLOBAL ayat
     final startGlobal = GlobalAyatService.toGlobalAyat(
       _currentSettings!.startSurahId,
       _currentSettings!.startVerse,
@@ -77,9 +77,9 @@ class ListeningAudioService {
       _currentSettings!.endVerse,
     );
 
-    print('🌍 Global range: $startGlobal - $endGlobal');
+    print('ðŸŒ Global range: $startGlobal - $endGlobal');
 
-    // ✅ Load SEMUA surah yang terlibat dalam range
+    // âœ… Load SEMUA surah yang terlibat dalam range
     for (
       int surah = _currentSettings!.startSurahId;
       surah <= _currentSettings!.endSurahId;
@@ -92,11 +92,11 @@ class ListeningAudioService {
 
       for (final verse in audioUrls) {
         final globalAyahNum =
-            verse['ayah_number'] as int; // ← Ini SUDAH GLOBAL dari database
+            verse['ayah_number'] as int; // â† Ini SUDAH GLOBAL dari database
 
-        // ✅ Filter: hanya ambil yang dalam range global
+        // âœ… Filter: hanya ambil yang dalam range global
         if (globalAyahNum >= startGlobal && globalAyahNum <= endGlobal) {
-          // ✅ Convert GLOBAL ke LOCAL untuk UI display
+          // âœ… Convert GLOBAL ke LOCAL untuk UI display
           final localInfo = GlobalAyatService.fromGlobalAyat(globalAyahNum);
 
           _playlist.add({
@@ -109,13 +109,13 @@ class ListeningAudioService {
           });
 
           print(
-            '  ✅ Added: Surah ${localInfo['surah_id']} Ayah ${localInfo['ayah_number']} (Global #$globalAyahNum)',
+            '  âœ… Added: Surah ${localInfo['surah_id']} Ayah ${localInfo['ayah_number']} (Global #$globalAyahNum)',
           );
         }
       }
     }
 
-    print('✅ Playlist ready: ${_playlist.length} tracks');
+    print('âœ… Playlist ready: ${_playlist.length} tracks');
   }
 
   // Start playback
@@ -127,7 +127,7 @@ class ListeningAudioService {
     _isPlaying = true;
     _isPaused = false;
 
-    print('▶️ Starting playback...');
+    print('â–¶ï¸ Starting playback...');
     await _playNextTrack();
   }
 
@@ -143,18 +143,18 @@ Future<void> _playNextTrack() async {
       _currentTrackIndex = 0;
       _currentVerseRepeat = 0;
       print(
-        '🔁 Repeating range (${_currentRangeRepeat}/${_currentSettings!.rangeRepeat})',
+        'ðŸ” Repeating range (${_currentRangeRepeat}/${_currentSettings!.rangeRepeat})',
       );
       await _playNextTrack();
     } else {
-      print('🏁 Playback completed');
+      print('ðŸ Playback completed');
       _isPlaying = false;
       _isPaused = false;
       await _player.stop();
       _currentVerseController?.add(
         VerseReference(surahId: -999, verseNumber: -999),
       );
-      print('✅ Listening mode fully stopped');
+      print('âœ… Listening mode fully stopped');
     }
     return;
   }
@@ -163,16 +163,19 @@ Future<void> _playNextTrack() async {
   final surahNum = currentAudio['surah_number'] as int;
   final ayahNum = currentAudio['ayah_number'] as int;
 
-  // ✅ FIX: Reset highlight SEBELUM notifikasi ayat baru
-  _wordHighlightController?.add(-1);
-  print('🔄 Reset word highlight before starting new ayah');
+ // âœ… FIX: Reset highlight SEBELUM notifikasi ayat baru
+_wordHighlightController?.add(-1);
+print('ðŸ"„ Reset word highlight before starting new ayah');
 
-  // Notify current verse
-  _currentVerseController?.add(
-    VerseReference(surahId: surahNum, verseNumber: ayahNum),
-  );
+// âœ… CRITICAL: Notify verse change FIRST, give UI time to update
+_currentVerseController?.add(
+  VerseReference(surahId: surahNum, verseNumber: ayahNum),
+);
+print('ðŸŽµ Playing: $surahNum:$ayahNum (repeat ${_currentVerseRepeat + 1})');
 
-  print('🎵 Playing: $surahNum:$ayahNum (repeat ${_currentVerseRepeat + 1})');
+// âœ… CRITICAL: Add delay to ensure verse change subscription processes first
+await Future.delayed(const Duration(milliseconds: 150));
+print('âš¡ Verse change processed, starting word highlighting...');
 
   // Get cached file path (download if not exists)
   final audioUrl = currentAudio['audio_url'] as String;
@@ -183,7 +186,7 @@ Future<void> _playNextTrack() async {
 
   // If not cached, download it
   if (filePath == null) {
-    print('📥 Audio not cached, downloading...');
+    print('ðŸ“¥ Audio not cached, downloading...');
     filePath = await AudioDownloadService.downloadAudio(
       _reciterIdentifier!,
       audioUrl,
@@ -191,7 +194,7 @@ Future<void> _playNextTrack() async {
   }
 
   if (filePath == null) {
-    print('⚠️ Audio file not available, skipping...');
+    print('âš ï¸ Audio file not available, skipping...');
     _moveToNextTrack();
     return;
   }
@@ -200,7 +203,7 @@ Future<void> _playNextTrack() async {
     // Load audio file
     await _player.setFilePath(filePath);
 
-    // ✅ FIX: Parse segments dari database
+    // âœ… FIX: Parse segments dari database
     final segmentsJson = currentAudio['segments'] as String?;
     List<Map<String, dynamic>> segments = [];
 
@@ -217,13 +220,13 @@ Future<void> _playNextTrack() async {
             )
             .toList();
 
-        print('🎯 Loaded ${segments.length} word segments for $surahNum:$ayahNum');
+        print('ðŸŽ¯ Loaded ${segments.length} word segments for $surahNum:$ayahNum');
       } catch (e) {
-        print('⚠️ Error parsing segments: $e');
+        print('âš ï¸ Error parsing segments: $e');
       }
     }
 
-    // ✅ FIX: Start word highlighting SEBELUM play
+    // âœ… FIX: Start word highlighting SEBELUM play
     StreamSubscription? positionSubscription;
 
     if (segments.isNotEmpty) {
@@ -245,7 +248,7 @@ Future<void> _playNextTrack() async {
             if (wordIndex != currentHighlightedWord) {
               currentHighlightedWord = wordIndex;
               _wordHighlightController?.add(wordIndex);
-              print('✨ Highlighting word $wordIndex at ${positionMs}ms (Surah $surahNum:$ayahNum)');
+              print('âœ¨ Highlighting word $wordIndex at ${positionMs}ms (Surah $surahNum:$ayahNum)');
             }
             break;
           }
@@ -261,10 +264,10 @@ Future<void> _playNextTrack() async {
       (state) => state.processingState == ProcessingState.completed,
     );
 
-    // ✅ Cancel position subscription
+    // âœ… Cancel position subscription
     await positionSubscription?.cancel();
 
-    print('✅ Ayah $surahNum:$ayahNum completed');
+    print('âœ… Ayah $surahNum:$ayahNum completed');
 
     // Check verse repeat
     if (_shouldRepeatVerse()) {
@@ -275,7 +278,7 @@ Future<void> _playNextTrack() async {
       _moveToNextTrack();
     }
   } catch (e) {
-    print('❌ Error playing track: $e');
+    print('âŒ Error playing track: $e');
     _moveToNextTrack();
   }
 }
@@ -303,7 +306,7 @@ Future<void> _playNextTrack() async {
     if (_isPlaying && !_isPaused) {
       await _player.pause();
       _isPaused = true;
-      print('⏸️ Playback paused');
+      print('â¸ï¸ Playback paused');
     }
   }
 
@@ -311,7 +314,7 @@ Future<void> _playNextTrack() async {
     if (_isPlaying && _isPaused) {
       await _player.play();
       _isPaused = false;
-      print('▶️ Playback resumed');
+      print('â–¶ï¸ Playback resumed');
     }
   }
 
@@ -320,7 +323,7 @@ Future<void> _playNextTrack() async {
     _isPaused = false;
     await _player.stop();
     _currentVerseController?.add(VerseReference(surahId: 0, verseNumber: 0));
-    print('⏹️ Playback stopped');
+    print('â¹ï¸ Playback stopped');
   }
 
   void dispose() {
