@@ -173,6 +173,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
+      appBar: const MenuAppBar(selectedIndex: 0),
       body: SafeArea(
         // ✅ Pull to Refresh
         child: RefreshIndicator(

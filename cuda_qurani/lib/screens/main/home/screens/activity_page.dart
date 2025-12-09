@@ -349,6 +349,7 @@ class _ActivityPageState extends State<ActivityPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
+      appBar: const MenuAppBar(selectedIndex: 4),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
