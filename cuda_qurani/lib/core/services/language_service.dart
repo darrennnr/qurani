@@ -10,13 +10,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 class LanguageService {
   static const String _languageKey = 'app_language';
   static const String _defaultLanguage = 'en';
-  
+
   // Cache untuk menyimpan translations yang sudah di-load
   final Map<String, Map<String, dynamic>> _translationsCache = {};
-  
+
   // Current language code
   String _currentLanguage = _defaultLanguage;
-  
+
   // Singleton instance
   static final LanguageService _instance = LanguageService._internal();
   factory LanguageService() => _instance;
@@ -35,18 +35,36 @@ class LanguageService {
   /// Load available languages dari language.json
   Future<List<LanguageModel>> loadAvailableLanguages() async {
     try {
+
       final String jsonString = await rootBundle.loadString(
         'assets/lang/data/language.json',
       );
+
       final Map<String, dynamic> jsonData = json.decode(jsonString);
       final List<dynamic> languagesJson = jsonData['languages'] as List;
-      
-      return languagesJson
+
+      final languages = languagesJson
           .map((lang) => LanguageModel.fromJson(lang))
           .toList();
-    } catch (e) {
-      print('Error loading languages: $e');
-      return [];
+
+      return languages;
+    } catch (e, stackTrace) {
+
+      // Return default languages as fallback
+      return [
+        LanguageModel(
+          code: 'en',
+          name: 'English',
+          nativeName: 'English',
+          flag: '🇺🇸',
+        ),
+        LanguageModel(
+          code: 'id',
+          name: 'Indonesian',
+          nativeName: 'Bahasa Indonesia',
+          flag: '🇮🇩',
+        ),
+      ];
     }
   }
 
@@ -56,13 +74,12 @@ class LanguageService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_languageKey, languageCode);
       _currentLanguage = languageCode;
-      
+
       // Clear cache agar translations baru di-load
       _translationsCache.clear();
-      
+
       return true;
     } catch (e) {
-      print('Error changing language: $e');
       return false;
     }
   }
@@ -71,7 +88,7 @@ class LanguageService {
   /// Example path: 'home/home' akan load 'assets/lang/en/home/home.json'
   Future<Map<String, dynamic>> loadTranslation(String path) async {
     final cacheKey = '${_currentLanguage}_$path';
-    
+
     // Check cache dulu
     if (_translationsCache.containsKey(cacheKey)) {
       return _translationsCache[cacheKey]!;
@@ -81,25 +98,24 @@ class LanguageService {
       final String filePath = 'assets/lang/$_currentLanguage/$path.json';
       final String jsonString = await rootBundle.loadString(filePath);
       final Map<String, dynamic> translations = json.decode(jsonString);
-      
+
       // Cache the translations
       _translationsCache[cacheKey] = translations;
-      
+
       return translations;
     } catch (e) {
-      print('Error loading translation $path: $e');
-      
+
       // Fallback ke bahasa default jika file tidak ditemukan
       if (_currentLanguage != _defaultLanguage) {
         try {
-          final String fallbackPath = 'assets/lang/$_defaultLanguage/$path.json';
+          final String fallbackPath =
+              'assets/lang/$_defaultLanguage/$path.json';
           final String jsonString = await rootBundle.loadString(fallbackPath);
           return json.decode(jsonString);
         } catch (e) {
-          print('Error loading fallback translation: $e');
         }
       }
-      
+
       return {};
     }
   }

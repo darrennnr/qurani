@@ -75,47 +75,6 @@ class _LanguagePageState extends State<LanguagePage> {
     
     // Close loading dialog
     Navigator.pop(context);
-    
-    if (success) {
-      // Show success snackbar
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Language changed to ${language.nativeName}',
-            style: const TextStyle(color: Colors.white),
-          ),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 2),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppDesignSystem.radiusSmall),
-          ),
-        ),
-      );
-      
-      // Optional: Pop back atau restart app untuk apply perubahan
-      // await Future.delayed(const Duration(milliseconds: 500));
-      // if (mounted) Navigator.pop(context);
-      
-      // Atau force rebuild semua widget:
-      // Phoenix.rebirth(context); // Jika pakai flutter_phoenix package
-    } else {
-      // Show error snackbar
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text(
-            'Failed to change language',
-            style: TextStyle(color: Colors.white),
-          ),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 2),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppDesignSystem.radiusSmall),
-          ),
-        ),
-      );
-    }
   }
 
   Widget _buildLanguageOption({

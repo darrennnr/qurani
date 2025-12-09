@@ -4,19 +4,22 @@
       "code": "en",
       "name": "English",
       "native_name": "English",
-      "flag": "🇺🇸"
+      "flag": "🇺🇸",
+      "rtl": "false"
     },
     {
       "code": "id",
       "name": "Indonesian",
       "native_name": "Bahasa Indonesia",
-      "flag": "🇮🇩"
+      "flag": "🇮🇩",
+      "rtl": "false"
     },
     {
       "code": "ar",
       "name": "Arabic",
       "native_name": "العربية",
-      "flag": "🇸🇦"
+      "flag": "🇸🇦",
+      "rtl": "true"
     }
   ]
 }

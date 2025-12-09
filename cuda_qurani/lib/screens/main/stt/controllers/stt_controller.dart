@@ -115,7 +115,8 @@ class SttController with ChangeNotifier {
   int _currentPage = 1;
   int _listViewCurrentPage = 1;
   bool _isDataLoaded = false; // Prevent unnecessary reloads
-  bool _isDisposed = false; // FIX: Track disposal state to prevent background task errors
+  bool _isDisposed =
+      false; // FIX: Track disposal state to prevent background task errors
   List<AyatData> _currentPageAyats = [];
   final ScrollController _scrollController = ScrollController();
 
@@ -181,7 +182,7 @@ class SttController with ChangeNotifier {
   // String? _surahMismatchWarning;
   // int? _detectedMismatchSurah;
   // String? _detectedMismatchSurahName;
-  
+
   // // bool get isSurahMismatch => _isSurahMismatch;
   // String? get surahMismatchWarning => _surahMismatchWarning;
   // int? get detectedMismatchSurah => _detectedMismatchSurah;
@@ -203,23 +204,25 @@ class SttController with ChangeNotifier {
   String _wordKey(int surahId, int ayahNumber) => '$surahId:$ayahNumber';
 
   // ✅ Helper: Get word status for specific surah:ayah:word
-WordStatus? getWordStatus(int surahId, int ayahNumber, int wordIndex) {
-  final key = _wordKey(surahId, ayahNumber);
-  final wordMap = _wordStatusMap[key];
-  
-  if (wordMap == null) {
-    print('⚠️ getWordStatus: No word map for $surahId:$ayahNumber');
-    return null;
+  WordStatus? getWordStatus(int surahId, int ayahNumber, int wordIndex) {
+    final key = _wordKey(surahId, ayahNumber);
+    final wordMap = _wordStatusMap[key];
+
+    if (wordMap == null) {
+      print('⚠️ getWordStatus: No word map for $surahId:$ayahNumber');
+      return null;
+    }
+
+    // ✅ CRITICAL: Return null for invalid index (prevent RangeError)
+    if (wordIndex < 0 || !wordMap.containsKey(wordIndex)) {
+      print(
+        '⚠️ getWordStatus: Invalid wordIndex $wordIndex for $surahId:$ayahNumber (has ${wordMap.length} words)',
+      );
+      return null;
+    }
+
+    return wordMap[wordIndex];
   }
-  
-  // ✅ CRITICAL: Return null for invalid index (prevent RangeError)
-  if (wordIndex < 0 || !wordMap.containsKey(wordIndex)) {
-    print('⚠️ getWordStatus: Invalid wordIndex $wordIndex for $surahId:$ayahNumber (has ${wordMap.length} words)');
-    return null;
-  }
-  
-  return wordMap[wordIndex];
-}
 
   List<WordFeedback> get currentWords =>
       _currentWords; // âœ… ADD: Getter for currentWords
@@ -237,9 +240,11 @@ WordStatus? getWordStatus(int surahId, int ayahNumber, int wordIndex) {
   int get currentAyatIndex => _currentAyatIndex;
   // FIX: Check both list not empty AND index is valid (>= 0)
   int get currentAyatNumber =>
-      _ayatList.isNotEmpty && _currentAyatIndex >= 0 && _currentAyatIndex < _ayatList.length
-          ? _ayatList[_currentAyatIndex].ayah
-          : 1;
+      _ayatList.isNotEmpty &&
+          _currentAyatIndex >= 0 &&
+          _currentAyatIndex < _ayatList.length
+      ? _ayatList[_currentAyatIndex].ayah
+      : 1;
   String get suratNameSimple => _suratNameSimple;
   String get suratVersesCount => _suratVersesCount;
   DateTime? get sessionStartTime => _sessionStartTime;
@@ -1660,7 +1665,7 @@ WordStatus? getWordStatus(int surahId, int ayahNumber, int wordIndex) {
     );
 
     print('✅ SttController: WebSocket subscriptions initialized');
-    
+
     // ✅ OPTIMIZED: NO pre-connect - WebSocket connects ONLY when user slides button
     // This makes page load faster and lighter
     print('💡 WebSocket will connect when user starts recording');
@@ -1676,10 +1681,13 @@ WordStatus? getWordStatus(int surahId, int ayahNumber, int wordIndex) {
       appLogger.log('WEBSOCKET_ERROR', 'Connection failed: $e');
     }
   }
-  
+
   /// Ensure WebSocket is connected (with timeout)
   /// ✅ IMPROVED: Force reconnect jika connection stale (backend restart)
-  Future<bool> _ensureConnected({int timeoutMs = 1500, bool forceNew = false}) async {
+  Future<bool> _ensureConnected({
+    int timeoutMs = 1500,
+    bool forceNew = false,
+  }) async {
     // ✅ Force new connection jika diminta (setelah backend restart)
     if (forceNew) {
       print('🔄 Force reconnecting WebSocket...');
@@ -1687,26 +1695,27 @@ WordStatus? getWordStatus(int surahId, int ayahNumber, int wordIndex) {
       _isConnected = _webSocketService.isConnected;
       return _isConnected;
     }
-    
+
     if (_webSocketService.isConnected) {
       print('⚡ WebSocket already connected!');
       return true;
     }
-    
+
     print('🔌 Connecting WebSocket...');
     final connectStart = DateTime.now();
-    
+
     await _connectWebSocket();
-    
+
     // Fast polling with timeout
     final stopwatch = Stopwatch()..start();
-    while (!_webSocketService.isConnected && stopwatch.elapsedMilliseconds < timeoutMs) {
+    while (!_webSocketService.isConnected &&
+        stopwatch.elapsedMilliseconds < timeoutMs) {
       await Future.delayed(const Duration(milliseconds: 20));
     }
-    
+
     final elapsed = DateTime.now().difference(connectStart).inMilliseconds;
     _isConnected = _webSocketService.isConnected;
-    
+
     if (_isConnected) {
       print('✅ WebSocket connected in ${elapsed}ms');
     } else {
@@ -1714,14 +1723,14 @@ WordStatus? getWordStatus(int surahId, int ayahNumber, int wordIndex) {
       print('⚠️ Normal connect failed, trying force reconnect...');
       await _webSocketService.forceReconnect();
       _isConnected = _webSocketService.isConnected;
-      
+
       if (_isConnected) {
         print('✅ Force reconnect succeeded!');
       } else {
         print('❌ WebSocket timeout after ${elapsed}ms');
       }
     }
-    
+
     return _isConnected;
   }
 
@@ -2000,19 +2009,19 @@ WordStatus? getWordStatus(int surahId, int ayahNumber, int wordIndex) {
       //   final detectedSurah = message['detected_surah'] ?? 0;
       //   final detectedSurahName = message['detected_surah_name'] ?? 'Surah $detectedSurah';
       //   final mismatchMessage = message['message'] ?? 'Surah tidak sesuai';
-        
+
       //   print('🚨 SURAH MISMATCH DETECTED!');
       //   print('   Expected: Surah $expectedSurah');
       //   print('   Detected: $detectedSurahName (Surah $detectedSurah)');
-        
+
       //   // Set warning message to display in UI
       //   // _surahMismatchWarning = mismatchMessage;
       //   // _isSurahMismatch = true;
       //   // _detectedMismatchSurah = detectedSurah;
       //   // _detectedMismatchSurahName = detectedSurahName;
-        
+
       //   notifyListeners();
-        
+
       //   // Auto-clear warning after 10 seconds
       //   // Future.delayed(const Duration(seconds: 10), () {
       //   //   if (_isSurahMismatch) {
@@ -2504,7 +2513,7 @@ WordStatus? getWordStatus(int surahId, int ayahNumber, int wordIndex) {
 
   Future<void> startRecording() async {
     print('🎤 startRecording(): Checking WebSocket...');
-    
+
     // ✅ OPTIMIZED: Fast connection check
     // WebSocket sudah pre-connected di background saat page load
     // Jika belum ready, tunggu max 2 detik
@@ -2703,5 +2712,3 @@ WordStatus? getWordStatus(int surahId, int ayahNumber, int wordIndex) {
     super.dispose();
   }
 }
-
-

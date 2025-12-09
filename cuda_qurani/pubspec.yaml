@@ -97,6 +97,8 @@ flutter:
 
   assets:
     - assets/lang/
+    - assets/lang/data/
+    - assets/lang/data/language.json
 
     - assets/images/qurani-white-text.png
     - assets/images/qurani-icon-green.png
@@ -113,8 +115,6 @@ flutter:
     - assets/data/quran-metadata-juz.sqlite
 
     - assets/reciters/data/reciters_data.json
-    - assets/reciters/data/
-    - assets/reciters/
 
     - assets/reciters/ayah-recitation-abdul-basit-abdul-samad-murattal-hafs-950.db
     - assets/reciters/ayah-recitation-abdur-rahman-as-sudais-recitation.db
