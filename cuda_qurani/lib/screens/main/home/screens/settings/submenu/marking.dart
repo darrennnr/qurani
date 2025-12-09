@@ -1,4 +1,5 @@
 // lib/screens/main/home/screens/settings/submenu/marking.dart
+import 'package:cuda_qurani/core/utils/language_helper.dart';
 import 'package:cuda_qurani/screens/main/home/screens/settings/widgets/tajweed_rules.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -19,6 +20,22 @@ class MarkingPage extends StatefulWidget {
 }
 
 class _MarkingPageState extends State<MarkingPage> {
+  Map<String, dynamic> _translations = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTranslations();
+  }
+
+  Future<void> _loadTranslations() async {
+    // Ganti path sesuai file JSON yang dibutuhkan
+    final trans = await context.loadTranslations('settings/quran_appearance');
+    setState(() {
+      _translations = trans;
+    });
+  }
+
   // Default states untuk semua toggle (dummy state)
   bool _showTajweedColors = false;
   bool _highlightMistakeHistory = false;
@@ -57,7 +74,11 @@ class _MarkingPageState extends State<MarkingPage> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const SettingsAppBar(title: 'Marking'),
+      appBar: SettingsAppBar(
+        title: _translations.isNotEmpty
+            ? LanguageHelper.tr(_translations, 'marking.marking_text')
+            : 'MARKING',
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -67,7 +88,9 @@ class _MarkingPageState extends State<MarkingPage> {
               children: [
                 // Tajweed Section
                 Text(
-                  'Tajweed',
+                  _translations.isNotEmpty
+                      ? LanguageHelper.tr(_translations, 'marking.tajweed_text')
+                      : 'Tajweed',
                   style: TextStyle(
                     fontSize: 14 * s * 0.9,
                     fontWeight: AppTypography.medium,
@@ -109,7 +132,12 @@ class _MarkingPageState extends State<MarkingPage> {
                           SizedBox(width: AppDesignSystem.space12 * s * 0.9),
                           Expanded(
                             child: Text(
-                              'Show Tajweed Colors',
+                              _translations.isNotEmpty
+                                  ? LanguageHelper.tr(
+                                      _translations,
+                                      'marking.show_tajweed_colors_text',
+                                    )
+                                  : 'Show Tajweed Colors',
                               style: TextStyle(
                                 fontSize: 16 * s * 0.9,
                                 fontWeight: AppTypography.regular,
@@ -200,7 +228,12 @@ class _MarkingPageState extends State<MarkingPage> {
                       Padding(
                         padding: EdgeInsets.only(left: 32 * s * 0.9),
                         child: Text(
-                          'Color letters with distinct colors according to Tajweed rules to make it easier to know which rules to apply while reciting.',
+                          _translations.isNotEmpty
+                              ? LanguageHelper.tr(
+                                  _translations,
+                                  'marking.show_tajweed_colors_desc',
+                                )
+                              : 'Color letters with distinct colors according to Tajweed rules to make it easier to know which rules to apply while reciting.',
                           style: TextStyle(
                             fontSize: 13 * s * 0.9,
                             fontWeight: AppTypography.regular,
@@ -217,7 +250,12 @@ class _MarkingPageState extends State<MarkingPage> {
 
                 // Mistakes Section
                 Text(
-                  'Mistakes',
+                  _translations.isNotEmpty
+                      ? LanguageHelper.tr(
+                          _translations,
+                          'marking.mistakes_text',
+                        )
+                      : 'Mistakes',
                   style: TextStyle(
                     fontSize: 14 * s * 0.9,
                     fontWeight: AppTypography.medium,
@@ -256,7 +294,12 @@ class _MarkingPageState extends State<MarkingPage> {
                           SizedBox(width: AppDesignSystem.space12 * s * 0.9),
                           Expanded(
                             child: Text(
-                              'Highlight mistake history',
+                              _translations.isNotEmpty
+                                  ? LanguageHelper.tr(
+                                      _translations,
+                                      'marking.highlight_mistake_history_text',
+                                    )
+                                  : 'Highlight Mistake History',
                               style: TextStyle(
                                 fontSize: 16 * s * 0.9,
                                 fontWeight: AppTypography.regular,
@@ -277,7 +320,12 @@ class _MarkingPageState extends State<MarkingPage> {
                       Padding(
                         padding: EdgeInsets.only(left: 32 * s * 0.9),
                         child: Text(
-                          'Highlight the mistakes you commonly make according to how often you\'ve been making them.',
+                          _translations.isNotEmpty
+                              ? LanguageHelper.tr(
+                                  _translations,
+                                  'marking.highlight_mistake_history_desc',
+                                )
+                              : 'Highlight the mistakes you commonly make according to how often you\'ve been making them.',
                           style: TextStyle(
                             fontSize: 13 * s * 0.9,
                             fontWeight: AppTypography.regular,
@@ -294,7 +342,12 @@ class _MarkingPageState extends State<MarkingPage> {
 
                 // Similar Phrases Section
                 Text(
-                  'Similar Phrases',
+                  _translations.isNotEmpty
+                      ? LanguageHelper.tr(
+                          _translations,
+                          'marking.similar_phrases_text',
+                        )
+                      : 'Similar Phrases',
                   style: TextStyle(
                     fontSize: 14 * s * 0.9,
                     fontWeight: AppTypography.medium,
@@ -333,7 +386,12 @@ class _MarkingPageState extends State<MarkingPage> {
                           SizedBox(width: AppDesignSystem.space12 * s * 0.9),
                           Expanded(
                             child: Text(
-                              'Color similar phrases',
+                              _translations.isNotEmpty
+                                  ? LanguageHelper.tr(
+                                      _translations,
+                                      'marking.color_similar_phrases_text',
+                                    )
+                                  : 'Color similar phrases',
                               style: TextStyle(
                                 fontSize: 16 * s * 0.9,
                                 fontWeight: AppTypography.regular,
@@ -354,7 +412,12 @@ class _MarkingPageState extends State<MarkingPage> {
                       Padding(
                         padding: EdgeInsets.only(left: 32 * s * 0.9),
                         child: Text(
-                          'Color similar phrases (Mutashabihat) with distinct colors to identify patterns and avoid confusing different verses.',
+                          _translations.isNotEmpty
+                              ? LanguageHelper.tr(
+                                  _translations,
+                                  'marking.similar_phrases_desc',
+                                )
+                              : 'Color similar phrases (Mutashabihat) with distinct colors to identify patterns and avoid confusing different verses.',
                           style: TextStyle(
                             fontSize: 13 * s * 0.9,
                             fontWeight: AppTypography.regular,
@@ -402,7 +465,11 @@ class _MarkingPageState extends State<MarkingPage> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.lock, size: 10 * s, color: const Color(0xFFF39C12)),
+                  Icon(
+                    Icons.lock,
+                    size: 10 * s,
+                    color: const Color(0xFFF39C12),
+                  ),
                   SizedBox(width: 2 * s),
                   Text(
                     'PRO',

@@ -1,5 +1,6 @@
 // lib/screens/main/home/screens/settings/widgets/audio_manager.dart
 
+import 'package:cuda_qurani/core/utils/language_helper.dart';
 import 'package:cuda_qurani/services/audio_download_services.dart';
 import 'package:cuda_qurani/services/reciter_manager_services.dart';
 import 'package:flutter/material.dart';
@@ -22,6 +23,16 @@ class AudioManagerPage extends StatefulWidget {
 }
 
 class _AudioManagerPageState extends State<AudioManagerPage> {
+  Map<String, dynamic> _translations = {};
+
+  Future<void> _loadTranslations() async {
+    // Ganti path sesuai file JSON yang dibutuhkan
+    final trans = await context.loadTranslations('settings/downloads');
+    setState(() {
+      _translations = trans;
+    });
+  }
+
   // Download state
   final Map<int, double> _downloadProgress = {};
   final Map<int, bool> _downloadedStatus = {};
@@ -45,6 +56,7 @@ class _AudioManagerPageState extends State<AudioManagerPage> {
   void initState() {
     super.initState();
     _initialize();
+    _loadTranslations();
   }
 
   Future<void> _initialize() async {
@@ -64,9 +76,7 @@ class _AudioManagerPageState extends State<AudioManagerPage> {
         _downloadProgress[surahId] = 0.0;
         _downloadedStatus[surahId] = false;
       }
-    } catch (e) {
-      print('❌ Error loading surahs: $e');
-    }
+    } catch (e) {}
   }
 
   Future<void> _loadStorageInfo() async {
@@ -235,19 +245,43 @@ class _AudioManagerPageState extends State<AudioManagerPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Clear Cache'),
+        title: Text(
+          _translations.isNotEmpty
+              ? LanguageHelper.tr(
+                  _translations,
+                  'reciters.audio_manager.clear_cache_text',
+                )
+              : 'Clear Cache',
+        ),
         content: Text(
-          'Are you sure you want to delete all downloaded audio for ${widget.reciterName}?\n\nThis will free up ${_storageInfo['formattedSize']}.',
+          '${LanguageHelper.tr(_translations, "reciters.audio_manager.clear_cache_desc")} '
+          '${widget.reciterName}?\n\n'
+          '${LanguageHelper.tr(_translations, "reciters.audio_manager.using_text")} '
+          '${_storageInfo['formattedSize']}.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(
+              _translations.isNotEmpty
+                  ? LanguageHelper.tr(
+                      _translations,
+                      'reciters.audio_manager.cancel_text',
+                    )
+                  : 'Cancel',
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Delete'),
+            child: Text(
+              _translations.isNotEmpty
+                  ? LanguageHelper.tr(
+                      _translations,
+                      'reciters.audio_manager.clear_cache_text',
+                    )
+                  : 'Delete',
+            ),
           ),
         ],
       ),
@@ -413,7 +447,12 @@ class _AudioManagerPageState extends State<AudioManagerPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: SettingsAppBar(
-        title: 'Audio Manager',
+        title: _translations.isNotEmpty
+            ? LanguageHelper.tr(
+                _translations,
+                'reciters.audio_manager.audio_manager_text',
+              )
+            : 'Audio Manager',
         actions: [
           if (_storageInfo['totalBytes'] > 0)
             IconButton(
@@ -454,7 +493,9 @@ class _AudioManagerPageState extends State<AudioManagerPage> {
                             ),
                             SizedBox(width: AppDesignSystem.space8 * s),
                             Text(
-                              'Using ${_storageInfo['formattedSize']} (${_storageInfo['fileCount']} files)',
+                              '${LanguageHelper.tr(_translations, "reciters.audio_manager.using_text")} '
+                              '${_storageInfo['formattedSize']} '
+                              '(${_storageInfo['fileCount']} ${LanguageHelper.tr(_translations, "reciters.files_text")})',
                               style: TextStyle(
                                 fontSize: 14 * s,
                                 fontWeight: AppTypography.regular,
@@ -514,8 +555,18 @@ class _AudioManagerPageState extends State<AudioManagerPage> {
                             SizedBox(width: AppDesignSystem.space8 * s),
                             Text(
                               _isDownloadingAll
-                                  ? 'Downloading all...'
-                                  : 'Download all',
+                                  ? _translations.isNotEmpty
+                                        ? LanguageHelper.tr(
+                                            _translations,
+                                            'reciters.audio_manager.downloading_all_text',
+                                          )
+                                        : 'Downloading All'
+                                  : _translations.isNotEmpty
+                                  ? LanguageHelper.tr(
+                                      _translations,
+                                      'reciters.audio_manager.download_all_text',
+                                    )
+                                  : 'Download All',
                               style: TextStyle(
                                 fontSize: 16 * s,
                                 fontWeight: AppTypography.regular,

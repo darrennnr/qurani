@@ -1,4 +1,5 @@
 // lib/screens/main/home/screens/settings/settings_page.dart
+import 'package:cuda_qurani/core/utils/language_helper.dart';
 import 'package:cuda_qurani/screens/main/home/screens/settings/submenu/dropped_connection.dart';
 import 'package:cuda_qurani/screens/main/home/screens/settings/submenu/hidden_verses.dart';
 import 'package:cuda_qurani/screens/main/home/screens/settings/submenu/language.dart';
@@ -28,6 +29,21 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
+    Map<String, dynamic> _translations = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTranslations();
+  }
+
+  Future<void> _loadTranslations() async {
+    // Ganti path sesuai file JSON yang dibutuhkan
+    final trans = await context.loadTranslations('settings/settings');
+    setState(() {
+      _translations = trans;
+    });
+  }
   Widget _buildSettingItem({
     required IconData icon,
     required String label,
@@ -94,7 +110,9 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const ProfileAppBar(title: 'Settings'),
+      appBar: ProfileAppBar(title: _translations.isNotEmpty 
+              ? LanguageHelper.tr(_translations, 'settings.settings_text')
+              : 'Settings',),
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
@@ -106,14 +124,18 @@ class _SettingsPageState extends State<SettingsPage> {
                 AppMargin.gapLarge(context),
 
                 // ==================== EXPERIENCES ====================
-                _buildSectionHeader('EXPERIENCES'),
+                _buildSectionHeader(_translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'settings.experiences_text').toUpperCase()
+                      : 'EXPERIENCES'),
                 AppCard(
                   padding: EdgeInsets.zero,
                   child: Column(
                     children: [
                       _buildSettingItem(
                         icon: Icons.mic_outlined,
-                        label: 'Recitation',
+                        label: _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'settings.recitation_text')
+                      : 'Recitation',
                         onTap: () {
                           AppHaptics.light();
                           Navigator.push(
@@ -162,7 +184,9 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                       _buildSettingItem(
                         icon: Icons.play_arrow_rounded,
-                        label: 'Listening',
+                        label: _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'settings.listening_text')
+                      : 'Listening',
                         onTap: () {
                           AppHaptics.light();
                           Navigator.push(
@@ -217,14 +241,18 @@ class _SettingsPageState extends State<SettingsPage> {
                 AppMargin.gapLarge(context),
 
                 // ==================== QURAN APPEARANCE ====================
-                _buildSectionHeader('QURAN APPEARANCE'),
+                _buildSectionHeader(_translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'settings.quran_appearance_text').toUpperCase()
+                      : 'QURAN APPEARANCE'),
                 AppCard(
                   padding: EdgeInsets.zero,
                   child: Column(
                     children: [
                       _buildSettingItem(
                         icon: Icons.menu_book_outlined,
-                        label: 'Mushaf Layout',
+                        label: _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'settings.mushaf_layout_text')
+                      : 'Mushaf Layout',
                         onTap: () {
                           AppHaptics.light();
                           Navigator.push(
@@ -273,7 +301,9 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                       _buildSettingItem(
                         icon: Icons.visibility_off_outlined,
-                        label: 'Hidden Verses',
+                        label: _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'settings.hidden_verses_text')
+                      : 'Hidden Verses',
                         onTap: () {
                           AppHaptics.light();
                           Navigator.push(
@@ -322,7 +352,9 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                       _buildSettingItem(
                         icon: Icons.edit_outlined,
-                        label: 'Marking',
+                        label: _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'settings.marking_text')
+                      : 'Marking',
                         onTap: () {
                           AppHaptics.light();
                           Navigator.push(
@@ -377,14 +409,18 @@ class _SettingsPageState extends State<SettingsPage> {
                 AppMargin.gapLarge(context),
 
                 // ==================== APPEARANCE ====================
-                _buildSectionHeader('APPEARANCE'),
+                _buildSectionHeader(_translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'settings.appearance_text').toUpperCase()
+                      : 'APPEARANCE'),
                 AppCard(
                   padding: EdgeInsets.zero,
                   child: Column(
                     children: [
                       _buildSettingItem(
                         icon: Icons.language_outlined,
-                        label: 'Language',
+                        label: _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'settings.language_text')
+                      : 'Language',
                         onTap: () {
                           AppHaptics.light();
                           Navigator.push(
@@ -433,7 +469,9 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                       _buildSettingItem(
                         icon: Icons.brightness_6_outlined,
-                        label: 'Theme',
+                        label: _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'settings.theme_text')
+                      : 'Theme',
                         onTap: () {
                           AppHaptics.light();
                           Navigator.push(
@@ -488,12 +526,16 @@ class _SettingsPageState extends State<SettingsPage> {
                 AppMargin.gapLarge(context),
 
                 // ==================== NOTIFICATIONS ====================
-                _buildSectionHeader('NOTIFICATIONS'),
+                _buildSectionHeader(_translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'settings.notifications_text').toUpperCase()
+                      : 'NOTIFICATIONS'),
                 AppCard(
                   padding: EdgeInsets.zero,
                   child: _buildSettingItem(
                     icon: Icons.notifications_outlined,
-                    label: 'Reminders',
+                    label: _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'settings.reminders_text')
+                      : 'Reminders',
                     onTap: () {
                       AppHaptics.light();
                       Navigator.push(
@@ -538,14 +580,18 @@ class _SettingsPageState extends State<SettingsPage> {
                 AppMargin.gapLarge(context),
 
                 // ==================== SOUNDS & HAPTICS ====================
-                _buildSectionHeader('SOUNDS & HAPTICS'),
+                _buildSectionHeader(_translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'settings.sounds_haptics_text').toUpperCase()
+                      : 'SOUNDS & HAPTICS'),
                 AppCard(
                   padding: EdgeInsets.zero,
                   child: Column(
                     children: [
                       _buildSettingItem(
                         icon: Icons.error_outline,
-                        label: 'Mistake Feedback',
+                        label: _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'settings.mistake_feedback_text')
+                      : 'Mistake Feedback',
                         onTap: () {
                           AppHaptics.light();
                           Navigator.push(
@@ -594,7 +640,9 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                       _buildSettingItem(
                         icon: Icons.mic_outlined,
-                        label: 'Session Start & Stop',
+                        label: _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'settings.session_start_stop_text')
+                      : 'Session Start & Stop',
                         onTap: () {
                           AppHaptics.light();
                           Navigator.push(
@@ -643,7 +691,9 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                       _buildSettingItem(
                         icon: Icons.wifi_off_outlined,
-                        label: 'Dropped Connection',
+                        label: _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'settings.dropped_connection_text')
+                      : 'Dropped Connection',
                         onTap: () {
                           AppHaptics.light();
                           Navigator.push(
@@ -698,14 +748,18 @@ class _SettingsPageState extends State<SettingsPage> {
                 AppMargin.gapLarge(context),
 
                 // ==================== DOWNLOADS ====================
-                _buildSectionHeader('DOWNLOADS'),
+                _buildSectionHeader(_translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'settings.downloads_text').toUpperCase()
+                      : 'DOWNLOADS'),
                 AppCard(
                   padding: EdgeInsets.zero,
                   child: Column(
                     children: [
                       _buildSettingItem(
                         icon: Icons.record_voice_over_outlined,
-                        label: 'Reciters',
+                        label: _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'settings.reciters_text')
+                      : 'Reciters',
                         onTap: () {
                           AppHaptics.light();
                           Navigator.push(
@@ -754,7 +808,9 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                       _buildSettingItem(
                         icon: Icons.translate_outlined,
-                        label: 'Translations',
+                        label: _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'settings.translations_text')
+                      : 'Translations',
                         onTap: () {
                           AppHaptics.light();
                           Navigator.push(
@@ -803,7 +859,9 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                       _buildSettingItem(
                         icon: Icons.book_outlined,
-                        label: 'Tafsir',
+                        label: _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'settings.tafsir_text')
+                      : 'Tafsir',
                         onTap: () {
                           AppHaptics.light();
                           Navigator.push(
@@ -858,14 +916,18 @@ class _SettingsPageState extends State<SettingsPage> {
                 AppMargin.gapLarge(context),
 
                 // ==================== PRIVACY ====================
-                _buildSectionHeader('PRIVACY'),
+                _buildSectionHeader(_translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'settings.privacy_text').toUpperCase()
+                      : 'PRIVACY'),
                 AppCard(
                   padding: EdgeInsets.zero,
                   child: Column(
                     children: [
                       _buildSettingItem(
                         icon: Icons.lock_outline,
-                        label: 'Data Usage',
+                        label: _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'settings.data_usage_text')
+                      : 'Data Usage',
                         onTap: () {
                           AppHaptics.light();
                           Navigator.push(
@@ -914,7 +976,9 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                       _buildSettingItem(
                         icon: Icons.delete_outline,
-                        label: 'Delete All Audio Data',
+                        label: _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'settings.delete_all_audio_data_text')
+                      : 'Delete All Audio Data',
                         iconColor: AppColors.error,
                         onTap: () {
                           AppHaptics.medium();
@@ -973,7 +1037,9 @@ class _SettingsPageState extends State<SettingsPage> {
                   AppMargin.gapH(context),
                   Expanded(
                     child: Text(
-                      'Delete All Audio Data',
+                      _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'settings.delete_all_audio_data_text')
+                      : 'Delete All Audio Data',
                       style: AppTypography.h3(
                         context,
                         weight: AppTypography.bold,
@@ -987,7 +1053,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
               // Content
               Text(
-                'Are you sure you want to delete all audio recordings? This action cannot be undone and will permanently remove all your recitation history.',
+                _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'settings.delete_all_audio_data_desc')
+                      :                 'Are you sure you want to delete all audio recordings? This action cannot be undone and will permanently remove all your recitation history.',
                 style: AppTypography.body(
                   context,
                   color: AppColors.textSecondary,
@@ -1001,7 +1069,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   AppTextButton(
-                    text: 'Cancel',
+                    text: _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'settings.cancel_text')
+                      : 'Cancel',
                     onPressed: () {
                       AppHaptics.light();
                       Navigator.pop(context);
@@ -1010,7 +1080,9 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   AppMargin.gapHSmall(context),
                   AppButton(
-                    text: 'Delete',
+                    text: _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'settings.delete_text')
+                      : 'Delete',
                     backgroundColor: AppColors.error,
                     textColor: Colors.white,
                     onPressed: () {

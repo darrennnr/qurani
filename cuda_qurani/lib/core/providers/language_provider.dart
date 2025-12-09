@@ -1,4 +1,5 @@
 // lib/core/providers/language_provider.dart
+import 'package:cuda_qurani/main.dart';
 import 'package:flutter/material.dart';
 import 'package:cuda_qurani/core/services/language_service.dart';
 
@@ -81,5 +82,56 @@ class LanguageProvider extends ChangeNotifier {
     Map<String, String>? params,
   }) {
     return _languageService.translate(translations, key, params: params);
+  }
+  /// Restart app setelah ganti bahasa
+  /// Method ini akan trigger full app restart
+  Future<void> restartApp(BuildContext context) async {
+    // Clear all navigation stack dan restart dari main
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (context) => const RestartWidget(),
+      ),
+      (route) => false,
+    );
+  }
+}
+
+/// Widget helper untuk restart app
+class RestartWidget extends StatefulWidget {
+  const RestartWidget({Key? key}) : super(key: key);
+
+  @override
+  State<RestartWidget> createState() => _RestartWidgetState();
+}
+
+class _RestartWidgetState extends State<RestartWidget> {
+  @override
+  void initState() {
+    super.initState();
+    _restart();
+  }
+
+  Future<void> _restart() async {
+    // Delay sebentar untuk smooth transition
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    if (!mounted) return;
+    
+    // Navigate ke InitialSplashScreen (restart point)
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (context) => const InitialSplashScreen(),
+      ),
+      (route) => false,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
   }
 }

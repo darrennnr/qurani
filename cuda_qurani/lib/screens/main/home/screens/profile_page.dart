@@ -1,5 +1,6 @@
 // lib/screens/main/home/screens/profile_page.dart
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
+import 'package:cuda_qurani/core/utils/language_helper.dart';
 import 'package:cuda_qurani/core/widgets/app_components.dart';
 import 'package:cuda_qurani/screens/main/home/widgets/navigation_bar.dart';
 import 'package:cuda_qurani/screens/main/auth/login/login_page.dart';
@@ -15,13 +16,33 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  Map<String, dynamic> _translations = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTranslations();
+  }
+
+  Future<void> _loadTranslations() async {
+    // Ganti path sesuai file JSON yang dibutuhkan
+    final trans = await context.loadTranslations('profile/profile');
+    setState(() {
+      _translations = trans;
+    });
+  }
+
   bool _isLoggingOut = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
-      appBar: const ProfileAppBar(title: 'Account'),
+      appBar: ProfileAppBar(
+        title: _translations.isNotEmpty
+            ? LanguageHelper.tr(_translations, 'profile.account_text')
+            : 'Account',
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
@@ -144,8 +165,25 @@ class _ProfilePageState extends State<ProfilePage> {
       padding: EdgeInsets.zero,
       child: Column(
         children: [
-          _buildInfoRow('Joined', joinedDate, showDivider: true),
-          _buildInfoRow('Subscription Status', 'Free Plan', showDivider: false),
+          _buildInfoRow(
+            _translations.isNotEmpty
+                ? LanguageHelper.tr(_translations, 'profile.joined_text')
+                : 'Joined',
+            joinedDate,
+            showDivider: true,
+          ),
+          _buildInfoRow(
+            _translations.isNotEmpty
+                ? LanguageHelper.tr(
+                    _translations,
+                    'profile.subscription_status_text',
+                  )
+                : 'Subscription Status',
+            _translations.isNotEmpty
+                ? LanguageHelper.tr(_translations, 'profile.premium_text')
+                : 'Premium',
+            showDivider: false,
+          ),
         ],
       ),
     );
@@ -178,13 +216,23 @@ class _ProfilePageState extends State<ProfilePage> {
     return Column(
       children: [
         _buildActionButton(
-          text: 'SWITCH ACCOUNT',
+          text: _translations.isNotEmpty
+              ? LanguageHelper.tr(
+                  _translations,
+                  'profile.switch_account_text',
+                ).toUpperCase()
+              : 'SWITCH ACCOUNT',
           onPressed: _showSwitchAccountBottomSheet,
           isLogout: false,
         ),
         AppMargin.gapSmall(context),
         _buildActionButton(
-          text: 'LOG OUT',
+          text: _translations.isNotEmpty
+              ? LanguageHelper.tr(
+                  _translations,
+                  'profile.logout_text',
+                ).toUpperCase()
+              : 'LOG OUT',
           onPressed: _showLogoutDialog,
           isLogout: true,
         ),
@@ -260,14 +308,61 @@ class _ProfilePageState extends State<ProfilePage> {
       padding: EdgeInsets.zero,
       child: Column(
         children: [
-          _buildMenuItem('About Qurani', Icons.info_outline),
-          _buildMenuItem('Request a Feature', Icons.chat_bubble_outline),
-          _buildMenuItem('Help Center', Icons.help_outline),
-          _buildMenuItem('Share Application', Icons.share_outlined),
-          _buildMenuItem('Rate Application', Icons.star_outline),
-          _buildMenuItem('Terms of Service', Icons.arrow_forward_ios),
           _buildMenuItem(
-            'Privacy Policy',
+            _translations.isNotEmpty
+                ? LanguageHelper.tr(_translations, 'profile.about_qurani_text')
+                : 'About Qurani',
+            Icons.info_outline,
+          ),
+          _buildMenuItem(
+            _translations.isNotEmpty
+                ? LanguageHelper.tr(
+                    _translations,
+                    'profile.request_a_feature_text',
+                  )
+                : 'Request a Feature',
+            Icons.chat_bubble_outline,
+          ),
+          _buildMenuItem(
+            _translations.isNotEmpty
+                ? LanguageHelper.tr(_translations, 'profile.help_center_text')
+                : 'Help Center',
+            Icons.help_outline,
+          ),
+          _buildMenuItem(
+            _translations.isNotEmpty
+                ? LanguageHelper.tr(
+                    _translations,
+                    'profile.share_application_text',
+                  )
+                : 'Share Application',
+            Icons.share_outlined,
+          ),
+          _buildMenuItem(
+            _translations.isNotEmpty
+                ? LanguageHelper.tr(
+                    _translations,
+                    'profile.rate_application_text',
+                  )
+                : 'Rate Application',
+            Icons.star_outline,
+          ),
+          _buildMenuItem(
+            _translations.isNotEmpty
+                ? LanguageHelper.tr(
+                    _translations,
+                    'profile.terms_and_conditions_text',
+                  )
+                : 'Terms of Service',
+            Icons.arrow_forward_ios,
+          ),
+          _buildMenuItem(
+            _translations.isNotEmpty
+                ? LanguageHelper.tr(
+                    _translations,
+                    'profile.privacy_policy_text',
+                  )
+                : 'Privacy Policy',
             Icons.arrow_forward_ios,
             showDivider: false,
           ),
@@ -323,7 +418,12 @@ class _ProfilePageState extends State<ProfilePage> {
         child: Align(
           alignment: Alignment.centerLeft,
           child: Text(
-            'Delete Account',
+            _translations.isNotEmpty
+                ? LanguageHelper.tr(
+                    _translations,
+                    'profile.delete_account_text',
+                  )
+                : 'Delete Account',
             style: AppTypography.body(
               context,
               color: AppColors.error,
@@ -359,16 +459,25 @@ class _ProfilePageState extends State<ProfilePage> {
             AppDesignSystem.scale(context, AppDesignSystem.radiusLarge),
           ),
         ),
-        title: Text('Logout', style: AppTypography.titleLarge(context)),
+        title: Text(
+          _translations.isNotEmpty
+              ? LanguageHelper.tr(_translations, 'profile.logout_text')
+              : 'Logout',
+          style: AppTypography.titleLarge(context),
+        ),
         content: Text(
-          'Are you sure you want to logout?',
+          _translations.isNotEmpty
+              ? LanguageHelper.tr(_translations, 'profile.logout_desc')
+              : 'Apakah Anda yakin ingin keluar?',
           style: AppTypography.body(context),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              'Cancel',
+              _translations.isNotEmpty
+                  ? LanguageHelper.tr(_translations, 'profile.cancel_text')
+                  : 'Cancel',
               style: AppTypography.label(
                 context,
                 color: AppColors.textTertiary,
@@ -382,7 +491,9 @@ class _ProfilePageState extends State<ProfilePage> {
               _performLogout();
             },
             child: Text(
-              'Logout',
+              _translations.isNotEmpty
+                  ? LanguageHelper.tr(_translations, 'profile.logout_text')
+                  : 'Logout',
               style: AppTypography.label(
                 context,
                 color: AppColors.error,
@@ -406,18 +517,27 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ),
         title: Text(
-          'Delete Account',
+          _translations.isNotEmpty
+              ? LanguageHelper.tr(_translations, 'profile.delete_account_text')
+              : 'Delete Account',
           style: AppTypography.titleLarge(context, color: AppColors.error),
         ),
         content: Text(
-          'This action cannot be undone. All your data will be permanently deleted.',
+          _translations.isNotEmpty
+              ? LanguageHelper.tr(_translations, 'profile.delete_account_desc')
+              : 'This action cannot be undone. All your data will be permanently deleted.',
           style: AppTypography.body(context),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              'Cancel',
+              _translations.isNotEmpty
+                  ? LanguageHelper.tr(
+                      _translations,
+                      'profile.cancel_text',
+                    ).toUpperCase()
+                  : 'Cancel',
               style: AppTypography.label(
                 context,
                 color: AppColors.textTertiary,
@@ -436,7 +556,9 @@ class _ProfilePageState extends State<ProfilePage> {
               );
             },
             child: Text(
-              'Delete',
+              _translations.isNotEmpty
+                  ? LanguageHelper.tr(_translations, 'profile.delete_text')
+                  : 'Delete',
               style: AppTypography.label(
                 context,
                 color: AppColors.error,
@@ -457,9 +579,7 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-      print('🚪 ProfilePage: Performing logout...');
       await authProvider.signOut();
-      print('✅ ProfilePage: Logout successful');
 
       if (!mounted) return;
 
@@ -492,7 +612,32 @@ class _ProfilePageState extends State<ProfilePage> {
 }
 
 // ==================== SWITCH ACCOUNT BOTTOM SHEET WIDGET ====================
-class _SwitchAccountBottomSheet extends StatelessWidget {
+// Replace the _SwitchAccountBottomSheet class with this:
+
+class _SwitchAccountBottomSheet extends StatefulWidget {
+  const _SwitchAccountBottomSheet({Key? key}) : super(key: key);
+
+  @override
+  State<_SwitchAccountBottomSheet> createState() =>
+      _SwitchAccountBottomSheetState();
+}
+
+class _SwitchAccountBottomSheetState extends State<_SwitchAccountBottomSheet> {
+  Map<String, dynamic> _translations = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTranslations();
+  }
+
+  Future<void> _loadTranslations() async {
+    final trans = await context.loadTranslations('profile/profile');
+    setState(() {
+      _translations = trans;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
@@ -532,7 +677,15 @@ class _SwitchAccountBottomSheet extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Switch Account', style: AppTypography.h3(context)),
+                Text(
+                  _translations.isNotEmpty
+                      ? LanguageHelper.tr(
+                          _translations,
+                          'profile.switch_account_text',
+                        )
+                      : 'Switch Account',
+                  style: AppTypography.h3(context),
+                ),
                 AppIconButton(
                   icon: Icons.close,
                   onPressed: () => Navigator.pop(context),
@@ -545,12 +698,12 @@ class _SwitchAccountBottomSheet extends StatelessWidget {
           AppMargin.gap(context),
           const AppDivider(),
 
-          // Account List (no Expanded to remove gap)
+          // Account List
           currentUser == null
               ? Expanded(child: _buildEmptyState(context))
               : _buildAccountList(context, currentUser),
 
-          // Add Account Button (Black theme like logout button)
+          // Add Account Button
           Padding(
             padding: EdgeInsets.fromLTRB(
               AppDesignSystem.space20 * AppDesignSystem.getScaleFactor(context),
@@ -563,9 +716,7 @@ class _SwitchAccountBottomSheet extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.surface,
                 border: Border.all(
-                  color: AppColors.textPrimary.withOpacity(
-                    0.50,
-                  ), // Softer black
+                  color: AppColors.textPrimary.withOpacity(0.50),
                   width: AppDesignSystem.scale(context, 1.5),
                 ),
                 borderRadius: BorderRadius.circular(
@@ -598,18 +749,19 @@ class _SwitchAccountBottomSheet extends StatelessWidget {
                             context,
                             AppDesignSystem.iconMedium,
                           ),
-                          color: AppColors.textPrimary.withOpacity(
-                            0.85,
-                          ), // Softer icon
+                          color: AppColors.textPrimary.withOpacity(0.85),
                         ),
                         AppMargin.gapHSmall(context),
                         Text(
-                          'ADD ACCOUNT',
+                          _translations.isNotEmpty
+                              ? LanguageHelper.tr(
+                                  _translations,
+                                  'profile.add_account_text',
+                                ).toUpperCase()
+                              : 'ADD ACCOUNT',
                           style: AppTypography.label(
                             context,
-                            color: AppColors.textPrimary.withOpacity(
-                              0.85,
-                            ), // Softer text
+                            color: AppColors.textPrimary.withOpacity(0.85),
                             weight: AppTypography.semiBold,
                           ).copyWith(letterSpacing: 1.5),
                         ),
@@ -627,7 +779,6 @@ class _SwitchAccountBottomSheet extends StatelessWidget {
   }
 
   Widget _buildAccountList(BuildContext context, currentUser) {
-    // Get avatar info
     String avatarLetter = 'U';
     String displayName = 'User';
     String displayEmail = currentUser.email;
@@ -642,7 +793,6 @@ class _SwitchAccountBottomSheet extends StatelessWidget {
 
     return Column(
       children: [
-        // Current Account (Active)
         Padding(
           padding: AppPadding.only(
             context,
@@ -666,9 +816,6 @@ class _SwitchAccountBottomSheet extends StatelessWidget {
             },
           ),
         ),
-
-        // TODO: Add more accounts from local storage/database
-        // For now, show a hint that more accounts can be added
       ],
     );
   }
@@ -696,9 +843,7 @@ class _SwitchAccountBottomSheet extends StatelessWidget {
             color: AppColors.surface,
             border: Border.all(
               color: isActive
-                  ? AppColors.textPrimary.withOpacity(
-                      0.50,
-                    ) // Softer black for active
+                  ? AppColors.textPrimary.withOpacity(0.50)
                   : AppColors.borderMedium,
               width: AppDesignSystem.scale(context, isActive ? 1.5 : 1),
             ),
@@ -708,7 +853,6 @@ class _SwitchAccountBottomSheet extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // Avatar
               Container(
                 width: AppDesignSystem.scale(context, 48),
                 height: AppDesignSystem.scale(context, 48),
@@ -766,9 +910,7 @@ class _SwitchAccountBottomSheet extends StatelessWidget {
                 AppMargin.gapHSmall(context),
                 Icon(
                   Icons.check_circle,
-                  color: AppColors.secondaryDark.withOpacity(
-                    0.80,
-                  ), // Softer checkmark
+                  color: AppColors.secondaryDark.withOpacity(0.80),
                   size: AppDesignSystem.scale(
                     context,
                     AppDesignSystem.iconLarge,
@@ -825,9 +967,16 @@ class _SwitchAccountBottomSheet extends StatelessWidget {
             AppDesignSystem.scale(context, AppDesignSystem.radiusLarge),
           ),
         ),
-        title: Text('Add Account', style: AppTypography.titleLarge(context)),
+        title: Text(
+          _translations.isNotEmpty
+              ? LanguageHelper.tr(_translations, 'profile.add_account_text')
+              : 'Add Account',
+          style: AppTypography.titleLarge(context),
+        ),
         content: Text(
-          'This feature is coming soon. You can logout and login with a different account.',
+          _translations.isNotEmpty
+              ? LanguageHelper.tr(_translations, 'profile.add_account_desc')
+              : 'This feature is coming soon. You can logout and login with a different account.',
           style: AppTypography.body(context),
         ),
         actions: [

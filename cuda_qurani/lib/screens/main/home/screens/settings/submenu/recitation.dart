@@ -1,4 +1,5 @@
 // lib/screens/main/home/screens/settings/submenu/recitation.dart
+import 'package:cuda_qurani/core/utils/language_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
@@ -18,6 +19,22 @@ class RecitationPage extends StatefulWidget {
 }
 
 class _RecitationPageState extends State<RecitationPage> {
+  Map<String, dynamic> _translations = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTranslations();
+  }
+
+  Future<void> _loadTranslations() async {
+    // Ganti path sesuai file JSON yang dibutuhkan
+    final trans = await context.loadTranslations('settings/experiences');
+    setState(() {
+      _translations = trans;
+    });
+  }
+
   // Default states untuk semua toggle (dummy state)
   bool _detectMistakes = true;
   bool _detectTashkeelMistakes = true;
@@ -29,7 +46,7 @@ class _RecitationPageState extends State<RecitationPage> {
       _detectMistakes = value;
     });
     AppHaptics.selection();
-    
+
     // TODO: Implement toggle logic
   }
 
@@ -38,7 +55,7 @@ class _RecitationPageState extends State<RecitationPage> {
       _detectTashkeelMistakes = value;
     });
     AppHaptics.selection();
-    
+
     // TODO: Implement toggle logic
   }
 
@@ -47,7 +64,7 @@ class _RecitationPageState extends State<RecitationPage> {
       _dontProgressUntilFixed = value;
     });
     AppHaptics.selection();
-    
+
     // TODO: Implement toggle logic
   }
 
@@ -56,7 +73,7 @@ class _RecitationPageState extends State<RecitationPage> {
       _resumableSessions = value;
     });
     AppHaptics.selection();
-    
+
     // TODO: Implement toggle logic
   }
 
@@ -66,8 +83,13 @@ class _RecitationPageState extends State<RecitationPage> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const SettingsAppBar(
-        title: 'Recitation',
+      appBar: SettingsAppBar(
+        title: _translations.isNotEmpty
+            ? LanguageHelper.tr(
+                _translations,
+                'experiences_menu.recitation_text',
+              )
+            : 'Recitation',
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -78,7 +100,12 @@ class _RecitationPageState extends State<RecitationPage> {
               children: [
                 // Mistake Detection Section
                 Text(
-                  'Mistake Detection',
+                  _translations.isNotEmpty
+                      ? LanguageHelper.tr(
+                          _translations,
+                          'experiences_menu.recitation_page.mistake_detection_text',
+                        )
+                      : 'Mistake Detection',
                   style: TextStyle(
                     fontSize: 14 * s * 0.9,
                     fontWeight: AppTypography.medium,
@@ -92,7 +119,9 @@ class _RecitationPageState extends State<RecitationPage> {
                 Container(
                   decoration: BoxDecoration(
                     color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium * s * 0.9),
+                    borderRadius: BorderRadius.circular(
+                      AppDesignSystem.radiusMedium * s * 0.9,
+                    ),
                     border: Border.all(
                       color: AppColors.borderLight,
                       width: 1.0 * s * 0.9,
@@ -116,7 +145,12 @@ class _RecitationPageState extends State<RecitationPage> {
                             SizedBox(width: AppDesignSystem.space12 * s * 0.9),
                             Expanded(
                               child: Text(
-                                'Detect mistakes',
+                                _translations.isNotEmpty
+                                    ? LanguageHelper.tr(
+                                        _translations,
+                                        'experiences_menu.recitation_page.detect_mistakes_text',
+                                      )
+                                    : 'Detect Mistakes',
                                 style: TextStyle(
                                   fontSize: 16 * s * 0.9,
                                   fontWeight: AppTypography.regular,
@@ -161,10 +195,17 @@ class _RecitationPageState extends State<RecitationPage> {
                                     color: AppColors.textPrimary,
                                   ),
                                 ),
-                                SizedBox(width: AppDesignSystem.space12 * s * 0.9),
+                                SizedBox(
+                                  width: AppDesignSystem.space12 * s * 0.9,
+                                ),
                                 Expanded(
                                   child: Text(
-                                    'Detect Tashkeel (diacritics) mistakes',
+                                    _translations.isNotEmpty
+                                        ? LanguageHelper.tr(
+                                            _translations,
+                                            'experiences_menu.recitation_page.detect_tashkeel_text',
+                                          )
+                                        : 'Detect Tashkeel (diacritics) mistakes',
                                     style: TextStyle(
                                       fontSize: 16 * s * 0.9,
                                       fontWeight: AppTypography.regular,
@@ -185,7 +226,12 @@ class _RecitationPageState extends State<RecitationPage> {
                             Padding(
                               padding: EdgeInsets.only(left: 32 * s * 0.9),
                               child: Text(
-                                'Tashkeel mistake detection is a new feature and may miss some of your tashkeel mistakes.',
+                                _translations.isNotEmpty
+                                    ? LanguageHelper.tr(
+                                        _translations,
+                                        'experiences_menu.recitation_page.detect_tashkeel_desc',
+                                      )
+                                    : 'Tashkeel mistake detection is a new feature and may miss some of your tashkeel mistakes.',
                                 style: TextStyle(
                                   fontSize: 13 * s * 0.9,
                                   fontWeight: AppTypography.regular,
@@ -221,10 +267,17 @@ class _RecitationPageState extends State<RecitationPage> {
                                   size: 20 * s * 0.9,
                                   color: AppColors.textPrimary,
                                 ),
-                                SizedBox(width: AppDesignSystem.space12 * s * 0.9),
+                                SizedBox(
+                                  width: AppDesignSystem.space12 * s * 0.9,
+                                ),
                                 Expanded(
                                   child: Text(
-                                    'Don\'t progress until mistake is fixed',
+                                    _translations.isNotEmpty
+                                        ? LanguageHelper.tr(
+                                            _translations,
+                                            'experiences_menu.recitation_page.dont_progress_text',
+                                          )
+                                        : 'Don\'t progress until mistake is fixed',
                                     style: TextStyle(
                                       fontSize: 16 * s * 0.9,
                                       fontWeight: AppTypography.regular,
@@ -245,7 +298,12 @@ class _RecitationPageState extends State<RecitationPage> {
                             Padding(
                               padding: EdgeInsets.only(left: 32 * s * 0.9),
                               child: Text(
-                                'Require every single word to be recited correctly before moving on to the next word.',
+                                _translations.isNotEmpty
+                                    ? LanguageHelper.tr(
+                                        _translations,
+                                        'experiences_menu.recitation_page.dont_progress_desc',
+                                      )
+                                    : 'Require every single word to be recited correctly before moving on to the next word.',
                                 style: TextStyle(
                                   fontSize: 13 * s * 0.9,
                                   fontWeight: AppTypography.regular,
@@ -265,7 +323,12 @@ class _RecitationPageState extends State<RecitationPage> {
 
                 // Sessions Section
                 Text(
-                  'Sessions',
+                  _translations.isNotEmpty
+                      ? LanguageHelper.tr(
+                          _translations,
+                          'experiences_menu.recitation_page.sessions_text',
+                        )
+                      : 'Sessions',
                   style: TextStyle(
                     fontSize: 14 * s * 0.9,
                     fontWeight: AppTypography.medium,
@@ -283,7 +346,9 @@ class _RecitationPageState extends State<RecitationPage> {
                   ),
                   decoration: BoxDecoration(
                     color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium * s * 0.9),
+                    borderRadius: BorderRadius.circular(
+                      AppDesignSystem.radiusMedium * s * 0.9,
+                    ),
                     border: Border.all(
                       color: AppColors.borderLight,
                       width: 1.0 * s * 0.9,
@@ -302,7 +367,12 @@ class _RecitationPageState extends State<RecitationPage> {
                           SizedBox(width: AppDesignSystem.space12 * s * 0.9),
                           Expanded(
                             child: Text(
-                              'Resumable Sessions',
+                              _translations.isNotEmpty
+                                  ? LanguageHelper.tr(
+                                      _translations,
+                                      'experiences_menu.recitation_page.resumable_sessions_text',
+                                    )
+                                  : 'Resumable Sessions',
                               style: TextStyle(
                                 fontSize: 16 * s * 0.9,
                                 fontWeight: AppTypography.regular,
@@ -323,7 +393,12 @@ class _RecitationPageState extends State<RecitationPage> {
                       Padding(
                         padding: EdgeInsets.only(left: 32 * s * 0.9),
                         child: Text(
-                          'Control whether to resume the current session, or start a new session every time recording is started.',
+                          _translations.isNotEmpty
+                              ? LanguageHelper.tr(
+                                  _translations,
+                                  'experiences_menu.recitation_page.resumable_sessions_desc',
+                                )
+                              : 'Control whether to resume the current session, or start a new session every time recording is started.',
                           style: TextStyle(
                             fontSize: 13 * s * 0.9,
                             fontWeight: AppTypography.regular,
@@ -332,7 +407,7 @@ class _RecitationPageState extends State<RecitationPage> {
                           ),
                         ),
                       ),
-                                            SizedBox(height: AppDesignSystem.space8 * s * 0.9),
+                      SizedBox(height: AppDesignSystem.space8 * s * 0.9),
                     ],
                   ),
                 ),
@@ -372,7 +447,11 @@ class _RecitationPageState extends State<RecitationPage> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.lock, size: 10 * s, color: const Color(0xFFF39C12)),
+                  Icon(
+                    Icons.lock,
+                    size: 10 * s,
+                    color: const Color(0xFFF39C12),
+                  ),
                   SizedBox(width: 2 * s),
                   Text(
                     'PRO',

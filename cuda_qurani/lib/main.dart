@@ -12,11 +12,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:cuda_qurani/config/app_config.dart';
 import 'package:cuda_qurani/screens/splash_screen.dart';
 import 'package:cuda_qurani/services/metadata_cache_service.dart';
-
-// ✅ NEW: Import Language Provider
 import 'package:cuda_qurani/core/providers/language_provider.dart';
-
-// ✅ NEW: Import Premium Provider
 import 'package:cuda_qurani/providers/premium_provider.dart';
 
 // Global flag to track DB initialization
@@ -29,34 +25,23 @@ void main() async {
     url: AppConfig.supabaseUrl,
     anonKey: AppConfig.supabaseAnonKey,
   );
-  print('✅ Supabase initialized');
-  
-  // ✅ Pre-initialize ALL databases BEFORE app starts
   await _initializeDatabases();
   await JuzService.initialize();
   await _initializeListeningServices();
-  
-  // ✅ NEW: Initialize Language Service
   await _initializeLanguageService();
 
-    await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,      // portrait normal
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp, // portrait normal
     // DeviceOrientation.portraitDown, // kalau mau ijinkan portrait terbalik
   ]);
-  
+
   runApp(const MainApp());
 }
-
-/// ✅ NEW: Initialize Language Service
 Future<void> _initializeLanguageService() async {
   try {
-    print('🔄 [MAIN] Initializing language service...');
     final languageProvider = LanguageProvider();
     await languageProvider.initialize();
-    print('✅ [MAIN] Language service initialized: ${languageProvider.currentLanguageCode}');
   } catch (e, stackTrace) {
-    print('⚠️ [MAIN] Language service initialization failed: $e');
-    print('🔍 Stack trace: $stackTrace');
     // Don't throw - app should still work with default language
   }
 }
@@ -64,36 +49,23 @@ Future<void> _initializeLanguageService() async {
 Future<void> _initializeListeningServices() async {
   try {
     await ReciterDatabaseService.initialize();
-    print('✅ Reciter database initialized');
-  } catch (e) {
-    print('⚠️ Failed to initialize reciter database: $e');
-  }
+  } catch (e) {}
 }
 
 Future<void> _initializeDatabases() async {
   if (_isDatabaseInitialized) {
-    print('⚠️ Databases already initialized, skipping...');
     return;
   }
 
   try {
-    print('🔄 [MAIN] Starting database pre-initialization...');
-
-    // ✅ STEP 1: Initialize databases
     await Future.wait([
       DBHelper.preInitializeAll(),
       LocalDatabaseService.preInitialize(),
     ]);
-
-    // ✅ STEP 2: Pre-cache metadata (CRITICAL for performance)
     await MetadataCacheService().initialize();
 
     _isDatabaseInitialized = true;
-    print('✅ [MAIN] All databases + metadata pre-initialized successfully');
-  } catch (e, stackTrace) {
-    print('❌ [MAIN] Database initialization FAILED: $e');
-    print('🔍 Stack trace: $stackTrace');
-  }
+  } catch (e, stackTrace) {}
 }
 
 class MainApp extends StatelessWidget {
@@ -103,29 +75,16 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // ✅ Auth Provider
-        ChangeNotifierProvider(
-          create: (_) => AuthProvider(),
-          lazy: false,
-        ),
-        
-        // ✅ NEW: Language Provider (lazy: false agar langsung available)
+        ChangeNotifierProvider(create: (_) => AuthProvider(), lazy: false),
         ChangeNotifierProvider(
           create: (_) => LanguageProvider()..initialize(),
           lazy: false,
         ),
-        
-        // ✅ NEW: Premium Provider (lazy: false untuk load plan saat start)
         ChangeNotifierProvider(
           create: (_) => PremiumProvider()..initialize(),
           lazy: false,
         ),
-        
-        // ✅ Recitation Provider (lazy to prevent WebSocket issues)
-        ChangeNotifierProvider(
-          create: (_) => RecitationProvider(),
-          lazy: true,
-        ),
+        ChangeNotifierProvider(create: (_) => RecitationProvider(), lazy: true),
       ],
       child: MaterialApp(
         title: 'Qurani Hafidz',
@@ -141,8 +100,6 @@ class MainApp extends StatelessWidget {
   }
 }
 
-/// ✅ Initial splash screen that shows ONCE on app start
-/// Separate from auth loading state
 class InitialSplashScreen extends StatefulWidget {
   const InitialSplashScreen({super.key});
 

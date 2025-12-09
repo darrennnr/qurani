@@ -1,4 +1,5 @@
 // lib/screens/main/home/screens/settings/widgets/tajweed_rules.dart
+import 'package:cuda_qurani/core/utils/language_helper.dart';
 import 'package:cuda_qurani/screens/main/home/screens/settings/submenu/marking.dart';
 import 'package:flutter/material.dart';
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
@@ -14,68 +15,86 @@ class TajweedRulesPage extends StatefulWidget {
 }
 
 class _TajweedRulesPageState extends State<TajweedRulesPage> {
+  Map<String, dynamic> _translations = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTranslations();
+  }
+
+  Future<void> _loadTranslations() async {
+    // Ganti path sesuai file JSON yang dibutuhkan
+    final trans = await context.loadTranslations('settings/tajweed_rules');
+    setState(() {
+      _translations = trans;
+    });
+  }
+
   // Track expanded state for each rule
   final Map<int, bool> _expandedStates = {};
 
   // Tajweed rules data
-  final List<TajweedRule> _rules = [
-    TajweedRule(
-      color: Color(0xFF8B2D2D), // Dark red
-      title: 'Madd: 6',
-      subtitle: 'Necessary Prolongation',
-      description:
-          'The dark red color indicates necessary prolongation, where the elongation is 6 vowels. This applies in cases like مد لازم (Madd Laazim). Example: "الضَّالِّينَ"',
-    ),
-    TajweedRule(
-      color: Color(0xFFD81B60), // Pink/Magenta
-      title: 'Madd: 4 or 5',
-      subtitle: 'Obligatory Prolongation',
-      description:
-          'The pink color signifies obligatory prolongation, typically 4 or 5 vowels, depending on the context. This could include مد واجب متصل (Madd Wajib Muttasil). Example: Words like "سَمَاءٍ"',
-    ),
-    TajweedRule(
-      color: Color(0xFFFF8C42), // Orange
-      title: 'Madd: 2, 4, or 6',
-      subtitle: 'Permissible Prolongation',
-      description:
-          'The orange color marks elongations that vary between 2, 4, or 6 vowels. This occurs in situations like مد عارض للسكون (Madd \'Aarid Li-Sukoon). Example: At the end of "الْعَالَمِينَ" when stopping.',
-    ),
-    TajweedRule(
-      color: Color(0xFFB8860B), // Dark goldenrod/yellow-brown
-      title: 'Madd: 2',
-      subtitle: 'Normal Prolongation',
-      description:
-          'The yellow-brown color represents normal prolongation of 2 vowels, which is the standard for natural prolongation (مد طبيعي Madd Tabee\'i) Example: "عَظِيمٌ"',
-    ),
-    TajweedRule(
-      color: Color(0xFF4CAF50), // Green
-      title: 'Ghunnah',
-      subtitle: 'Nasalization',
-      description:
-          'The green color indicates Ghunnah, a nasal sound that resonates from the nose and lasts for two vowels. Ghunnah occurs in several cases:\n\n• When ن (Noon) or م (Meem) carries shaddah (emphasis), such as in إِنَّهُمْ.\n\n• When Noon Sakinah (نْ) or Tanween (ـًـٍـٌ) is followed by Baa (ب), a small Meem (م) is added and pronounced with Ghunnah. This is known as Iqlaab (inversion).\nExamples:\nمِنْ بَعْدِ\nPronounced as "Mimba\'d", with Ghunnah on the second Meem (م).\nسَمِيعٌ بَصِيرٌ\nPronounced as "Sami\'um Basir", where the Tanween is converted into Meem with Ghunnah.\n\n• When Noon Sakinah (نْ) or Tanween (ـًـٍـٌ) is followed by one of the fifteen letters of Ikhfaa\' (ت، ث، ج، د، ذ، ز، س، ش، ص، ض، ط، ظ، ف، ق، ك). In these cases, the sound of the Noon (ن) or Tanween (ـًـٍـٌ) is hidden (the tongue does not touch the roof of the mouth) and it is pronounced instead with Ghunnah.\nExamples:\nإِنْ تَكْفُرُوا\nكَذَّبَ قَبْلُ\n\n• When the letters of Idghaam with Ghunnah (يَا يُو ي، Noon ن، Meem م، and Waw و) follow a Noon Sakinah (نْ) or Tanween (ـًـٍـٌ), they are pronounced with Ghunnah.\nExamples:\nمِنْ يَقُولُ\nPronounced as "Mayyaqool" (Noon merges into Yaa with Ghunnah).\nرَحِيمٌ وَدُودٌ\nPronounced as "Rahiimuw-waduud" (Tanween merges into Waw with Ghunnah).\n\n• When Meem Sakinah (مْ) is followed by a Baa (ب), it is pronounced with a nasalized Meem sound (م). Known as Ikhfaa\' Shafawi, an example of this is: وَاعْتَصِمُوا بِحَبْلِ',
-    ),
-    TajweedRule(
-      color: Color(0xFF00BCD4), // Light blue/Cyan
-      title: 'Qalqala',
-      subtitle: 'Echoing Sound',
-      description:
-          'The light blue color identifies the letters of Qalqala (ق ط ب ج د) when they have سكون (e.g., "أَحَدٌ"). These letters are pronounced with a slight echo or bouncing sound, especially at the end of a verse or pause.',
-    ),
-    TajweedRule(
-      color: Color(0xFF1976D2), // Dark blue
-      title: 'Tafkhim',
-      subtitle: 'Emphatic Pronunciation of Heavy Letters',
-      description:
-          'The dark blue color highlights ر (Ra\') when pronounced with tafkhim (a heavy, emphatic sound), as well as all other letters of isti\'laa (elevation), which include: خ، ص، ض، غ، ط، ق، ظ. These letters are pronounced with a full, resonant sound. Examples: "الْحَرَامَ", "خَالِدِينَ", "الصَّالِحَاتِ","الْمُسْتَقِيمَ".',
-    ),
-    TajweedRule(
-      color: Color(0xFF9E9E9E), // Grey
-      title: 'Silent',
-      subtitle: 'Unannounced Pronunciation',
-      description:
-          'The grey color highlights letters that are silent and diacritics that are merged/assimilated and do not contribute any sound during recitation. Examples include the ل in الشَّمْسِ and the ن in كَانَ لَمْ pronounced as كَأْلَمْ instead.',
-    ),
-  ];
+  List<TajweedRule> _getRules() {
+    return [
+      TajweedRule(
+        color: Color(0xFF8B2D2D), // Dark red
+        titleKey: 'madd_text',
+        titleSuffix: ' 6',
+        subtitleKey: 'necessary_prolongation_text',
+        descriptionKey: 'necessary_prolongation_desc',
+      ),
+      TajweedRule(
+        color: Color(0xFFD81B60), // Pink/Magenta
+        titleKey: 'madd_text',
+        titleSuffix: ' 4 or 5',
+        subtitleKey: 'obligatory_prolongation_text',
+        descriptionKey: 'obligatory_prolongation_desc',
+      ),
+      TajweedRule(
+        color: Color(0xFFFF8C42), // Orange
+        titleKey: 'madd_text',
+        titleSuffix: ' 2, 4, or 6',
+        subtitleKey: 'permissible_prolongation_text',
+        descriptionKey: 'permissible_prolongation_desc',
+      ),
+      TajweedRule(
+        color: Color(0xFFB8860B), // Dark goldenrod/yellow-brown
+        titleKey: 'madd_text',
+        titleSuffix: ' 2',
+        subtitleKey: 'normal_prolongation_text',
+        descriptionKey: 'normal_prolongation_desc',
+      ),
+      TajweedRule(
+        color: Color(0xFF4CAF50), // Green
+        titleKey: 'ghunnah_text',
+        titleSuffix: '',
+        subtitleKey: 'nasalization_text',
+        descriptionKey: 'nasalization_desc',
+      ),
+      TajweedRule(
+        color: Color(0xFF00BCD4), // Light blue/Cyan
+        titleKey: 'qalqala_text',
+        titleSuffix: '',
+        subtitleKey: 'echoing_sound_text',
+        descriptionKey: 'echoing_sound_desc',
+      ),
+      TajweedRule(
+        color: Color(0xFF1976D2), // Dark blue
+        titleKey: 'tafkhim_text',
+        titleSuffix: '',
+        subtitleKey: 'emphatic_text',
+        descriptionKey: 'emphatic_desc',
+      ),
+      TajweedRule(
+        color: Color(0xFF9E9E9E), // Grey
+        titleKey: 'silent_text',
+        titleSuffix: '',
+        subtitleKey: 'unannounced_pronunciation_text',
+        descriptionKey: 'unannounced_pronunciation_desc',
+      ),
+    ];
+  }
 
   void _toggleExpanded(int index) {
     setState(() {
@@ -87,6 +106,17 @@ class _TajweedRulesPageState extends State<TajweedRulesPage> {
   Widget _buildRuleItem(TajweedRule rule, int index) {
     final s = AppDesignSystem.getScaleFactor(context);
     final isExpanded = _expandedStates[index] ?? false;
+
+    // Get translated text
+    final title = _translations.isNotEmpty
+        ? LanguageHelper.tr(_translations, rule.titleKey)
+        : rule.titleKey;
+    final subtitle = _translations.isNotEmpty
+        ? LanguageHelper.tr(_translations, rule.subtitleKey)
+        : rule.subtitleKey;
+    final description = _translations.isNotEmpty
+        ? LanguageHelper.tr(_translations, rule.descriptionKey)
+        : rule.descriptionKey;
 
     return Column(
       children: [
@@ -115,7 +145,7 @@ class _TajweedRulesPageState extends State<TajweedRulesPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        rule.title,
+                        title + rule.titleSuffix,
                         style: TextStyle(
                           fontSize: 16 * s * 0.9,
                           fontWeight: AppTypography.semiBold,
@@ -124,7 +154,7 @@ class _TajweedRulesPageState extends State<TajweedRulesPage> {
                       ),
                       SizedBox(height: 2 * s * 0.9),
                       Text(
-                        rule.subtitle,
+                        subtitle,
                         style: TextStyle(
                           fontSize: 14 * s * 0.9,
                           fontWeight: AppTypography.regular,
@@ -156,7 +186,7 @@ class _TajweedRulesPageState extends State<TajweedRulesPage> {
           Padding(
             padding: EdgeInsets.all(AppDesignSystem.space16 * s * 0.9),
             child: Text(
-              rule.description,
+              description,
               style: TextStyle(
                 fontSize: 14 * s * 0.9,
                 fontWeight: AppTypography.regular,
@@ -167,7 +197,7 @@ class _TajweedRulesPageState extends State<TajweedRulesPage> {
           ),
         ],
         // Divider between items (except last item)
-        if (index < _rules.length - 1)
+        if (index < _getRules().length - 1)
           Divider(
             height: 1,
             thickness: 1 * s * 0.9,
@@ -180,6 +210,7 @@ class _TajweedRulesPageState extends State<TajweedRulesPage> {
   @override
   Widget build(BuildContext context) {
     final s = AppDesignSystem.getScaleFactor(context);
+    final rules = _getRules();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -201,36 +232,38 @@ class _TajweedRulesPageState extends State<TajweedRulesPage> {
                     const MarkingPage(),
                 transitionsBuilder:
                     (context, animation, secondaryAnimation, child) {
-                      const begin = Offset(-0.03, 0.0);
-                      const end = Offset.zero;
-                      const curve = Curves.easeInOut;
-                      var tween = Tween(
-                        begin: begin,
-                        end: end,
-                      ).chain(CurveTween(curve: curve));
-                      var offsetAnimation = animation.drive(tween);
-                      var fadeAnimation = animation.drive(
-                        Tween(
-                          begin: 0.0,
-                          end: 1.0,
-                        ).chain(CurveTween(curve: curve)),
-                      );
+                  const begin = Offset(-0.03, 0.0);
+                  const end = Offset.zero;
+                  const curve = Curves.easeInOut;
+                  var tween = Tween(
+                    begin: begin,
+                    end: end,
+                  ).chain(CurveTween(curve: curve));
+                  var offsetAnimation = animation.drive(tween);
+                  var fadeAnimation = animation.drive(
+                    Tween(
+                      begin: 0.0,
+                      end: 1.0,
+                    ).chain(CurveTween(curve: curve)),
+                  );
 
-                      return FadeTransition(
-                        opacity: fadeAnimation,
-                        child: SlideTransition(
-                          position: offsetAnimation,
-                          child: child,
-                        ),
-                      );
-                    },
+                  return FadeTransition(
+                    opacity: fadeAnimation,
+                    child: SlideTransition(
+                      position: offsetAnimation,
+                      child: child,
+                    ),
+                  );
+                },
                 transitionDuration: AppDesignSystem.durationNormal,
               ),
             );
           },
         ),
         title: Text(
-          'Tajweed Rules',
+          _translations.isNotEmpty
+              ? LanguageHelper.tr(_translations, 'tajweed_rules_text')
+              : 'Tajweed Rules',
           style: TextStyle(
             fontSize: 18 * s * 0.9,
             fontWeight: AppTypography.semiBold,
@@ -245,7 +278,9 @@ class _TajweedRulesPageState extends State<TajweedRulesPage> {
           children: [
             // Header description
             Text(
-              'Tajweed is the set of rules governing the correct pronunciation and articulation of the Quranic text during recitation.',
+              _translations.isNotEmpty
+                  ? LanguageHelper.tr(_translations, 'tajweed_rules_desc')
+                  : 'Tajweed is the set of rules governing the correct pronunciation and articulation of the Quranic text during recitation.',
               style: TextStyle(
                 fontSize: 14 * s * 0.9,
                 fontWeight: AppTypography.regular,
@@ -261,7 +296,9 @@ class _TajweedRulesPageState extends State<TajweedRulesPage> {
                 AppHaptics.selection();
               },
               child: Text(
-                'Read our blog',
+                _translations.isNotEmpty
+                    ? LanguageHelper.tr(_translations, 'read_our_blog_text')
+                    : 'Read our blog',
                 style: TextStyle(
                   fontSize: 14 * s * 0.9,
                   fontWeight: AppTypography.regular,
@@ -285,8 +322,8 @@ class _TajweedRulesPageState extends State<TajweedRulesPage> {
                 ),
               ),
               child: Column(
-                children: List.generate(_rules.length, (index) {
-                  return _buildRuleItem(_rules[index], index);
+                children: List.generate(rules.length, (index) {
+                  return _buildRuleItem(rules[index], index);
                 }),
               ),
             ),
@@ -300,14 +337,16 @@ class _TajweedRulesPageState extends State<TajweedRulesPage> {
 /// Model class for Tajweed Rule
 class TajweedRule {
   final Color color;
-  final String title;
-  final String subtitle;
-  final String description;
+  final String titleKey;
+  final String titleSuffix;
+  final String subtitleKey;
+  final String descriptionKey;
 
   TajweedRule({
     required this.color,
-    required this.title,
-    required this.subtitle,
-    required this.description,
+    required this.titleKey,
+    required this.titleSuffix,
+    required this.subtitleKey,
+    required this.descriptionKey,
   });
 }

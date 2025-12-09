@@ -1,4 +1,5 @@
 // lib/screens/main/home/screens/settings/submenu/language.dart
+import 'package:cuda_qurani/core/utils/language_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
@@ -18,9 +19,12 @@ class LanguagePage extends StatefulWidget {
 }
 
 class _LanguagePageState extends State<LanguagePage> {
+  Map<String, dynamic> _translations = {};
+
   @override
   void initState() {
     super.initState();
+    _loadTranslations();
     // Load available languages saat page dibuka
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = Provider.of<LanguageProvider>(context, listen: false);
@@ -30,16 +34,23 @@ class _LanguagePageState extends State<LanguagePage> {
     });
   }
 
+  Future<void> _loadTranslations() async {
+    final trans = await context.loadTranslations('settings/appearances');
+    setState(() {
+      _translations = trans;
+    });
+  }
+
   Future<void> _selectLanguage(LanguageModel language) async {
     final provider = Provider.of<LanguageProvider>(context, listen: false);
-    
+
     // Skip jika sudah dipilih
     if (provider.currentLanguageCode == language.code) {
       return;
     }
-    
+
     AppHaptics.selection();
-    
+
     // Show loading dialog
     if (mounted) {
       showDialog(
@@ -47,20 +58,33 @@ class _LanguagePageState extends State<LanguagePage> {
         barrierDismissible: false,
         builder: (context) => Center(
           child: Container(
-            padding: EdgeInsets.all(AppDesignSystem.space24 * 
-                AppDesignSystem.getScaleFactor(context)),
+            padding: EdgeInsets.all(
+              AppDesignSystem.space24 * AppDesignSystem.getScaleFactor(context),
+            ),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium * 
-                  AppDesignSystem.getScaleFactor(context)),
+              borderRadius: BorderRadius.circular(
+                AppDesignSystem.radiusMedium *
+                    AppDesignSystem.getScaleFactor(context),
+              ),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const CircularProgressIndicator(),
-                SizedBox(height: AppDesignSystem.space16 * 
-                    AppDesignSystem.getScaleFactor(context)),
-                const Text('Changing language...'),
+                SizedBox(
+                  height:
+                      AppDesignSystem.space16 *
+                      AppDesignSystem.getScaleFactor(context),
+                ),
+                Text(
+                  _translations.isNotEmpty
+                      ? LanguageHelper.tr(
+                          _translations,
+                          'language_page.changing_text',
+                        )
+                      : 'Changing language...',
+                ),
               ],
             ),
           ),
@@ -70,11 +94,16 @@ class _LanguagePageState extends State<LanguagePage> {
 
     // Change language
     final success = await provider.changeLanguage(language.code);
-    
+
     if (!mounted) return;
-    
+
     // Close loading dialog
     Navigator.pop(context);
+
+    if (success) {
+      // Restart app untuk apply bahasa baru
+      await provider.restartApp(context);
+    }
   }
 
   Widget _buildLanguageOption({
@@ -85,7 +114,9 @@ class _LanguagePageState extends State<LanguagePage> {
 
     return InkWell(
       onTap: () => _selectLanguage(language),
-      borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium * s * 0.9),
+      borderRadius: BorderRadius.circular(
+        AppDesignSystem.radiusMedium * s * 0.9,
+      ),
       child: Container(
         padding: EdgeInsets.symmetric(
           horizontal: AppDesignSystem.space16 * s * 0.9,
@@ -93,7 +124,9 @@ class _LanguagePageState extends State<LanguagePage> {
         ),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium * s * 0.9),
+          borderRadius: BorderRadius.circular(
+            AppDesignSystem.radiusMedium * s * 0.9,
+          ),
           border: Border.all(
             color: isSelected ? Colors.black : AppColors.borderLight,
             width: isSelected ? 1.5 * s * 0.9 : 1.0 * s * 0.9,
@@ -103,13 +136,10 @@ class _LanguagePageState extends State<LanguagePage> {
           children: [
             // Flag emoji
             if (language.flag.isNotEmpty) ...[
-              Text(
-                language.flag,
-                style: TextStyle(fontSize: 28 * s * 0.9),
-              ),
+              Text(language.flag, style: TextStyle(fontSize: 28 * s * 0.9)),
               SizedBox(width: AppDesignSystem.space12 * s * 0.9),
             ],
-            
+
             // Language name
             Expanded(
               child: Column(
@@ -120,11 +150,11 @@ class _LanguagePageState extends State<LanguagePage> {
                     language.nativeName,
                     style: TextStyle(
                       fontSize: 16 * s * 0.9,
-                      fontWeight: isSelected 
-                          ? AppTypography.semiBold 
+                      fontWeight: isSelected
+                          ? AppTypography.semiBold
                           : AppTypography.regular,
-                      color: isSelected 
-                          ? AppColors.textPrimary 
+                      color: isSelected
+                          ? AppColors.textPrimary
                           : AppColors.textSecondary,
                     ),
                   ),
@@ -143,7 +173,7 @@ class _LanguagePageState extends State<LanguagePage> {
                 ],
               ),
             ),
-            
+
             // Radio indicator
             Container(
               width: 22 * s * 0.9,
@@ -181,8 +211,10 @@ class _LanguagePageState extends State<LanguagePage> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const SettingsAppBar(
-        title: 'Language',
+      appBar: SettingsAppBar(
+        title: _translations.isNotEmpty
+            ? LanguageHelper.tr(_translations, 'language_page.language_text')
+            : 'Language',
       ),
       body: SafeArea(
         child: Consumer<LanguageProvider>(
@@ -295,9 +327,8 @@ class _LanguagePageState extends State<LanguagePage> {
             return ListView.separated(
               padding: EdgeInsets.all(AppDesignSystem.space20 * s * 0.9),
               itemCount: languages.length,
-              separatorBuilder: (context, index) => SizedBox(
-                height: AppDesignSystem.space12 * s * 0.9,
-              ),
+              separatorBuilder: (context, index) =>
+                  SizedBox(height: AppDesignSystem.space12 * s * 0.9),
               itemBuilder: (context, index) {
                 final language = languages[index];
                 return _buildLanguageOption(

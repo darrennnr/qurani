@@ -4,7 +4,7 @@
         "play_a_sound_text": "Play a sound",
         "sound_effect_text": "Sound Effect",
         "haptic_text": "Haptic",
-        "Vibrate_my_device_text": "Vibrate my device",
+        "vibrate_my_device_text": "Vibrate my device",
         "mistake_feedback": {
             "mistake_feedback_text": "Mistake Feedback",
             "sound_effect_desc": "Adjusr the sound played when a mistake is detected during recitation.",

@@ -1,4 +1,5 @@
 // lib/screens/main/home/screens/settings/submenu/hidden_verses.dart
+import 'package:cuda_qurani/core/utils/language_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
 import 'package:cuda_qurani/screens/main/home/screens/settings/widgets/appbar.dart';
@@ -14,6 +15,22 @@ class HiddenVersesPage extends StatefulWidget {
 }
 
 class _HiddenVersesPageState extends State<HiddenVersesPage> {
+  Map<String, dynamic> _translations = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTranslations();
+  }
+
+  Future<void> _loadTranslations() async {
+    // Ganti path sesuai file JSON yang dibutuhkan
+    final trans = await context.loadTranslations('settings/quran_appearance');
+    setState(() {
+      _translations = trans;
+    });
+  }
+
   // Default states untuk semua toggle (dummy state)
   bool _hideVerses = false;
   bool _hideVerseMarkers = false;
@@ -23,7 +40,7 @@ class _HiddenVersesPageState extends State<HiddenVersesPage> {
       _hideVerses = value;
     });
     AppHaptics.selection();
-    
+
     // TODO: Implement toggle logic
   }
 
@@ -32,7 +49,7 @@ class _HiddenVersesPageState extends State<HiddenVersesPage> {
       _hideVerseMarkers = value;
     });
     AppHaptics.selection();
-    
+
     // TODO: Implement toggle logic
   }
 
@@ -42,8 +59,13 @@ class _HiddenVersesPageState extends State<HiddenVersesPage> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const SettingsAppBar(
-        title: 'Hidden Verses',
+      appBar: SettingsAppBar(
+        title: _translations.isNotEmpty
+            ? LanguageHelper.tr(
+                _translations,
+                'hidden_verses.hidden_verses_text',
+              )
+            : 'Hidden Verses',
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -54,7 +76,12 @@ class _HiddenVersesPageState extends State<HiddenVersesPage> {
               children: [
                 // Ayah Adjustments Section
                 Text(
-                  'Ayah Adjustments',
+                  _translations.isNotEmpty
+                      ? LanguageHelper.tr(
+                          _translations,
+                          'hidden_verses.ayah_adjustments_text',
+                        )
+                      : 'Ayah Adjustments',
                   style: TextStyle(
                     fontSize: 14 * s * 0.9,
                     fontWeight: AppTypography.medium,
@@ -68,7 +95,9 @@ class _HiddenVersesPageState extends State<HiddenVersesPage> {
                 Container(
                   decoration: BoxDecoration(
                     color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium * s * 0.9),
+                    borderRadius: BorderRadius.circular(
+                      AppDesignSystem.radiusMedium * s * 0.9,
+                    ),
                     border: Border.all(
                       color: AppColors.borderLight,
                       width: 1.0 * s * 0.9,
@@ -92,7 +121,12 @@ class _HiddenVersesPageState extends State<HiddenVersesPage> {
                             SizedBox(width: AppDesignSystem.space12 * s * 0.9),
                             Expanded(
                               child: Text(
-                                'Hide Verses',
+                                _translations.isNotEmpty
+                                    ? LanguageHelper.tr(
+                                        _translations,
+                                        'hidden_verses.hide_verses_text',
+                                      )
+                                    : 'Hide Verses',
                                 style: TextStyle(
                                   fontSize: 16 * s * 0.9,
                                   fontWeight: AppTypography.regular,
@@ -134,7 +168,12 @@ class _HiddenVersesPageState extends State<HiddenVersesPage> {
                             SizedBox(width: AppDesignSystem.space12 * s * 0.9),
                             Expanded(
                               child: Text(
-                                'Hide verse markers',
+                                _translations.isNotEmpty
+                                    ? LanguageHelper.tr(
+                                        _translations,
+                                        'hidden_verses.hide_verse_markers_text',
+                                      )
+                                    : 'Hide verse markers',
                                 style: TextStyle(
                                   fontSize: 16 * s * 0.9,
                                   fontWeight: AppTypography.regular,
@@ -164,7 +203,12 @@ class _HiddenVersesPageState extends State<HiddenVersesPage> {
                     horizontal: AppDesignSystem.space4 * s * 0.9,
                   ),
                   child: Text(
-                    'Hide the words that you haven\'t recited yet, to practice your memorization.',
+                    _translations.isNotEmpty
+                        ? LanguageHelper.tr(
+                            _translations,
+                            'hidden_verses.hidden_verses_desc',
+                          )
+                        : 'Hide the words that you haven\'t recited yet, to practice your memorization.',
                     style: TextStyle(
                       fontSize: 14 * s * 0.9,
                       fontWeight: AppTypography.regular,

@@ -1,4 +1,5 @@
 // lib/screens/main/home/screens/settings/submenu/session_start&stop.dart
+import 'package:cuda_qurani/core/utils/language_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
 import 'package:cuda_qurani/screens/main/home/screens/settings/widgets/appbar.dart';
@@ -14,6 +15,21 @@ class SessionStartStopPage extends StatefulWidget {
 }
 
 class _SessionStartStopPageState extends State<SessionStartStopPage> {
+      Map<String, dynamic> _translations = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTranslations();
+  }
+
+  Future<void> _loadTranslations() async {
+    // Ganti path sesuai file JSON yang dibutuhkan
+    final trans = await context.loadTranslations('settings/sound&haptics');
+    setState(() {
+      _translations = trans;
+    });
+  }
   // Default states untuk semua toggle (dummy state)
   bool _playSound = true;
   bool _vibrateDevice = true;
@@ -42,7 +58,9 @@ class _SessionStartStopPageState extends State<SessionStartStopPage> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const SettingsAppBar(title: 'Session Start & Stop'),
+      appBar: SettingsAppBar(title: _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'sound_and_haptics.session_start_and_stop.session_start_and_stop_text')
+                      : 'Session Start & Stop'),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -52,7 +70,9 @@ class _SessionStartStopPageState extends State<SessionStartStopPage> {
               children: [
                 // Sound Section
                 Text(
-                  'Sound',
+                  _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'sound_and_haptics.sound_text')
+                      : 'Sound',
                   style: TextStyle(
                     fontSize: 14 * s * 0.9,
                     fontWeight: AppTypography.medium,
@@ -88,7 +108,9 @@ class _SessionStartStopPageState extends State<SessionStartStopPage> {
                       SizedBox(width: AppDesignSystem.space12 * s * 0.9),
                       Expanded(
                         child: Text(
-                          'Play a sound',
+                          _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'sound_and_haptics.play_a_sound_text')
+                      : 'Play a sound',
                           style: TextStyle(
                             fontSize: 16 * s * 0.9,
                             fontWeight: AppTypography.regular,
@@ -115,7 +137,9 @@ class _SessionStartStopPageState extends State<SessionStartStopPage> {
                     horizontal: AppDesignSystem.space4 * s * 0.9,
                   ),
                   child: Text(
-                    'Adjust the sound played when a recitation session starts or stops.',
+                    _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'sound_and_haptics.session_start_and_stop.session_start_and_stop_sound_desc')
+                      : 'Adjust the sound played when a recitation session starts or stops.',
                     style: TextStyle(
                       fontSize: 14 * s * 0.9,
                       fontWeight: AppTypography.regular,
@@ -129,7 +153,9 @@ class _SessionStartStopPageState extends State<SessionStartStopPage> {
 
                 // Haptic Section
                 Text(
-                  'Haptic',
+                  _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'sound_and_haptics.haptic_text')
+                      : 'Haptic',
                   style: TextStyle(
                     fontSize: 14 * s * 0.9,
                     fontWeight: AppTypography.medium,
@@ -165,7 +191,9 @@ class _SessionStartStopPageState extends State<SessionStartStopPage> {
                       SizedBox(width: AppDesignSystem.space12 * s * 0.9),
                       Expanded(
                         child: Text(
-                          'Vibrate my device',
+                          _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'sound_and_haptics.vibrate_my_device_text')
+                      : 'Vibrate my device',
                           style: TextStyle(
                             fontSize: 16 * s * 0.9,
                             fontWeight: AppTypography.regular,
@@ -192,7 +220,9 @@ class _SessionStartStopPageState extends State<SessionStartStopPage> {
                     horizontal: AppDesignSystem.space4 * s * 0.9,
                   ),
                   child: Text(
-                    'Adjust the haptic feedback when a recitation session starts or stops.',
+                    _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'sound_and_haptics.session_start_and_stop.session_start_and_stop_haptic_desc')
+                      : 'Adjust the haptic feedback when a recitation session starts or stops.',
                     style: TextStyle(
                       fontSize: 14 * s * 0.9,
                       fontWeight: AppTypography.regular,

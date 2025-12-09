@@ -1,4 +1,5 @@
 // lib/screens/main/home/screens/settings/submenu/data_usage.dart
+import 'package:cuda_qurani/core/utils/language_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
 import 'package:cuda_qurani/screens/main/home/screens/settings/widgets/appbar.dart';
@@ -14,6 +15,22 @@ class DataUsagePage extends StatefulWidget {
 }
 
 class _DataUsagePageState extends State<DataUsagePage> {
+  Map<String, dynamic> _translations = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTranslations();
+  }
+
+  Future<void> _loadTranslations() async {
+    // Ganti path sesuai file JSON yang dibutuhkan
+    final trans = await context.loadTranslations('settings/privacy');
+    setState(() {
+      _translations = trans;
+    });
+  }
+
   // Default state untuk audio data dan AI training (dummy state)
   bool _saveAudioDataEnabled = true;
   bool _allowAITrainingEnabled = true;
@@ -23,7 +40,7 @@ class _DataUsagePageState extends State<DataUsagePage> {
       _saveAudioDataEnabled = value;
     });
     AppHaptics.selection();
-    
+
     // TODO: Implement save audio data toggle logic
     // Example: Save to SharedPreferences or update via Provider
   }
@@ -33,7 +50,7 @@ class _DataUsagePageState extends State<DataUsagePage> {
       _allowAITrainingEnabled = value;
     });
     AppHaptics.selection();
-    
+
     // TODO: Implement AI training toggle logic
     // Example: Save to SharedPreferences or update via Provider
   }
@@ -53,20 +70,15 @@ class _DataUsagePageState extends State<DataUsagePage> {
       ),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium * s * 0.9),
-        border: Border.all(
-          color: AppColors.borderLight,
-          width: 1.0 * s * 0.9,
+        borderRadius: BorderRadius.circular(
+          AppDesignSystem.radiusMedium * s * 0.9,
         ),
+        border: Border.all(color: AppColors.borderLight, width: 1.0 * s * 0.9),
       ),
       child: Row(
         children: [
           // Icon
-          Icon(
-            icon,
-            size: 24 * s * 0.9,
-            color: AppColors.textPrimary,
-          ),
+          Icon(icon, size: 24 * s * 0.9, color: AppColors.textPrimary),
           SizedBox(width: AppDesignSystem.space12 * s * 0.9),
           // Label
           Expanded(
@@ -112,8 +124,10 @@ class _DataUsagePageState extends State<DataUsagePage> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const SettingsAppBar(
-        title: 'Data Usage',
+      appBar: SettingsAppBar(
+        title: _translations.isNotEmpty
+            ? LanguageHelper.tr(_translations, 'data_usage.data_usage_text')
+            : 'Data Usage',
       ),
       body: SafeArea(
         child: ListView(
@@ -121,7 +135,12 @@ class _DataUsagePageState extends State<DataUsagePage> {
           children: [
             // Section header: Audio Data
             Text(
-              'Audio Data',
+              _translations.isNotEmpty
+                  ? LanguageHelper.tr(
+                      _translations,
+                      'data_usage.audio_data_text',
+                    )
+                  : 'Audio Data',
               style: TextStyle(
                 fontSize: 14 * s * 0.9,
                 fontWeight: AppTypography.medium,
@@ -134,7 +153,12 @@ class _DataUsagePageState extends State<DataUsagePage> {
             // Save audio data toggle
             _buildToggleOption(
               icon: Icons.cloud_upload_outlined,
-              label: 'Save audio data',
+              label: _translations.isNotEmpty
+                  ? LanguageHelper.tr(
+                      _translations,
+                      'data_usage.save_audio_data_text',
+                    )
+                  : 'Save audio data',
               isEnabled: _saveAudioDataEnabled,
               onChanged: _toggleSaveAudioData,
             ),
@@ -143,7 +167,12 @@ class _DataUsagePageState extends State<DataUsagePage> {
 
             // Description text for audio data
             _buildDescriptionText(
-              'Qurani securely stores your audio in the cloud to provide you with unique features such as replaying mistakes, listening to your audio, and sharing audio. If you disable this setting, you will lose access to these features. This setting is not applied retroactively.',
+              _translations.isNotEmpty
+                  ? LanguageHelper.tr(
+                      _translations,
+                      'data_usage.save_audio_data_text',
+                    )
+                  : 'Qurani securely stores your audio in the cloud to provide you with unique features such as replaying mistakes, listening to your audio, and sharing audio. If you disable this setting, you will lose access to these features. This setting is not applied retroactively.',
             ),
 
             SizedBox(height: AppDesignSystem.space32 * s * 0.9),

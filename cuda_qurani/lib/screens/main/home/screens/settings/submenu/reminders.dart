@@ -1,4 +1,5 @@
 // lib/screens/main/home/screens/settings/submenu/reminders.dart
+import 'package:cuda_qurani/core/utils/language_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
@@ -18,6 +19,21 @@ class RemindersPage extends StatefulWidget {
 }
 
 class _RemindersPageState extends State<RemindersPage> {
+      Map<String, dynamic> _translations = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTranslations();
+  }
+
+  Future<void> _loadTranslations() async {
+    // Ganti path sesuai file JSON yang dibutuhkan
+    final trans = await context.loadTranslations('settings/notifications');
+    setState(() {
+      _translations = trans;
+    });
+  }
   // Default state untuk streak reminder (dummy state)
   bool _streakReminderEnabled = false;
 
@@ -37,8 +53,10 @@ class _RemindersPageState extends State<RemindersPage> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const SettingsAppBar(
-        title: 'Reminders',
+      appBar: SettingsAppBar(
+        title: _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'reminders_text')
+                      : 'Reminders',
       ),
       body: SafeArea(
         child: Padding(
@@ -64,7 +82,9 @@ class _RemindersPageState extends State<RemindersPage> {
                   children: [
                     Expanded(
                       child: Text(
-                        'Streak Reminder',
+                        _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'streak_reminder_text')
+                      : 'Streak Reminders',
                         style: TextStyle(
                           fontSize: 16 * s * 0.9,
                           fontWeight: AppTypography.regular,
@@ -90,7 +110,9 @@ class _RemindersPageState extends State<RemindersPage> {
                 children: [
                   Expanded(
                     child: Text(
-                      'Please allow notifications in your device settings to receive reminders.',
+                      _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'streak_reminder_desc')
+                      : 'Please allow notifications in your device settings to receive reminders.',
                       style: TextStyle(
                         fontSize: 14 * s * 0.9,
                         fontWeight: AppTypography.regular,
@@ -119,7 +141,9 @@ class _RemindersPageState extends State<RemindersPage> {
                       elevation: 0,
                     ),
                     child: Text(
-                      'Allow',
+                      _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'allow_text')
+                      : 'Allow',
                       style: TextStyle(
                         fontSize: 14 * s * 0.9,
                         fontWeight: AppTypography.semiBold,

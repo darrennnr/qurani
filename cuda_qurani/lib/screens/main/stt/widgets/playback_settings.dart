@@ -1,5 +1,6 @@
 // lib/screens/main/stt/widgets/playback_settings.dart
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
+import 'package:cuda_qurani/core/utils/language_helper.dart';
 import 'package:cuda_qurani/models/playback_settings_model.dart';
 import 'package:cuda_qurani/screens/main/home/screens/settings/submenu/reciters_download.dart';
 import 'package:cuda_qurani/services/reciter_manager_services.dart';
@@ -22,6 +23,15 @@ class PlaybackSettingsPage extends StatefulWidget {
 }
 
 class _PlaybackSettingsPageState extends State<PlaybackSettingsPage> {
+              Map<String, dynamic> _translations = {};
+
+  Future<void> _loadTranslations() async {
+    // Ganti path sesuai file JSON yang dibutuhkan
+    final trans = await context.loadTranslations('playback_settings');
+    setState(() {
+      _translations = trans;
+    });
+  }
   bool _isLoading = true;
   List<Map<String, dynamic>> _surahs = [];
 
@@ -69,6 +79,7 @@ void initState() {
   super.initState();
   _loadDatabaseData();
   _loadReciters();
+  _loadTranslations();
   
   // ✅ NEW: Auto-fill range if currentPage is provided
   if (widget.currentPage != null) {
