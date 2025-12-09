@@ -1,5 +1,6 @@
 {
   "playback_settings": {
+    "playback_settings_text": "إعدادات التشغيل",
     "select_range_text": "اختر النطاق",
     "starting_verse_text": "الآية البداية",
     "ending_verse_text": "الآية النهاية",
@@ -10,7 +11,7 @@
     "play_Speed": "سرعة التشغيل",
     "play_each_verse_text": "تشغيل كل آية",
     "play_each_range_text": "تشغيل كل نطاق",
-    "times_text": "عدد المرات",
+    "times_text": "مرات",
     "loop_text": "تكرار",
     "play_audio_text": "تشغيل الصوت"
   }

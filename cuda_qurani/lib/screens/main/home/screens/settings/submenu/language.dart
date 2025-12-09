@@ -135,10 +135,10 @@ class _LanguagePageState extends State<LanguagePage> {
         child: Row(
           children: [
             // Flag emoji
-            if (language.flag.isNotEmpty) ...[
-              Text(language.flag, style: TextStyle(fontSize: 28 * s * 0.9)),
-              SizedBox(width: AppDesignSystem.space12 * s * 0.9),
-            ],
+            // if (language.flag.isNotEmpty) ...[
+            //   Text(language.flag, style: TextStyle(fontSize: 28 * s * 0.9)),
+            //   SizedBox(width: AppDesignSystem.space12 * s * 0.9),
+            // ],
 
             // Language name
             Expanded(

@@ -275,7 +275,9 @@ Future<List<Map<String, dynamic>>> _getAyatsOnPage(int pageNumber) async {
                         TextButton(
                           onPressed: () => Navigator.pop(context),
                           child: Text(
-                            'Cancel',
+                            _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'playback_settings.cancel_text')
+                      : 'Cancel',
                             style: AppTypography.label(
                               context,
                               color: AppColors.textSecondary,
@@ -283,7 +285,11 @@ Future<List<Map<String, dynamic>>> _getAyatsOnPage(int pageNumber) async {
                           ),
                         ),
                         Text(
-                          isStart ? 'Starting Verse' : 'Ending Verse',
+                          isStart ? _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'playback_settings.starting_verse_text')
+                      : 'Starting Verse' : _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'playback_settings.ending_verse_text')
+                      : 'Ending Verse',
                           style: AppTypography.titleLarge(context),
                         ),
                         TextButton(
@@ -306,7 +312,9 @@ Future<List<Map<String, dynamic>>> _getAyatsOnPage(int pageNumber) async {
                             Navigator.pop(context);
                           },
                           child: Text(
-                            'Done',
+                            _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'playback_settings.done_text')
+                      : 'Done',
                             style: AppTypography.label(
                               context,
                               color: AppColors.textPrimary,
@@ -441,7 +449,9 @@ Future<List<Map<String, dynamic>>> _getAyatsOnPage(int pageNumber) async {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "Reciter",
+          _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'playback_settings.reciter_text')
+                      : 'Reciter',
           style: AppTypography.caption(context, weight: AppTypography.semiBold),
         ),
         SizedBox(height: AppDesignSystem.space10 * s),
@@ -585,7 +595,9 @@ Future<List<Map<String, dynamic>>> _getAyatsOnPage(int pageNumber) async {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          "Manage downloads",
+                          _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'playback_settings.manage_downloads_text')
+                      : 'Manage Downloads',
                           style: AppTypography.body(context),
                         ),
                         Container(
@@ -706,7 +718,9 @@ Future<List<Map<String, dynamic>>> _getAyatsOnPage(int pageNumber) async {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "Playback Settings",
+                    _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'playback_settings.playback_settings_text')
+                      : 'Playback Settings',
                     style: AppTypography.h2(
                       context,
                       weight: AppTypography.bold,
@@ -731,7 +745,9 @@ Future<List<Map<String, dynamic>>> _getAyatsOnPage(int pageNumber) async {
                 physics: const BouncingScrollPhysics(),
                 children: [
                   Text(
-                    "Select Range",
+                    _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'playback_settings.select_range_text')
+                      : 'Select Range',
                     style: AppTypography.caption(
                       context,
                       weight: AppTypography.semiBold,
@@ -739,14 +755,18 @@ Future<List<Map<String, dynamic>>> _getAyatsOnPage(int pageNumber) async {
                   ),
                   SizedBox(height: AppDesignSystem.space12 * s),
                   _buildDropdownTrigger(
-                    label: "Starting Verse",
+                    label: _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'playback_settings.starting_verse_text')
+                      : 'Starting Verse',
                     value:
                         "${_getSurahName(_startSurahId)} - $_startSurahId:$_startVerse",
                     onTap: () => _showVersePicker(isStart: true),
                   ),
                   SizedBox(height: AppDesignSystem.space12 * s),
                   _buildDropdownTrigger(
-                    label: "Ending Verse",
+                    label: _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'playback_settings.ending_verse_text')
+                      : 'Ending Verse',
                     value:
                         "${_getSurahName(_endSurahId)} - $_endSurahId:$_endVerse",
                     onTap: () => _showVersePicker(isStart: false),
@@ -755,21 +775,27 @@ Future<List<Map<String, dynamic>>> _getAyatsOnPage(int pageNumber) async {
                   _buildReciterSection(),
                   SizedBox(height: AppDesignSystem.space24 * s),
                   _buildSelectionRow(
-                    "Play speed",
+                    _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'playback_settings.play_speed')
+                      : 'Play Speed',
                     _speeds,
                     _selectedSpeed,
                     (val) => setState(() => _selectedSpeed = val),
                   ),
                   SizedBox(height: AppDesignSystem.space24 * s),
                   _buildSelectionRow(
-                    "Play each verse",
+                    _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'playback_settings.play_each_verse_text')
+                      : 'Play Each Verse',
                     _repetitions,
                     _eachVerseRepeat,
                     (val) => setState(() => _eachVerseRepeat = val),
                   ),
                   SizedBox(height: AppDesignSystem.space24 * s),
                   _buildSelectionRow(
-                    "Play the range",
+                    _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'playback_settings.play_each_range_text')
+                      : 'Play Each Range',
                     _repetitions,
                     _rangeRepeat,
                     (val) => setState(() => _rangeRepeat = val),
@@ -825,7 +851,9 @@ Future<List<Map<String, dynamic>>> _getAyatsOnPage(int pageNumber) async {
                 size: AppDesignSystem.iconMedium * s,
               ),
               label: Text(
-                "Play Audio",
+                _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'playback_settings.play_audio_text')
+                      : 'Play Audio',
                 style: AppTypography.label(
                   context,
                   color: Colors.white,

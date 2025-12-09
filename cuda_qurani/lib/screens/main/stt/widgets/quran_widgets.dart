@@ -1,5 +1,6 @@
 // lib\screens\main\stt\widgets\quran_widgets.dart
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
+import 'package:cuda_qurani/core/utils/language_helper.dart';
 import 'package:cuda_qurani/models/playback_settings_model.dart';
 import 'package:cuda_qurani/screens/main/home/screens/settings/settings_page.dart';
 import 'package:cuda_qurani/screens/main/home/screens/surah_list_page.dart';
@@ -9,8 +10,32 @@ import 'package:provider/provider.dart';
 import '../controllers/stt_controller.dart';
 import '../utils/constants.dart';
 
-class QuranAppBar extends StatelessWidget implements PreferredSizeWidget {
+class QuranAppBar extends StatefulWidget implements PreferredSizeWidget {
   const QuranAppBar({Key? key}) : super(key: key);
+
+  @override
+  State<QuranAppBar> createState() => _QuranAppBarState();
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight * 0.86);
+}
+
+class _QuranAppBarState extends State<QuranAppBar> {
+  Map<String, dynamic> _translations = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTranslations();
+  }
+
+  Future<void> _loadTranslations() async {
+    // Ganti path sesuai file JSON yang dibutuhkan
+    final trans = await context.loadTranslations('stt');
+    setState(() {
+      _translations = trans;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -95,7 +120,7 @@ class QuranAppBar extends StatelessWidget implements PreferredSizeWidget {
                   SizedBox(width: screenWidth * 0.015),
                   // Juz Badge
                   Text(
-                    'Juz $currentJuz',
+                    '${LanguageHelper.tr(_translations, "app_bar.juz_text")} $currentJuz',
                     style: TextStyle(
                       fontSize: badgeSize,
                       fontWeight: FontWeight.w400,
@@ -103,6 +128,7 @@ class QuranAppBar extends StatelessWidget implements PreferredSizeWidget {
                       height: 1.1,
                     ),
                   ),
+
                   SizedBox(width: screenWidth * 0.015),
                   // Separator
                   Container(
@@ -113,7 +139,7 @@ class QuranAppBar extends StatelessWidget implements PreferredSizeWidget {
                   SizedBox(width: screenWidth * 0.015),
                   // Page Number
                   Text(
-                    'Hal ${controller.currentPage}',
+                    '${LanguageHelper.tr(_translations, "app_bar.page_text")} ${controller.currentPage}',
                     style: TextStyle(
                       fontSize: subtitleSize,
                       fontWeight: FontWeight.w400,
@@ -227,9 +253,20 @@ class _QuranBottomBarState extends State<QuranBottomBar>
   String? _activeMode; // 'listen', 'recite', or null
   bool _isDragging = false;
 
+  Map<String, dynamic> _translations = {};
+
+  Future<void> _loadTranslations() async {
+    // Ganti path sesuai file JSON yang dibutuhkan
+    final trans = await context.loadTranslations('stt');
+    setState(() {
+      _translations = trans;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
+    _loadTranslations();
     _slideController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),
@@ -446,7 +483,12 @@ class _QuranBottomBarState extends State<QuranBottomBar>
                                 ),
                                 SizedBox(width: 6),
                                 Text(
-                                  'Listen',
+                                  _translations.isNotEmpty
+                                      ? LanguageHelper.tr(
+                                          _translations,
+                                          'bottom_bar.listen_text',
+                                        )
+                                      : 'Listen',
                                   style: TextStyle(
                                     fontSize: labelSize,
                                     fontWeight: FontWeight.w600,
@@ -469,7 +511,12 @@ class _QuranBottomBarState extends State<QuranBottomBar>
                             child: Row(
                               children: [
                                 Text(
-                                  'Recite',
+                                  _translations.isNotEmpty
+                                      ? LanguageHelper.tr(
+                                          _translations,
+                                          'bottom_bar.recite_text',
+                                        )
+                                      : 'Recite',
                                   style: TextStyle(
                                     fontSize: labelSize,
                                     fontWeight: FontWeight.w600,

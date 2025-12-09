@@ -1,5 +1,6 @@
 {
     "playback_settings": {
+        "playback_settings_text": "Playback Settings",
         "select_range_text": "Select Range",
         "starting_verse_text": "Starting Verse",
         "ending_verse_text": "Ending Verse",
