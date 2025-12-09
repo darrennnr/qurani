@@ -1,13 +1,8 @@
 // lib/screens/main/home/widgets/navigation_bar.dart
 
-import 'package:cuda_qurani/screens/main/home/screens/activity_page.dart';
-import 'package:cuda_qurani/screens/main/home/screens/completion_page.dart';
 import 'package:cuda_qurani/screens/main/home/screens/premium_offer_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:cuda_qurani/screens/main/stt/utils/constants.dart' as constants;
-import 'package:cuda_qurani/screens/main/home/screens/home_page.dart';
-import 'package:cuda_qurani/screens/main/home/screens/surah_list_page.dart';
 import 'package:cuda_qurani/screens/main/home/screens/profile_page.dart';
 import 'package:cuda_qurani/screens/main/home/screens/settings/settings_page.dart';
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
@@ -15,6 +10,7 @@ import 'package:cuda_qurani/core/widgets/app_components.dart';
 
 class MenuAppBar extends StatefulWidget implements PreferredSizeWidget {
   final int selectedIndex;
+  final Function(int)? onMenuTapped;
   final bool showSearch;
   final TextEditingController? searchController;
   final Function(String)? onSearchChanged;
@@ -23,6 +19,7 @@ class MenuAppBar extends StatefulWidget implements PreferredSizeWidget {
   const MenuAppBar({
     Key? key,
     required this.selectedIndex,
+    this.onMenuTapped,
     this.showSearch = false,
     this.searchController,
     this.onSearchChanged,
@@ -43,14 +40,14 @@ class _MenuAppBarState extends State<MenuAppBar>
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
 
-  // Menu items with proper structure
+  // Menu items - sesuaikan dengan pages yang ada di PageView
   final List<Map<String, dynamic>> _menuItems = [
     {'label': 'Home', 'index': 0, 'icon': Icons.home_outlined},
     {'label': 'Quran', 'index': 1, 'icon': Icons.menu_book_outlined},
     {'label': 'Completion', 'index': 2, 'icon': Icons.flag_outlined},
-    {'label': 'Activity', 'index': 4, 'icon': Icons.analytics_outlined},
-    {'label': 'History', 'index': 5, 'icon': Icons.history_outlined},
-    {'label': 'Premium', 'index': 6, 'icon': Icons.settings_outlined},
+    {'label': 'Activity', 'index': 3, 'icon': Icons.analytics_outlined},
+    {'label': 'History', 'index': 4, 'icon': Icons.history_outlined, 'isExtra': true},
+    {'label': 'Premium', 'index': 5, 'icon': Icons.workspace_premium_outlined, 'isExtra': true},
   ];
 
   @override
@@ -59,7 +56,6 @@ class _MenuAppBarState extends State<MenuAppBar>
     _searchFocusNode = FocusNode();
     _searchFocusNode.addListener(_handleSearchFocusChange);
 
-    // Animation for smooth interactions
     _animationController = AnimationController(
       vsync: this,
       duration: AppDesignSystem.durationFast,
@@ -114,7 +110,6 @@ class _MenuAppBarState extends State<MenuAppBar>
     );
   }
 
-  // ==================== TOP BAR ====================
   Widget _buildTopBar(BuildContext context) {
     final s = AppDesignSystem.getScaleFactor(context);
 
@@ -123,107 +118,31 @@ class _MenuAppBarState extends State<MenuAppBar>
       padding: EdgeInsets.symmetric(horizontal: AppDesignSystem.space20 * s),
       child: Row(
         children: [
-          // Logo
           Image.asset(
             'assets/images/qurani-white-text.png',
             height: 28 * s,
             color: AppColors.primary,
             fit: BoxFit.contain,
           ),
-
           SizedBox(width: AppDesignSystem.space16 * s),
-
-          const Spacer(), // ✅ GANTI search field dengan Spacer
-
+          const Spacer(),
           SizedBox(width: AppDesignSystem.space12 * s),
-
-          // Profile button
           _buildTopIconButton(
             context,
             icon: Icons.person_outline_rounded,
-            onTap: () => Navigator.push(
-              context,
-              PageRouteBuilder(
-                pageBuilder: (context, animation, secondaryAnimation) =>
-                    const ProfilePage(),
-                transitionsBuilder:
-                    (context, animation, secondaryAnimation, child) {
-                      const begin = Offset(0.03, 0.0);
-                      const end = Offset.zero;
-                      const curve = Curves.easeInOut;
-                      var tween = Tween(
-                        begin: begin,
-                        end: end,
-                      ).chain(CurveTween(curve: curve));
-                      var offsetAnimation = animation.drive(tween);
-                      var fadeAnimation = animation.drive(
-                        Tween(
-                          begin: 0.0,
-                          end: 1.0,
-                        ).chain(CurveTween(curve: curve)),
-                      );
-
-                      return FadeTransition(
-                        opacity: fadeAnimation,
-                        child: SlideTransition(
-                          position: offsetAnimation,
-                          child: child,
-                        ),
-                      );
-                    },
-                transitionDuration: AppDesignSystem.durationNormal,
-              ),
-            ),
-            isSelected: widget.selectedIndex == 3,
+            onTap: () => _navigateToExtraPage(context, const ProfilePage()),
           ),
-
           SizedBox(width: AppDesignSystem.space8 * s),
-
-          // Settings button
-          if (widget.selectedIndex != 6)
-            _buildTopIconButton(
-              context,
-              icon: Icons.settings_outlined,
-              onTap: () => Navigator.push(
-                context,
-                PageRouteBuilder(
-                  pageBuilder: (context, animation, secondaryAnimation) =>
-                      const SettingsPage(),
-                  transitionsBuilder:
-                      (context, animation, secondaryAnimation, child) {
-                        const begin = Offset(0.03, 0.0);
-                        const end = Offset.zero;
-                        const curve = Curves.easeInOut;
-                        var tween = Tween(
-                          begin: begin,
-                          end: end,
-                        ).chain(CurveTween(curve: curve));
-                        var offsetAnimation = animation.drive(tween);
-                        var fadeAnimation = animation.drive(
-                          Tween(
-                            begin: 0.0,
-                            end: 1.0,
-                          ).chain(CurveTween(curve: curve)),
-                        );
-
-                        return FadeTransition(
-                          opacity: fadeAnimation,
-                          child: SlideTransition(
-                            position: offsetAnimation,
-                            child: child,
-                          ),
-                        );
-                      },
-                  transitionDuration: AppDesignSystem.durationNormal,
-                ),
-              ),
-            ),
+          _buildTopIconButton(
+            context,
+            icon: Icons.settings_outlined,
+            onTap: () => _navigateToExtraPage(context, const SettingsPage()),
+          ),
         ],
       ),
     );
   }
 
-  // ==================== TOP ICON BUTTON ====================
   Widget _buildTopIconButton(
     BuildContext context, {
     required IconData icon,
@@ -278,23 +197,11 @@ class _MenuAppBarState extends State<MenuAppBar>
     return button;
   }
 
-  // ==================== MENU BAR ====================
   Widget _buildMenuBar(BuildContext context) {
     final s = AppDesignSystem.getScaleFactor(context);
-    final screenWidth = MediaQuery.of(context).size.width;
-    final itemWidth = screenWidth / _menuItems.length;
+    
     return Container(
       height: 56 * s,
-
-      //Line pembatas antara topbar/bottombar
-      // decoration: BoxDecoration(
-      //   border: Border(
-      //     top: BorderSide(
-      //       color: AppColors.borderLight,
-      //       width: AppDesignSystem.borderNormal,
-      //     ),
-      //   ),
-      // ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
@@ -306,7 +213,7 @@ class _MenuAppBarState extends State<MenuAppBar>
               label: item['label'] as String,
               index: item['index'] as int,
               icon: item['icon'] as IconData,
-              itemWidth: itemWidth,
+              isExtra: item['isExtra'] == true,
             );
           }).toList(),
         ),
@@ -314,13 +221,12 @@ class _MenuAppBarState extends State<MenuAppBar>
     );
   }
 
-  // ==================== MENU ITEM ====================
   Widget _buildMenuItem(
     BuildContext context, {
     required String label,
     required int index,
     required IconData icon,
-    required double itemWidth,
+    bool isExtra = false,
   }) {
     final s = AppDesignSystem.getScaleFactor(context);
     final isSelected = widget.selectedIndex == index;
@@ -330,7 +236,14 @@ class _MenuAppBarState extends State<MenuAppBar>
       child: InkWell(
         onTap: () {
           AppHaptics.light();
-          _navigateToPage(context, index);
+          
+          // Jika extra item (History, Premium), navigate dengan push
+          if (isExtra) {
+            _handleExtraNavigation(context, index);
+          } else {
+            // Main items, trigger slide navigation
+            widget.onMenuTapped?.call(index);
+          }
         },
         splashColor: AppComponentStyles.rippleColor,
         highlightColor: AppComponentStyles.hoverColor,
@@ -351,17 +264,6 @@ class _MenuAppBarState extends State<MenuAppBar>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Icon (optional - uncomment if you want icons)
-              // Icon(
-              //   icon,
-              //   size: AppDesignSystem.iconMedium * s,
-              //   color: isSelected
-              //       ? AppColors.primary
-              //       : AppColors.textDisabled,
-              // ),
-              // SizedBox(height: AppDesignSystem.space4 * s),
-
-              // Label
               Text(
                 label,
                 style: AppTypography.label(
@@ -383,92 +285,54 @@ class _MenuAppBarState extends State<MenuAppBar>
     );
   }
 
-  // ==================== NAVIGATION ====================
-  void _navigateToPage(BuildContext context, int index) {
-    if (widget.selectedIndex == index) return;
-
-    Widget targetPage;
+  // Navigate untuk extra pages (History, Premium)
+  void _handleExtraNavigation(BuildContext context, int index) {
+    Widget? targetPage;
+    
     switch (index) {
-      case 0:
-        targetPage = const HomePage();
+      case 4: // History
+        targetPage = const SettingsPage(); // Ganti dengan HistoryPage jika ada
         break;
-      case 1:
-        targetPage = const SurahListPage();
-        break;
-      case 2:
-        targetPage = const CompletionPage();
-        break;
-      case 3:
-        targetPage = const ProfilePage();
-        break;
-      case 4:
-        targetPage = const ActivityPage();
-        break;
-      case 5:
-        targetPage = const SettingsPage();
-        break;
-      case 6:
+      case 5: // Premium
         targetPage = const PremiumOfferPage();
         break;
-      default:
-        return;
     }
 
-    // ⭐ KHUSUS PREMIUM — gunakan push biasa
-    if (index == 6 || index == 5) {
-      Navigator.of(context).push(
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) => targetPage,
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            const begin = Offset(0.0, 0.03);
-            const end = Offset.zero;
-            const curve = Curves.easeInOut;
-            var tween = Tween(
-              begin: begin,
-              end: end,
-            ).chain(CurveTween(curve: curve));
-
-            return FadeTransition(
-              opacity: animation,
-              child: SlideTransition(
-                position: animation.drive(tween),
-                child: child,
-              ),
-            );
-          },
-          transitionDuration: AppDesignSystem.durationNormal,
-        ),
-      );
-      return;
+    if (targetPage != null) {
+      _navigateToExtraPage(context, targetPage);
     }
+  }
 
-    // ⭐ DEFAULT PAGE — tetap pushReplacement
-    Navigator.of(context).pushReplacement(
+  // Helper untuk navigate ke extra pages
+  void _navigateToExtraPage(BuildContext context, Widget page) {
+    Navigator.of(context).push(
       PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => targetPage,
+        pageBuilder: (context, animation, secondaryAnimation) => page,
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          const begin = Offset(0.0, 0.03);
-          const end = Offset.zero;
-          const curve = Curves.easeInOut;
-          var tween = Tween(
-            begin: begin,
-            end: end,
-          ).chain(CurveTween(curve: curve));
-
           return FadeTransition(
-            opacity: animation,
+            opacity: CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeInOut,
+            ),
             child: SlideTransition(
-              position: animation.drive(tween),
+              position: Tween<Offset>(
+                begin: const Offset(0.02, 0.0),
+                end: Offset.zero,
+              ).animate(CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeInOut,
+              )),
               child: child,
             ),
           );
         },
-        transitionDuration: AppDesignSystem.durationNormal,
+        transitionDuration: const Duration(milliseconds: 250),
       ),
     );
   }
-} // ==================== IMPROVED PROFILE APP BAR ====================
+}
 
+// ==================== PROFILE APP BAR (No changes) ====================
 class ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final List<Widget>? actions;
@@ -501,7 +365,6 @@ class ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
               child: InkWell(
                 onTap: () {
                   AppHaptics.light();
-                  // ✅ PERBAIKAN: Gunakan pop() bukan pushReplacement()
                   Navigator.pop(context);
                 },
                 borderRadius: BorderRadius.circular(

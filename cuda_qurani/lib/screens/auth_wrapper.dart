@@ -1,4 +1,6 @@
-import 'package:cuda_qurani/screens/main/home/screens/home_page.dart';
+// lib/screens/auth_wrapper.dart
+
+import 'package:cuda_qurani/screens/main/home/widgets/main_container.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
@@ -25,8 +27,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
         print('   - isAuthenticated: ${auth.isAuthenticated}');
         print('   - currentUser: ${auth.currentUser?.email ?? "null"}');
         
-        // ✅ FIXED: Show loading indicator instead of SplashScreen
-        // SplashScreen should only show once on app start (handled by InitialSplashScreen)
+        // ✅ Show loading indicator
         if (auth.isLoading) {
           print('   → Showing LOADING screen');
           return Scaffold(
@@ -53,7 +54,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
           );
         }
 
-        // Authenticated -> Home
+        // ✅ Authenticated -> MainContainer with slide navigation
         if (auth.isAuthenticated) {
           // ✅ Refresh PremiumProvider ketika baru login
           if (!_wasAuthenticated) {
@@ -64,11 +65,11 @@ class _AuthWrapperState extends State<AuthWrapper> {
               context.read<PremiumProvider>().refresh();
             });
           }
-          print('   → Navigating to HOME');
-          return const HomePage();
+          print('   → Navigating to MAIN CONTAINER (with slide navigation)');
+          return const MainContainer(initialIndex: 0); // Start at Home
         }
 
-        // Not authenticated -> Login
+        // ✅ Not authenticated -> Login
         _wasAuthenticated = false;
         print('   → Navigating to LOGIN');
         return const LoginPage();

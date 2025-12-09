@@ -228,7 +228,6 @@ class _SurahListPageState extends State<SurahListPage> {
 
     return Scaffold(
       backgroundColor: AppColors.surfaceVariant,
-      appBar: MenuAppBar(selectedIndex: 1),
       body: SafeArea(
         child: Column(
           children: [

@@ -319,14 +319,12 @@ class _CompletionPageState extends State<CompletionPage> {
     if (_isLoading) {
       return Scaffold(
         backgroundColor: AppColors.surfaceVariant,
-        appBar: MenuAppBar(selectedIndex: 2),
         body: const AppLoadingIndicator(message: 'Loading completion data...'),
       );
     }
 
     return Scaffold(
       backgroundColor: AppColors.surfaceVariant,
-      appBar: MenuAppBar(selectedIndex: 2),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _loadData,
