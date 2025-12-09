@@ -1,0 +1,31 @@
+{
+    "reciters": {
+        "reciters_text": "القراء",
+        "manage_downloads_text": "إدارة التنزيلات",
+        "total_storage_used_text": "إجمالي المساحة المستخدمة",
+        "files_text": "ملفات",
+        "available_reciters_text": "القراء المتاحون",
+        "clear_all_caches_text": "مسح جميع الذاكرة المؤقتة",
+        "clear_all_caches_desc": "هل أنت متأكد أنك تريد حذف جميع المقاطع الصوتية المحمّلة لجميع القراء؟\n\nهذا الإجراء لا يمكن التراجع عنه.",
+        "cancel_text": "إلغاء",
+        "delete_all_text": "حذف الكل",
+        "audio_manager": {
+            "audio_manager_text": "مدير الصوت",
+            "download_all_text": "تنزيل الكل",
+            "using_text": "يستخدم",
+            "clear_cache_text": "مسح الذاكرة المؤقتة",
+            "clear_cache_desc": "هل أنت متأكد أنك تريد حذف جميع المقاطع الصوتية المحمّلة؟\n\nسيؤدي هذا إلى توفير مساحة تخزين.",
+            "cancel_text": "إلغاء",
+            "delete_text": "حذف الكل"
+        }
+    },
+    "translation": {
+        "translation_text": "الترجمة",
+        "downloaded_text": "تم التنزيل",
+        "available_downloads_text": "التنزيلات المتاحة"
+    },
+    "tafsir": {
+        "tafsir_text": "التفسير",
+        "available_downloads_text": "التنزيلات المتاحة"
+    }
+}

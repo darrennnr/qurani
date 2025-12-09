@@ -1,0 +1,24 @@
+{
+    "sound_and_haptics": {
+        "sound_text": "Sound",
+        "play_a_sound_text": "Play a sound",
+        "sound_effect_text": "Sound Effect",
+        "haptic_text": "Haptic",
+        "Vibrate_my_device_text": "Vibrate my device",
+        "mistake_feedback": {
+            "mistake_feedback_text": "Mistake Feedback",
+            "sound_effect_desc": "Adjusr the sound played when a mistake is detected during recitation.",
+            "haptic_desc": "Adjust the haptic feedback when a mistake is detected during recitation."
+        },
+        "session_start_and_stop": {
+            "session_start_and_stop_text": "Session Start & Stop",
+            "session_start_and_stop_sound_desc": "Adjust the sound played when a recitation session starts or stops.",
+            "session_start_and_stop_haptic_desc": "Adjust the haptic feedback when a recitation session starts or stops."
+        },
+        "dropped_connection": {
+            "dropped_connection_text": "Dropped Connection",
+            "dropped_connection_sound_desc": "Adjust the sound played when the network connection is lost during recitation.",
+            "dropped_connection_stop_haptic_desc": "Adjust the haptic feedback when the network connection is lost during recitation."
+        }
+    }
+}

@@ -1,0 +1,24 @@
+{
+  "sound_and_haptics": {
+    "sound_text": "Suara",
+    "play_a_sound_text": "Putar suara",
+    "sound_effect_text": "Efek Suara",
+    "haptic_text": "Getaran",
+    "Vibrate_my_device_text": "Getarkan perangkat saya",
+    "mistake_feedback": {
+      "mistake_feedback_text": "Umpan Balik Kesalahan",
+      "sound_effect_desc": "Sesuaikan suara yang diputar ketika terjadi kesalahan saat tilawah.",
+      "haptic_desc": "Sesuaikan getaran yang muncul ketika terjadi kesalahan saat tilawah."
+    },
+    "session_start_and_stop": {
+      "session_start_and_stop_text": "Mulai & Akhiri Sesi",
+      "session_start_and_stop_sound_desc": "Sesuaikan suara yang diputar ketika sesi tilawah dimulai atau diakhiri.",
+      "session_start_and_stop_haptic_desc": "Sesuaikan getaran ketika sesi tilawah dimulai atau diakhiri."
+    },
+    "dropped_connection": {
+      "dropped_connection_text": "Koneksi Terputus",
+      "dropped_connection_sound_desc": "Sesuaikan suara yang diputar ketika koneksi jaringan terputus saat tilawah.",
+      "dropped_connection_stop_haptic_desc": "Sesuaikan getaran ketika koneksi jaringan terputus saat tilawah."
+    }
+  }
+}

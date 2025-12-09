@@ -1,0 +1,45 @@
+{
+  "experiences_menu": {
+    "recitation_text": "التلاوة",
+    "recitation_page": {
+      "mistake_detection_text": "اكتشاف الأخطاء",
+      "detect_mistakes_text": "اكتشاف الأخطاء",
+      "detect_tashkeel_text": "اكتشاف أخطاء التشكيل",
+      "detect_tashkeel_desc": "ميزة اكتشاف أخطاء التشكيل لا تزال جديدة وقد لا تكتشف جميع الأخطاء.",
+      "dont_progress_text": "لا تتقدم حتى تُصحَّح الأخطاء",
+      "dont_progress_desc": "يتطلّب نطق كل كلمة بشكل صحيح قبل الانتقال إلى الكلمة التالية.",
+      "sessions_text": "الجلسات",
+      "resumable_sessions_text": "الجلسات القابلة للاستئناف",
+      "resumable_sessions_desc": "التحكم فيما إذا كان يجب استئناف الجلسة الحالية أو بدء جلسة جديدة عند بدء التسجيل."
+    },
+
+    "listening_text": "الاستماع",
+    "listening_page": {
+      "reciter_text": "القارئ",
+      "manage_downloads_text": "إدارة التنزيلات",
+
+      "manage_download_page": {
+        "total_storage_text": "إجمالي المساحة المستخدمة",
+        "available_reciters_text": "القراء المتاحون",
+        "clear_all_caches_text": "مسح جميع الذاكرة المؤقتة",
+        "clear_all_caches_desc": "هل أنت متأكد أنك تريد حذف جميع المقاطع الصوتية المحمّلة لجميع القراء؟",
+        "clear_all_caches_desc2": "هذا الإجراء لا يمكن التراجع عنه.",
+        "cancel_text": "إلغاء",
+        "delete_text": "حذف",
+        "delete_all_text": "حذف الكل",
+
+        "audio_manager_page": {
+          "audio_manager_text": "مدير الصوت",
+          "using_text": "يستخدم",
+          "files_text": "ملفات",
+          "download_all_text": "تنزيل الكل",
+          "clear_caches_text": "مسح الذاكرة المؤقتة",
+          "clear_caches_desc": "هل أنت متأكد أنك تريد حذف جميع المقاطع الصوتية المحمّلة لـ ",
+          "clear_caches_desc2": "سيؤدي هذا إلى توفير مساحة تخزين."
+        }
+      }
+    }
+  },
+
+  "quran_appearance": {}
+}

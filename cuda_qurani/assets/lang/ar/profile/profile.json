@@ -1,0 +1,25 @@
+{
+  "profile": {
+    "account_text": "الحساب",
+    "joined_text": "انضممت منذ",
+    "description_status_text": "حالة الاشتراك",
+    "free_text": "مجاني",
+    "premium_text": "مميز",
+    "switch_account_text": "تبديل الحساب",
+    "add_account_text": "إضافة حساب",
+    "logout_text": "تسجيل الخروج",
+    "logout_desc": "هل أنت متأكد أنك تريد تسجيل الخروج؟",
+    "cancel_text": "إلغاء",
+    "logout_text2": "تسجيل الخروج",
+    "about_qurani_text": "حول Qurani",
+    "request_a_feature_text": "طلب ميزة جديدة",
+    "help_center_text": "مركز المساعدة",
+    "share_application_text": "مشاركة التطبيق",
+    "rate_application_text": "تقييم التطبيق",
+    "terms_and_conditions_text": "شروط الخدمة",
+    "privacy_policy_text": "سياسة الخصوصية",
+    "delete_account_text": "حذف الحساب",
+    "delete_account_desc": "هذا الإجراء لا يمكن التراجع عنه. سيتم حذف جميع بياناتك بشكل نهائي.",
+    "delete_text": "حذف"
+  }
+}

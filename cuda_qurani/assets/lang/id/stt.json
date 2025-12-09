@@ -6,7 +6,9 @@
     },
     "bottom_bar": {
         "listen_text": "Dengarkan",
-        "recite_text": "Lafalkan"
+        "recite_text": "Murotal",
+        "quick_guide_text": "Panduan Cepat",
+        "quick_guide_desc": "Geser kiri untuk mendengar, kanan untuk membaca"
     },
     "mushaf_view": {
         "juz_text": "Juz"

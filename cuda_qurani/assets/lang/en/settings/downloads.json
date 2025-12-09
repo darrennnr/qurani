@@ -1,0 +1,31 @@
+{
+    "reciters": {
+        "reciters_text": "Reciters",
+        "manage_downloads_text": "Manage Downloads",
+        "total_storage_used_text": "Total Storage Used",
+        "files_text": "files",
+        "available_reciters_text": "Available Reciters",
+        "clear_all_caches_text": "Clear All Caches",
+        "clear_all_caches_desc": "Are you sure you want to delete all downloaded audio for all reciters?\n\nThis action cannot be undone.",
+        "cancel_text": "Cancel",
+        "delete_all_text": "Delete All",
+        "audio_manager": {
+            "audio_manager_text": "Audio Manager",
+            "download_all_text": "Download all",
+            "using_text": "Using",
+            "clear_cache_text": "Clear Cache",
+            "clear_cache_desc": "Are you sure you want to delete all downloaded audio for \n\nThis will free up .",
+            "cancel_text": "Cancel",
+            "delete_text": "Delete All"
+        }
+    },
+    "translation": {
+        "translation_text": "Translation",
+        "downloaded_text": "Downloaded",
+        "available_downloads_text": "Available Downloads"
+    },
+    "tafsir": {
+        "tafsir_text": "Tafsir",
+        "available_downloads_text": "Available Downloads"
+    }
+}

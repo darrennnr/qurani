@@ -1,0 +1,8 @@
+{
+  "data_usage": {
+    "data_usage_text": "Penggunaan Data",
+    "audio_data_text": "Data Audio",
+    "save_audio_data_text": "Simpan data audio",
+    "save_audio_data_desc": "Qurani menyimpan audio Anda secara aman di cloud untuk menyediakan fitur seperti memutar ulang kesalahan, mendengarkan rekaman Anda, dan membagikan audio. Jika Anda menonaktifkan pengaturan ini, Anda akan kehilangan akses ke fitur-fitur tersebut. Pengaturan ini tidak berlaku secara retroaktif."
+  }
+}

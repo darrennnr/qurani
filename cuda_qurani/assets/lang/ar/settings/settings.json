@@ -1,0 +1,31 @@
+{
+  "settings": {
+    "settings_text": "الإعدادات",
+    "experiences_text": "التجارب",
+    "recitation_text": "التلاوة",
+    "listening_text": "الاستماع",
+    "quran_appearance_text": "مظهر القرآن",
+    "mushaf_layout_text": "تنسيق المصحف",
+    "hidden_verses_text": "الآيات المخفية",
+    "marking_text": "التمييز",
+    "appearance_text": "المظهر",
+    "language_text": "اللغة",
+    "theme_text": "المظهر العام",
+    "notifications_text": "الإشعارات",
+    "reminders_text": "التذكيرات",
+    "sounds_haptics_text": "الأصوات والاهتزازات",
+    "mistake_feedback_text": "ملاحظات الأخطاء",
+    "session_start_stop_text": "بدء وإيقاف الجلسة",
+    "dropped_connection_text": "انقطاع الاتصال",
+    "downloads_text": "التنزيلات",
+    "reciters_text": "القراء",
+    "translations_text": "الترجمات",
+    "tafsir_text": "التفسير",
+    "privacy_text": "الخصوصية",
+    "data_usage_text": "استهلاك البيانات",
+    "delete_all_audio_data_text": "حذف جميع البيانات الصوتية",
+    "delete_all_audio_data_desc": "هل أنت متأكد أنك تريد حذف جميع التسجيلات الصوتية؟ هذا الإجراء لا يمكن التراجع عنه وسيؤدي إلى حذف جميع سجلات تلاوتك نهائيًا.",
+    "delete_text": "حذف",
+    "cancel_text": "إلغاء"
+  }
+}

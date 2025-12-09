@@ -99,6 +99,18 @@ flutter:
     - assets/lang/
     - assets/lang/data/
     - assets/lang/data/language.json
+    - assets/lang/ar/
+    - assets/lang/ar/home/
+    - assets/lang/ar/profile/
+    - assets/lang/ar/settings/
+    - assets/lang/id/
+    - assets/lang/id/home/
+    - assets/lang/id/profile/
+    - assets/lang/id/settings/
+    - assets/lang/en/
+    - assets/lang/en/home/
+    - assets/lang/en/profile/
+    - assets/lang/en/settings/
 
     - assets/images/qurani-white-text.png
     - assets/images/qurani-icon-green.png

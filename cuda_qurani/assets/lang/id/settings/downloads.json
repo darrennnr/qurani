@@ -1,0 +1,31 @@
+{
+  "reciters": {
+    "reciters_text": "Qari",
+    "manage_downloads_text": "Kelola Unduhan",
+    "total_storage_used_text": "Total Penyimpanan Digunakan",
+    "files_text": "berkas",
+    "available_reciters_text": "Qari Tersedia",
+    "clear_all_caches_text": "Hapus Semua Cache",
+    "clear_all_caches_desc": "Apakah Anda yakin ingin menghapus semua audio yang telah diunduh untuk semua qari?\n\nTindakan ini tidak dapat dibatalkan.",
+    "cancel_text": "Batal",
+    "delete_all_text": "Hapus Semua",
+    "audio_manager": {
+      "audio_manager_text": "Manajer Audio",
+      "download_all_text": "Unduh Semua",
+      "using_text": "Menggunakan",
+      "clear_cache_text": "Hapus Cache",
+      "clear_cache_desc": "Apakah Anda yakin ingin menghapus semua audio yang telah diunduh untuk \n\nIni akan mengosongkan .",
+      "cancel_text": "Batal",
+      "delete_text": "Hapus Semua"
+    }
+  },
+  "translation": {
+    "translation_text": "Terjemahan",
+    "downloaded_text": "Diunduh",
+    "available_downloads_text": "Unduhan Tersedia"
+  },
+  "tafsir": {
+    "tafsir_text": "Tafsir",
+    "available_downloads_text": "Unduhan Tersedia"
+  }
+}

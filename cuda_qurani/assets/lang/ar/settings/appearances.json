@@ -1,0 +1,11 @@
+{
+  "language_page": {
+    "language_text": "اللغة"
+  },
+  "theme_page": {
+    "theme_text": "المظهر",
+    "light_text": "فاتح",
+    "dark_text": "داكن",
+    "auto_text": "تلقائي (فاتح/داكن)"
+  }
+}

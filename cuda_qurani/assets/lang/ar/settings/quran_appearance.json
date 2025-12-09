@@ -1,0 +1,34 @@
+{
+  "mushaf_layout": {
+    "mushaf_layout_text": "تنسيق المصحف",
+    "select_text": "اختر تنسيق القراءة",
+    "book_text": "كتاب",
+    "translation_text": "الترجمة/الترجمة الصوتية",
+    "madani_text": "مصحف مدني",
+    "indopak_text": "مصحف هندي/باكستاني",
+    "translation_desc": "د. مصطفى خطاب، القرآن المبين",
+    "mushaf_layout_and_font_text": "تنسيق المصحف والخط",
+    "mushaf_layout_and_font_desc": "اختر نوع المصحف الذي ترغب في استخدامه.",
+    "preview_text": "معاينة"
+  },
+
+  "hidden_verses": {
+    "hidden_verses_text": "الآيات المخفية",
+    "ayah_adjustments_text": "تعديلات الآيات",
+    "hide_verses_text": "إخفاء الآيات",
+    "hide_verse_markers_text": "إخفاء أرقام الآيات",
+    "hidden_verses_desc": "إخفاء الكلمات التي لم تتلُها بعد لمساعدتك في ممارسة الحفظ."
+  },
+
+  "marking": {
+    "marking_text": "التمييز",
+    "tajweed_text": "التجويد",
+    "show_tajweed_colors_text": "إظهار ألوان التجويد",
+    "show_tajweed_colors_desc": "تلوين الحروف بألوان مميزة حسب أحكام التجويد لتسهيل معرفة الأحكام أثناء التلاوة.",
+    "mistakes_text": "الأخطاء",
+    "Highlight_mistake_history_text": "تمييز سجل الأخطاء",
+    "Highlight_mistake_history_desc": "تمييز الأخطاء التي ترتكبها باستمرار وفقًا لمدى تكرارها.",
+    "similar_phrases_text": "العبارات المتشابهة",
+    "similar_phrases_desc": "تلوين العبارات المتشابهة (المتشابهات) بألوان مختلفة للتعرف على الأنماط وتجنب الخلط بين الآيات."
+  }
+}

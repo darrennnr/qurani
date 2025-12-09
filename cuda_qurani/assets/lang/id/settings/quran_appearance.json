@@ -1,1 +1,32 @@
-{}
+{
+  "mushaf_layout": {
+    "mushaf_layout_text": "Tata Letak Mushaf",
+    "select_text": "Pilih Tata Letak Bacaan",
+    "book_text": "Buku",
+    "translation_text": "Terjemahan/Transliterasi",
+    "madani_text": "Mushaf Madani",
+    "indopak_text": "Mushaf Indo-Pak",
+    "translation_desc": "Dr. Mustafa Khattab, The Clear Quran",
+    "mushaf_layout_and_font_text": "Tata Letak Mushaf dan Font",
+    "mushaf_layout_and_font_desc": "Pilih jenis Mushaf yang ingin Anda gunakan.",
+    "preview_text": "Pratinjau"
+  },
+  "hidden_verses": {
+    "hidden_verses_text": "Ayat Tersembunyi",
+    "ayah_adjustments_text": "Penyesuaian Ayat",
+    "hide_verses_text": "Sembunyikan Ayat",
+    "hide_verse_markers_text": "Sembunyikan penanda ayat",
+    "hidden_verses_desc": "Sembunyikan kata-kata yang belum Anda baca untuk melatih hafalan Anda."
+  },
+  "marking": {
+    "marking_text": "Penandaan",
+    "tajweed_text": "Tajwid",
+    "show_tajweed_colors_text": "Tampilkan Warna Tajwid",
+    "show_tajweed_colors_desc": "Warnai huruf dengan warna berbeda sesuai aturan tajwid untuk memudahkan mengetahui aturan yang harus diterapkan saat membaca.",
+    "mistakes_text": "Kesalahan",
+    "Highlight_mistake_history_text": "Sorot Riwayat Kesalahan",
+    "Highlight_mistake_history_desc": "Sorot kesalahan yang sering Anda lakukan berdasarkan seberapa sering kesalahan tersebut terjadi.",
+    "similar_phrases_text": "Frasa Serupa",
+    "similar_phrases_desc": "Warnai frasa serupa (Mutasyabihat) dengan warna berbeda untuk mengenali pola dan menghindari tertukar dengan ayat lain."
+  }
+}
