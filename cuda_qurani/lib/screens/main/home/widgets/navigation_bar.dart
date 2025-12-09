@@ -49,7 +49,6 @@ class _MenuAppBarState extends State<MenuAppBar>
     {'label': 'Quran', 'index': 1, 'icon': Icons.menu_book_outlined},
     {'label': 'Completion', 'index': 2, 'icon': Icons.flag_outlined},
     {'label': 'Activity', 'index': 4, 'icon': Icons.analytics_outlined},
-    {'label': 'History', 'index': 5, 'icon': Icons.history_outlined},
     {'label': 'Premium', 'index': 6, 'icon': Icons.settings_outlined},
   ];
 
@@ -59,7 +58,6 @@ class _MenuAppBarState extends State<MenuAppBar>
     _searchFocusNode = FocusNode();
     _searchFocusNode.addListener(_handleSearchFocusChange);
 
-    // Animation for smooth interactions
     _animationController = AnimationController(
       vsync: this,
       duration: AppDesignSystem.durationFast,
@@ -114,7 +112,6 @@ class _MenuAppBarState extends State<MenuAppBar>
     );
   }
 
-  // ==================== TOP BAR ====================
   Widget _buildTopBar(BuildContext context) {
     final s = AppDesignSystem.getScaleFactor(context);
 
@@ -123,21 +120,15 @@ class _MenuAppBarState extends State<MenuAppBar>
       padding: EdgeInsets.symmetric(horizontal: AppDesignSystem.space20 * s),
       child: Row(
         children: [
-          // Logo
           Image.asset(
             'assets/images/qurani-white-text.png',
             height: 28 * s,
             color: AppColors.primary,
             fit: BoxFit.contain,
           ),
-
           SizedBox(width: AppDesignSystem.space16 * s),
-
-          const Spacer(), // ✅ GANTI search field dengan Spacer
-
+          const Spacer(),
           SizedBox(width: AppDesignSystem.space12 * s),
-
-          // Profile button
           _buildTopIconButton(
             context,
             icon: Icons.person_outline_rounded,
@@ -148,38 +139,29 @@ class _MenuAppBarState extends State<MenuAppBar>
                     const ProfilePage(),
                 transitionsBuilder:
                     (context, animation, secondaryAnimation, child) {
-                      const begin = Offset(0.03, 0.0);
-                      const end = Offset.zero;
-                      const curve = Curves.easeInOut;
-                      var tween = Tween(
-                        begin: begin,
-                        end: end,
-                      ).chain(CurveTween(curve: curve));
-                      var offsetAnimation = animation.drive(tween);
-                      var fadeAnimation = animation.drive(
-                        Tween(
-                          begin: 0.0,
-                          end: 1.0,
-                        ).chain(CurveTween(curve: curve)),
-                      );
-
-                      return FadeTransition(
-                        opacity: fadeAnimation,
-                        child: SlideTransition(
-                          position: offsetAnimation,
-                          child: child,
-                        ),
-                      );
-                    },
-                transitionDuration: AppDesignSystem.durationNormal,
+                  return FadeTransition(
+                    opacity: CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeInOut,
+                    ),
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0.02, 0.0),
+                        end: Offset.zero,
+                      ).animate(CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeInOut,
+                      )),
+                      child: child,
+                    ),
+                  );
+                },
+                transitionDuration: const Duration(milliseconds: 250),
               ),
             ),
             isSelected: widget.selectedIndex == 3,
           ),
-
           SizedBox(width: AppDesignSystem.space8 * s),
-
-          // Settings button
           if (widget.selectedIndex != 6)
             _buildTopIconButton(
               context,
@@ -191,30 +173,24 @@ class _MenuAppBarState extends State<MenuAppBar>
                       const SettingsPage(),
                   transitionsBuilder:
                       (context, animation, secondaryAnimation, child) {
-                        const begin = Offset(0.03, 0.0);
-                        const end = Offset.zero;
-                        const curve = Curves.easeInOut;
-                        var tween = Tween(
-                          begin: begin,
-                          end: end,
-                        ).chain(CurveTween(curve: curve));
-                        var offsetAnimation = animation.drive(tween);
-                        var fadeAnimation = animation.drive(
-                          Tween(
-                            begin: 0.0,
-                            end: 1.0,
-                          ).chain(CurveTween(curve: curve)),
-                        );
-
-                        return FadeTransition(
-                          opacity: fadeAnimation,
-                          child: SlideTransition(
-                            position: offsetAnimation,
-                            child: child,
-                          ),
-                        );
-                      },
-                  transitionDuration: AppDesignSystem.durationNormal,
+                    return FadeTransition(
+                      opacity: CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeInOut,
+                      ),
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0.02, 0.0),
+                          end: Offset.zero,
+                        ).animate(CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeInOut,
+                        )),
+                        child: child,
+                      ),
+                    );
+                  },
+                  transitionDuration: const Duration(milliseconds: 250),
                 ),
               ),
             ),
@@ -223,7 +199,6 @@ class _MenuAppBarState extends State<MenuAppBar>
     );
   }
 
-  // ==================== TOP ICON BUTTON ====================
   Widget _buildTopIconButton(
     BuildContext context, {
     required IconData icon,
@@ -278,23 +253,13 @@ class _MenuAppBarState extends State<MenuAppBar>
     return button;
   }
 
-  // ==================== MENU BAR ====================
   Widget _buildMenuBar(BuildContext context) {
     final s = AppDesignSystem.getScaleFactor(context);
     final screenWidth = MediaQuery.of(context).size.width;
     final itemWidth = screenWidth / _menuItems.length;
+    
     return Container(
       height: 56 * s,
-
-      //Line pembatas antara topbar/bottombar
-      // decoration: BoxDecoration(
-      //   border: Border(
-      //     top: BorderSide(
-      //       color: AppColors.borderLight,
-      //       width: AppDesignSystem.borderNormal,
-      //     ),
-      //   ),
-      // ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
@@ -314,7 +279,6 @@ class _MenuAppBarState extends State<MenuAppBar>
     );
   }
 
-  // ==================== MENU ITEM ====================
   Widget _buildMenuItem(
     BuildContext context, {
     required String label,
@@ -351,17 +315,6 @@ class _MenuAppBarState extends State<MenuAppBar>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Icon (optional - uncomment if you want icons)
-              // Icon(
-              //   icon,
-              //   size: AppDesignSystem.iconMedium * s,
-              //   color: isSelected
-              //       ? AppColors.primary
-              //       : AppColors.textDisabled,
-              // ),
-              // SizedBox(height: AppDesignSystem.space4 * s),
-
-              // Label
               Text(
                 label,
                 style: AppTypography.label(
@@ -383,7 +336,7 @@ class _MenuAppBarState extends State<MenuAppBar>
     );
   }
 
-  // ==================== NAVIGATION ====================
+  // ==================== SMOOTH NAVIGATION (NO FLICKER) ====================
   void _navigateToPage(BuildContext context, int index) {
     if (widget.selectedIndex == index) return;
 
@@ -414,61 +367,61 @@ class _MenuAppBarState extends State<MenuAppBar>
         return;
     }
 
-    // ⭐ KHUSUS PREMIUM — gunakan push biasa
+    // ✨ SOLUSI: Gunakan push dengan popUntil untuk main pages
+    // Ini lebih smooth karena tidak ada flicker
     if (index == 6 || index == 5) {
+      // Premium & Settings tetap push biasa
       Navigator.of(context).push(
         PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) => targetPage,
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            const begin = Offset(0.0, 0.03);
-            const end = Offset.zero;
-            const curve = Curves.easeInOut;
-            var tween = Tween(
-              begin: begin,
-              end: end,
-            ).chain(CurveTween(curve: curve));
-
             return FadeTransition(
-              opacity: animation,
+              opacity: CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeInOut,
+              ),
               child: SlideTransition(
-                position: animation.drive(tween),
+                position: Tween<Offset>(
+                  begin: const Offset(0.0, 0.02),
+                  end: Offset.zero,
+                ).animate(CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeInOut,
+                )),
                 child: child,
               ),
             );
           },
-          transitionDuration: AppDesignSystem.durationNormal,
+          transitionDuration: const Duration(milliseconds: 250),
         ),
       );
       return;
     }
 
-    // ⭐ DEFAULT PAGE — tetap pushReplacement
-    Navigator.of(context).pushReplacement(
+    // ✨ MAIN PAGES: Gunakan pushAndRemoveUntil untuk navigation yang clean
+    // Ini menghindari stack yang terlalu dalam
+    Navigator.of(context).pushAndRemoveUntil(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) => targetPage,
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          const begin = Offset(0.0, 0.03);
-          const end = Offset.zero;
-          const curve = Curves.easeInOut;
-          var tween = Tween(
-            begin: begin,
-            end: end,
-          ).chain(CurveTween(curve: curve));
-
+          // Crossfade transition - paling smooth, no flicker
           return FadeTransition(
-            opacity: animation,
-            child: SlideTransition(
-              position: animation.drive(tween),
-              child: child,
+            opacity: CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeInOut,
             ),
+            child: child,
           );
         },
-        transitionDuration: AppDesignSystem.durationNormal,
+        transitionDuration: const Duration(milliseconds: 300),
+        reverseTransitionDuration: const Duration(milliseconds: 200),
       ),
+      (route) => false, // Clear semua route sebelumnya
     );
   }
-} // ==================== IMPROVED PROFILE APP BAR ====================
+}
 
+// ==================== PROFILE APP BAR ====================
 class ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final List<Widget>? actions;
@@ -501,7 +454,6 @@ class ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
               child: InkWell(
                 onTap: () {
                   AppHaptics.light();
-                  // ✅ PERBAIKAN: Gunakan pop() bukan pushReplacement()
                   Navigator.pop(context);
                 },
                 borderRadius: BorderRadius.circular(

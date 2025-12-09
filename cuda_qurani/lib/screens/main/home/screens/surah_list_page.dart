@@ -241,93 +241,94 @@ class _SurahListPageState extends State<SurahListPage> {
     );
   }
 
-  // ==================== SEARCH BAR ====================
-
-  Widget _buildSearchBar() {
-    final s = AppDesignSystem.getScaleFactor(context);
-
-    return Container(
-      color: AppColors.surface,
-      padding: EdgeInsets.symmetric(
-        horizontal: AppDesignSystem.space20 * s,
-        vertical: AppDesignSystem.space20 * s,
-      ),
-      child: Container(
-        height: 38 * s,
-        decoration: BoxDecoration(
-          color: AppColors.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium * s),
-          border: Border.all(
-            color: _searchController.text.isNotEmpty
-                ? AppColors.borderFocus
-                : Colors.transparent,
-            width: AppDesignSystem.borderThick * s,
-          ),
+// ==================== SEARCH BAR ====================
+Widget _buildSearchBar() {
+  final s = AppDesignSystem.getScaleFactor(context);
+  return Container(
+    color: AppColors.surface,
+    padding: EdgeInsets.symmetric(
+      horizontal: AppDesignSystem.space20 * s,
+      vertical: AppDesignSystem.space20 * s,
+    ),
+    child: Container(
+      height: 38 * s,
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium * s),
+        border: Border.all(
+          color: _searchController.text.isNotEmpty
+              ? AppColors.borderFocus
+              : Colors.transparent,
+          width: AppDesignSystem.borderThick * s,
         ),
-        child: TextField(
-          controller: _searchController,
-          style: AppTypography.body(context, color: AppColors.textPrimary),
-          textAlignVertical: TextAlignVertical.center,
-          decoration: InputDecoration(
-            isDense: true,
-            border: InputBorder.none,
-            // ✅ FIX: Gunakan padding vertikal yang responsif
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: 0,
-              vertical:
-                  (32 * s - (AppTypography.body(context).fontSize ?? 14)) / 2,
+      ),
+      alignment: Alignment.center,
+      child: Row(
+        children: [
+          // PREFIX ICON
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: AppDesignSystem.space12 * s,
             ),
-            hintText: 'Search surah, juz, or page...',
-            hintStyle: AppTypography.body(
-              context,
-              color: AppColors.textHint,
-              weight: AppTypography.regular,
+            child: Icon(
+              Icons.search_rounded,
+              color: _searchController.text.isNotEmpty
+                  ? AppColors.primary
+                  : AppColors.textTertiary,
+              size: AppDesignSystem.iconMedium * s,
             ),
-
-            // PREFIX ICON
-            prefixIcon: Padding(
-              padding: EdgeInsets.only(left: AppDesignSystem.space12 * s),
-              child: Icon(
-                Icons.search_rounded,
-                color: _searchController.text.isNotEmpty
-                    ? AppColors.primary
-                    : AppColors.textTertiary,
-                size: AppDesignSystem.iconMedium * s,
+          ),
+          
+          // TEXT FIELD
+          Expanded(
+            child: TextField(
+              controller: _searchController,
+              style: AppTypography.body(context, color: AppColors.textPrimary),
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+                isDense: true,
+                hintText: 'Search surah, juz, or page...',
+                hintStyle: AppTypography.body(
+                  context,
+                  color: AppColors.textHint,
+                  weight: AppTypography.regular,
+                ),
               ),
             ),
-            prefixIconConstraints: BoxConstraints(minWidth: 0, minHeight: 0),
-
-            // SUFFIX ICON
-            suffixIcon: _searchController.text.isNotEmpty
-                ? Padding(
-                    padding: EdgeInsets.only(
-                      right: AppDesignSystem.space12 * s,
-                    ),
-                    child: IconButton(
-                      icon: Icon(
-                        Icons.close_rounded,
-                        color: AppColors.textTertiary,
-                        size: AppDesignSystem.iconMedium * s,
-                      ),
-                      onPressed: () {
-                        AppHaptics.light();
-                        _searchController.clear();
-                        setState(() {
-                          _isSearching = false;
-                          _searchResults = [];
-                        });
-                      },
-                      padding: EdgeInsets.zero,
-                      splashRadius: 20 * s,
-                    ),
-                  )
-                : null,
-            suffixIconConstraints: BoxConstraints(minWidth: 0, minHeight: 0),
           ),
-        ),
+          
+          // SUFFIX ICON
+          if (_searchController.text.isNotEmpty)
+            IconButton(
+              icon: Icon(
+                Icons.close_rounded,
+                color: AppColors.textTertiary,
+                size: AppDesignSystem.iconMedium * s,
+              ),
+              onPressed: () {
+                AppHaptics.light();
+                _searchController.clear();
+                setState(() {
+                  _isSearching = false;
+                  _searchResults = [];
+                });
+              },
+              padding: EdgeInsets.symmetric(
+                horizontal: AppDesignSystem.space12 * s,
+              ),
+              constraints: BoxConstraints(),
+              splashRadius: 20 * s,
+            )
+          else
+            SizedBox(width: AppDesignSystem.space12 * s),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   // ==================== SEGMENTED BUTTON TAB BAR ====================
 
