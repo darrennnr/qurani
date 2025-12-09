@@ -52,20 +52,74 @@ class _ProfilePageState extends State<ProfilePage> {
     final authProvider = context.watch<AuthProvider>();
     final user = authProvider.currentUser;
 
-    // Get first letter of name or email for avatar
-    String avatarLetter = 'U';
-    String displayName = 'User';
-    String displayEmail = 'user@email.com';
+    // ✅ FIX: Jangan render jika user null atau sedang logout
+    if (user == null || _isLoggingOut) {
+      return AppCard(
+        padding: AppPadding.all(context, AppDesignSystem.space20),
+        child: Row(
+          children: [
+            Container(
+              width: AppDesignSystem.scale(context, 64),
+              height: AppDesignSystem.scale(context, 64),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceContainerLowest,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: SizedBox(
+                  width: AppDesignSystem.scale(context, 24),
+                  height: AppDesignSystem.scale(context, 24),
+                  child: const CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppColors.primary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            AppMargin.gapH(context),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    height: AppDesignSystem.scale(context, 20),
+                    width: AppDesignSystem.scale(context, 120),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceContainerLowest,
+                      borderRadius: BorderRadius.circular(
+                        AppDesignSystem.scale(context, 4),
+                      ),
+                    ),
+                  ),
+                  AppMargin.gapSmall(context),
+                  Container(
+                    height: AppDesignSystem.scale(context, 16),
+                    width: AppDesignSystem.scale(context, 160),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceContainerLowest,
+                      borderRadius: BorderRadius.circular(
+                        AppDesignSystem.scale(context, 4),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
-    if (user != null) {
-      displayEmail = user.email;
-      if (user.fullName != null && user.fullName!.isNotEmpty) {
-        displayName = user.fullName!;
-        avatarLetter = user.fullName![0].toUpperCase();
-      } else {
-        displayName = user.email.split('@')[0];
-        avatarLetter = displayName[0].toUpperCase();
-      }
+    // Get user info
+    String displayName = user.email.split('@')[0];
+    String avatarLetter = displayName[0].toUpperCase();
+
+    if (user.fullName != null && user.fullName!.isNotEmpty) {
+      displayName = user.fullName!;
+      avatarLetter = user.fullName![0].toUpperCase();
     }
 
     return AppCard(
@@ -112,7 +166,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 AppMargin.gapSmall(context),
                 Text(
-                  displayEmail,
+                  user.email,
                   style: AppTypography.body(
                     context,
                     color: AppColors.textTertiary,
@@ -132,13 +186,23 @@ class _ProfilePageState extends State<ProfilePage> {
     final authProvider = context.watch<AuthProvider>();
     final user = authProvider.currentUser;
 
-    // Format date
-    String joinedDate = '08/05/2025';
-    if (user != null) {
-      final date = user.createdAt;
-      joinedDate =
-          '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+    // ✅ FIX: Tampilkan skeleton saat logout
+    if (user == null || _isLoggingOut) {
+      return AppCard(
+        padding: EdgeInsets.zero,
+        child: Column(
+          children: [
+            _buildInfoRowSkeleton(showDivider: true),
+            _buildInfoRowSkeleton(showDivider: false),
+          ],
+        ),
+      );
     }
+
+    // Format date
+    final date = user.createdAt;
+    String joinedDate =
+        '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
 
     return AppCard(
       padding: EdgeInsets.zero,
@@ -168,6 +232,40 @@ class _ProfilePageState extends State<ProfilePage> {
           Text(
             value,
             style: AppTypography.body(context, color: AppColors.textTertiary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRowSkeleton({required bool showDivider}) {
+    return Container(
+      padding: AppPadding.all(context, AppDesignSystem.space16),
+      decoration: showDivider
+          ? AppComponentStyles.divider(color: AppColors.borderLight)
+          : null,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Container(
+            height: AppDesignSystem.scale(context, 16),
+            width: AppDesignSystem.scale(context, 80),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceContainerLowest,
+              borderRadius: BorderRadius.circular(
+                AppDesignSystem.scale(context, 4),
+              ),
+            ),
+          ),
+          Container(
+            height: AppDesignSystem.scale(context, 16),
+            width: AppDesignSystem.scale(context, 100),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceContainerLowest,
+              borderRadius: BorderRadius.circular(
+                AppDesignSystem.scale(context, 4),
+              ),
+            ),
           ),
         ],
       ),
@@ -206,7 +304,7 @@ class _ProfilePageState extends State<ProfilePage> {
         border: Border.all(
           color: isDisabled
               ? AppColors.borderLight
-              : AppColors.textPrimary.withOpacity(0.75), // Softer black border
+              : AppColors.textPrimary.withOpacity(0.75),
           width: AppDesignSystem.scale(context, 1.5),
         ),
         borderRadius: BorderRadius.circular(
@@ -282,10 +380,12 @@ class _ProfilePageState extends State<ProfilePage> {
     bool showDivider = true,
   }) {
     return InkWell(
-      onTap: () {
-        AppHaptics.light();
-        // TODO: Implement navigation
-      },
+      onTap: _isLoggingOut
+          ? null
+          : () {
+              AppHaptics.light();
+              // TODO: Implement navigation
+            },
       splashColor: AppComponentStyles.rippleColor,
       highlightColor: AppComponentStyles.hoverColor,
       child: Container(
@@ -296,7 +396,15 @@ class _ProfilePageState extends State<ProfilePage> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: AppTypography.body(context)),
+            Text(
+              label,
+              style: AppTypography.body(
+                context,
+                color: _isLoggingOut
+                    ? AppColors.textDisabled
+                    : AppColors.textPrimary,
+              ),
+            ),
             Icon(
               icon,
               size: AppDesignSystem.scale(context, AppDesignSystem.iconSmall),
@@ -311,10 +419,12 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildDeleteAccount() {
     return AppCard(
       child: InkWell(
-        onTap: () {
-          AppHaptics.light();
-          _showDeleteAccountDialog();
-        },
+        onTap: _isLoggingOut
+            ? null
+            : () {
+                AppHaptics.light();
+                _showDeleteAccountDialog();
+              },
         splashColor: AppColors.error.withOpacity(0.05),
         highlightColor: AppColors.error.withOpacity(0.02),
         borderRadius: BorderRadius.circular(
@@ -326,7 +436,9 @@ class _ProfilePageState extends State<ProfilePage> {
             'Delete Account',
             style: AppTypography.body(
               context,
-              color: AppColors.error,
+              color: _isLoggingOut
+                  ? AppColors.textDisabled
+                  : AppColors.error,
               weight: AppTypography.medium,
             ),
           ),
@@ -338,7 +450,7 @@ class _ProfilePageState extends State<ProfilePage> {
   // ==================== BOTTOM SHEET - SWITCH ACCOUNT ====================
   void _showSwitchAccountBottomSheet() {
     final screenHeight = AppDesignSystem.screenHeight(context);
-    final sheetHeight = screenHeight * 0.4; // 2/5 of screen
+    final sheetHeight = screenHeight * 0.4;
 
     showModalBottomSheet(
       context: context,
@@ -450,6 +562,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _performLogout() async {
+    // ✅ FIX: Set loading state SEBELUM logout
     setState(() {
       _isLoggingOut = true;
     });
@@ -463,7 +576,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
       if (!mounted) return;
 
-      // Navigate to Login Page and remove all previous routes
+      // ✅ FIX: Langsung navigate tanpa delay, jangan reset loading state
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const LoginPage()),
         (route) => false,
@@ -545,12 +658,12 @@ class _SwitchAccountBottomSheet extends StatelessWidget {
           AppMargin.gap(context),
           const AppDivider(),
 
-          // Account List (no Expanded to remove gap)
+          // Account List
           currentUser == null
               ? Expanded(child: _buildEmptyState(context))
               : _buildAccountList(context, currentUser),
 
-          // Add Account Button (Black theme like logout button)
+          // Add Account Button
           Padding(
             padding: EdgeInsets.fromLTRB(
               AppDesignSystem.space20 * AppDesignSystem.getScaleFactor(context),
@@ -563,9 +676,7 @@ class _SwitchAccountBottomSheet extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.surface,
                 border: Border.all(
-                  color: AppColors.textPrimary.withOpacity(
-                    0.50,
-                  ), // Softer black
+                  color: AppColors.textPrimary.withOpacity(0.50),
                   width: AppDesignSystem.scale(context, 1.5),
                 ),
                 borderRadius: BorderRadius.circular(
@@ -598,18 +709,14 @@ class _SwitchAccountBottomSheet extends StatelessWidget {
                             context,
                             AppDesignSystem.iconMedium,
                           ),
-                          color: AppColors.textPrimary.withOpacity(
-                            0.85,
-                          ), // Softer icon
+                          color: AppColors.textPrimary.withOpacity(0.85),
                         ),
                         AppMargin.gapHSmall(context),
                         Text(
                           'ADD ACCOUNT',
                           style: AppTypography.label(
                             context,
-                            color: AppColors.textPrimary.withOpacity(
-                              0.85,
-                            ), // Softer text
+                            color: AppColors.textPrimary.withOpacity(0.85),
                             weight: AppTypography.semiBold,
                           ).copyWith(letterSpacing: 1.5),
                         ),
@@ -627,17 +734,13 @@ class _SwitchAccountBottomSheet extends StatelessWidget {
   }
 
   Widget _buildAccountList(BuildContext context, currentUser) {
-    // Get avatar info
-    String avatarLetter = 'U';
-    String displayName = 'User';
-    String displayEmail = currentUser.email;
+    // Get user info
+    String displayName = currentUser.email.split('@')[0];
+    String avatarLetter = displayName[0].toUpperCase();
 
     if (currentUser.fullName != null && currentUser.fullName!.isNotEmpty) {
       displayName = currentUser.fullName!;
       avatarLetter = currentUser.fullName![0].toUpperCase();
-    } else {
-      displayName = currentUser.email.split('@')[0];
-      avatarLetter = displayName[0].toUpperCase();
     }
 
     return Column(
@@ -654,7 +757,7 @@ class _SwitchAccountBottomSheet extends StatelessWidget {
             context: context,
             avatarLetter: avatarLetter,
             name: displayName,
-            email: displayEmail,
+            email: currentUser.email,
             isActive: true,
             onTap: () {
               Navigator.pop(context);
@@ -666,9 +769,6 @@ class _SwitchAccountBottomSheet extends StatelessWidget {
             },
           ),
         ),
-
-        // TODO: Add more accounts from local storage/database
-        // For now, show a hint that more accounts can be added
       ],
     );
   }
@@ -696,9 +796,7 @@ class _SwitchAccountBottomSheet extends StatelessWidget {
             color: AppColors.surface,
             border: Border.all(
               color: isActive
-                  ? AppColors.textPrimary.withOpacity(
-                      0.50,
-                    ) // Softer black for active
+                  ? AppColors.textPrimary.withOpacity(0.50)
                   : AppColors.borderMedium,
               width: AppDesignSystem.scale(context, isActive ? 1.5 : 1),
             ),
@@ -766,9 +864,7 @@ class _SwitchAccountBottomSheet extends StatelessWidget {
                 AppMargin.gapHSmall(context),
                 Icon(
                   Icons.check_circle,
-                  color: AppColors.secondaryDark.withOpacity(
-                    0.80,
-                  ), // Softer checkmark
+                  color: AppColors.secondaryDark.withOpacity(0.80),
                   size: AppDesignSystem.scale(
                     context,
                     AppDesignSystem.iconLarge,

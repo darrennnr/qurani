@@ -21,7 +21,8 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
 
   bool _isPasswordVisible = false;
-  bool _isLoading = false;
+  bool _isEmailLoginLoading = false; // ✅ Separate loading for email login
+  bool _isGoogleLoginLoading = false; // ✅ Separate loading for Google login
   bool _rememberMe = false;
 
   @override
@@ -44,7 +45,7 @@ class _LoginPageState extends State<LoginPage> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
     setState(() {
-      _isLoading = true;
+      _isEmailLoginLoading = true; // ✅ Only email login loading
     });
 
     print('🔐 LoginPage: Starting login for ${_emailController.text.trim()}');
@@ -58,7 +59,7 @@ class _LoginPageState extends State<LoginPage> {
     print('🔐 LoginPage: Login result = $success');
 
     setState(() {
-      _isLoading = false;
+      _isEmailLoginLoading = false; // ✅ Stop email login loading
     });
 
     if (success && mounted) {
@@ -71,7 +72,6 @@ class _LoginPageState extends State<LoginPage> {
         ),
       );
 
-      // ✅ FIX: Manual navigation instead of relying on AuthWrapper Consumer
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (context) => const HomePage(),
@@ -94,7 +94,7 @@ class _LoginPageState extends State<LoginPage> {
     print('🔐 LoginPage: ===== STARTING Google Sign In =====');
     
     setState(() {
-      _isLoading = true;
+      _isGoogleLoginLoading = true; // ✅ Only Google login loading
     });
 
     print('🔐 LoginPage: Button clicked, calling authProvider.signInWithGoogle()...');
@@ -110,7 +110,7 @@ class _LoginPageState extends State<LoginPage> {
       }
 
       setState(() {
-        _isLoading = false;
+        _isGoogleLoginLoading = false; // ✅ Stop Google login loading
       });
 
       print('🔐 LoginPage: ===== SIGN IN RESULT =====');
@@ -152,8 +152,6 @@ class _LoginPageState extends State<LoginPage> {
         );
 
         print('✅ LoginPage: Navigating to HomePage...');
-        // Navigate to HomePage - navigate even if isAuthenticated check fails
-        // because success=true means Supabase auth was successful
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
             builder: (context) => const HomePage(),
@@ -186,7 +184,7 @@ class _LoginPageState extends State<LoginPage> {
       }
       
       setState(() {
-        _isLoading = false;
+        _isGoogleLoginLoading = false; // ✅ Stop Google login loading
       });
       
       String errorMessage = 'Terjadi kesalahan saat login dengan Google';
@@ -210,7 +208,6 @@ class _LoginPageState extends State<LoginPage> {
       );
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -482,13 +479,16 @@ class _LoginPageState extends State<LoginPage> {
 
   // ==================== LOGIN BUTTON ====================
   Widget _buildLoginButton(BuildContext context) {
+    // ✅ Disable only when email login is loading
+    final isDisabled = _isEmailLoginLoading;
+    
     return Container(
       height: AppDesignSystem.scale(context, AppDesignSystem.buttonHeightLarge),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(
           AppDesignSystem.radiusMedium * AppDesignSystem.getScaleFactor(context),
         ),
-        boxShadow: [
+        boxShadow: isDisabled ? [] : [
           BoxShadow(
             color: AppColors.primary.withOpacity(0.25),
             blurRadius: AppDesignSystem.scale(context, 12),
@@ -497,9 +497,9 @@ class _LoginPageState extends State<LoginPage> {
         ],
       ),
       child: ElevatedButton(
-        onPressed: _isLoading ? null : _handleLogin,
+        onPressed: isDisabled ? null : _handleLogin,
         style: AppComponentStyles.primaryButton(context),
-        child: _isLoading
+        child: _isEmailLoginLoading // ✅ Only show loading for email login
             ? SizedBox(
                 height: AppDesignSystem.scale(context, 20),
                 width: AppDesignSystem.scale(context, 20),
@@ -554,57 +554,59 @@ class _LoginPageState extends State<LoginPage> {
 
   // ==================== GOOGLE BUTTON ====================
   Widget _buildGoogleButton(BuildContext context, double s) {
-  final double iconSize = 28 * s;
+    final double iconSize = 28 * s;
+    // ✅ Disable only when Google login is loading
+    final isDisabled = _isGoogleLoginLoading;
 
-  return SizedBox(
-    height: AppDesignSystem.scale(context, AppDesignSystem.buttonHeightLarge),
-    child: OutlinedButton(
-      onPressed: _isLoading ? null : _handleGoogleSignIn, // ✅ Updated
-      style: AppComponentStyles.secondaryButton(context).copyWith(
-        padding: WidgetStateProperty.all(
-          EdgeInsets.symmetric(
-            horizontal: AppDesignSystem.scale(context, 16),
+    return SizedBox(
+      height: AppDesignSystem.scale(context, AppDesignSystem.buttonHeightLarge),
+      child: OutlinedButton(
+        onPressed: isDisabled ? null : _handleGoogleSignIn,
+        style: AppComponentStyles.secondaryButton(context).copyWith(
+          padding: WidgetStateProperty.all(
+            EdgeInsets.symmetric(
+              horizontal: AppDesignSystem.scale(context, 16),
+            ),
           ),
         ),
-      ),
-      child: _isLoading // ✅ Show loading when signing in
-          ? SizedBox(
-              height: AppDesignSystem.scale(context, 20),
-              width: AppDesignSystem.scale(context, 20),
-              child: const CircularProgressIndicator(
-                strokeWidth: 2.5,
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF247C64)),
-              ),
-            )
-          : Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Image.asset(
-                  'assets/images/google-icon.png',
-                  height: iconSize,
-                  width: iconSize,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Icon(
-                      Icons.g_mobiledata,
-                      size: AppDesignSystem.iconLarge * s,
-                      color: AppColors.textPrimary,
-                    );
-                  },
+        child: _isGoogleLoginLoading // ✅ Only show loading for Google login
+            ? SizedBox(
+                height: AppDesignSystem.scale(context, 20),
+                width: AppDesignSystem.scale(context, 20),
+                child: const CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF247C64)),
                 ),
-                SizedBox(width: 12 * s),
-                Text(
-                  'Masuk dengan Google',
-                  style: AppTypography.label(
-                    context,
-                    color: AppColors.textPrimary,
-                    weight: AppTypography.semiBold,
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Image.asset(
+                    'assets/images/google-icon.png',
+                    height: iconSize,
+                    width: iconSize,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Icon(
+                        Icons.g_mobiledata,
+                        size: AppDesignSystem.iconLarge * s,
+                        color: AppColors.textPrimary,
+                      );
+                    },
                   ),
-                ),
-              ],
-            ),
-    ),
-  );
-}
+                  SizedBox(width: 12 * s),
+                  Text(
+                    'Masuk dengan Google',
+                    style: AppTypography.label(
+                      context,
+                      color: AppColors.textPrimary,
+                      weight: AppTypography.semiBold,
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
 
   // ==================== REGISTER LINK ====================
   Widget _buildRegisterLink(BuildContext context) {
