@@ -26,8 +26,8 @@
     "show_tajweed_colors_text": "إظهار ألوان التجويد",
     "show_tajweed_colors_desc": "تلوين الحروف بألوان مميزة حسب أحكام التجويد لتسهيل معرفة الأحكام أثناء التلاوة.",
     "mistakes_text": "الأخطاء",
-    "Highlight_mistake_history_text": "تمييز سجل الأخطاء",
-    "Highlight_mistake_history_desc": "تمييز الأخطاء التي ترتكبها باستمرار وفقًا لمدى تكرارها.",
+    "highlight_mistake_history_text": "تمييز سجل الأخطاء",
+    "highlight_mistake_history_desc": "تمييز الأخطاء التي ترتكبها باستمرار وفقًا لمدى تكرارها.",
     "similar_phrases_text": "العبارات المتشابهة",
     "similar_phrases_desc": "تلوين العبارات المتشابهة (المتشابهات) بألوان مختلفة للتعرف على الأنماط وتجنب الخلط بين الآيات."
   }

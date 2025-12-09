@@ -2,7 +2,7 @@
     "profile": {
         "account_text": "Account",
         "joined_text": "Joined",
-        "description_status_text": "Subscription Status",
+        "subscription_status_text": "Subscription Status",
         "free_text": "Free",
         "premium_text": "Premium",
         "switch_account_text": "Switch Account",

@@ -2,7 +2,7 @@
   "profile": {
     "account_text": "الحساب",
     "joined_text": "انضممت منذ",
-    "description_status_text": "حالة الاشتراك",
+    "subscription_status_text": "حالة الاشتراك",
     "free_text": "مجاني",
     "premium_text": "مميز",
     "switch_account_text": "تبديل الحساب",
