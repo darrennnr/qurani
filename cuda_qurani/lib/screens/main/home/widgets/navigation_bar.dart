@@ -49,7 +49,6 @@ class _MenuAppBarState extends State<MenuAppBar>
     {'label': 'Quran', 'index': 1, 'icon': Icons.menu_book_outlined},
     {'label': 'Completion', 'index': 2, 'icon': Icons.flag_outlined},
     {'label': 'Activity', 'index': 4, 'icon': Icons.analytics_outlined},
-    {'label': 'History', 'index': 5, 'icon': Icons.history_outlined},
     {'label': 'Premium', 'index': 6, 'icon': Icons.settings_outlined},
   ];
 
