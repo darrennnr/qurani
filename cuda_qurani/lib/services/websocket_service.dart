@@ -260,18 +260,41 @@ class WebSocketService {
     // Method kept for backward compatibility but does nothing
   }
 
-  void sendStartRecording(int surahNumber, {int? pageId, int? juzId, int? ayah, bool isFromHistory = false, String? sessionId}) {
+  /// Send start recording with ayah words from local SQLite
+  /// 
+  /// [ayahWords] is a map of ayah number to list of words from local database
+  /// Example: {1: ["بِسْمِ", "اللَّهِ", "الرَّحْمَٰنِ"], 2: [...]}
+  /// 
+  /// This eliminates the need for backend to fetch from Supabase!
+  void sendStartRecording(int surahNumber, {
+    int? pageId, 
+    int? juzId, 
+    int? ayah, 
+    bool isFromHistory = false, 
+    String? sessionId,
+    Map<int, List<String>>? ayahWords,  // ✅ NEW: Words from Flutter SQLite
+    bool isResume = false,  // ✅ NEW: Set true only when resuming from Resume Session button
+  }) {
     if (_isConnected && _channel != null) {
       _audioChunksSent = 0; // Reset counter
       
       // ✅ Build message with location info
-      final messageData = {
+      final messageData = <String, dynamic>{
         'type': 'start',
         'surah': surahNumber,
         'is_from_history': isFromHistory,
+        'is_resume': isResume,  // ✅ NEW: Backend will only restore words if true
       };
       
-      // ✅ NEW: Include session_id if resuming existing session
+      // ✅ NEW: Include ayah_words from Flutter SQLite (PERFORMANCE BOOST!)
+      // This eliminates backend database fetch entirely
+      if (ayahWords != null && ayahWords.isNotEmpty) {
+        // Convert int keys to string keys for JSON
+        messageData['ayah_words'] = ayahWords.map((k, v) => MapEntry(k.toString(), v));
+        print('⚡ Including ${ayahWords.length} ayahs from local SQLite (no backend fetch!)');
+      }
+      
+      // ✅ Include session_id if resuming existing session
       if (sessionId != null) {
         messageData['session_id'] = sessionId;
         print('🔄 Including session_id for resume: $sessionId');
@@ -334,18 +357,28 @@ class WebSocketService {
     }
   }
   
-  /// ✅ FIX: Resume session sesuai backend (type: "start" + resume_session_id)
+  /// ✅ Resume session sesuai backend (type: "start" + resume_session_id)
+  /// 
+  /// [ayahWords] - Words from Flutter SQLite for backend word matching
   void sendResumeSession({
     required String sessionId,
     required int surahNumber,
     int? position,
+    Map<int, List<String>>? ayahWords,  // ✅ NEW: Words from Flutter SQLite
   }) {
     if (_isConnected && _channel != null) {
-      final messageData = {
+      final messageData = <String, dynamic>{
         'type': 'start',  // ✅ Backend expects "start" not "recover"
         'surah': surahNumber,
         'resume_session_id': sessionId,  // ✅ Backend key untuk resume
+        'is_resume': true,  // ✅ NEW: Always true for resume session
       };
+      
+      // ✅ NEW: Include ayah_words from Flutter SQLite
+      if (ayahWords != null && ayahWords.isNotEmpty) {
+        messageData['ayah_words'] = ayahWords.map((k, v) => MapEntry(k.toString(), v));
+        print('⚡ Resume: Including ${ayahWords.length} ayahs from local SQLite');
+      }
       
       // Add position if provided
       if (position != null) {
@@ -369,14 +402,25 @@ class WebSocketService {
     }
   }
   
-  /// ✅ NEW: Continue previous session (restore word colors from Redis)
+  /// ✅ Continue previous session (restore word colors from Redis)
   /// This loads the full session state including word_status_map
-  void sendContinueSession({required String sessionId}) {
+  /// 
+  /// [ayahWords] - Words from Flutter SQLite for backend word matching
+  void sendContinueSession({
+    required String sessionId,
+    Map<int, List<String>>? ayahWords,  // ✅ NEW: Words from Flutter SQLite
+  }) {
     if (_isConnected && _channel != null) {
-      final messageData = {
+      final messageData = <String, dynamic>{
         'type': 'continue',
         'session_id': sessionId,
       };
+      
+      // ✅ NEW: Include ayah_words from Flutter SQLite
+      if (ayahWords != null && ayahWords.isNotEmpty) {
+        messageData['ayah_words'] = ayahWords.map((k, v) => MapEntry(k.toString(), v));
+        print('⚡ Continue: Including ${ayahWords.length} ayahs from local SQLite');
+      }
       
       // Add user info if authenticated
       if (_authService.isAuthenticated) {
