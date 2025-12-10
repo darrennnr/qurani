@@ -10,6 +10,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../controllers/stt_controller.dart';
 import '../utils/constants.dart';
+import 'package:cuda_qurani/core/providers/language_provider.dart';
+import 'package:cuda_qurani/services/metadata_cache_service.dart';
 
 class QuranAppBar extends StatefulWidget implements PreferredSizeWidget {
   const QuranAppBar({Key? key}) : super(key: key);
@@ -41,6 +43,9 @@ class _QuranAppBarState extends State<QuranAppBar> {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<SttController>();
+    final languageProvider = context.watch<LanguageProvider>();
+    final isArabic = languageProvider.currentLanguageCode == 'ar';
+
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
@@ -50,10 +55,32 @@ class _QuranAppBarState extends State<QuranAppBar> {
     final subtitleSize = screenWidth * 0.028;
     final badgeSize = screenWidth * 0.028;
 
-    // Determine display name
+    // ✅ NEW: Determine display name with Arabic support
     String displaySurahName;
     if (controller.suratNameSimple.isNotEmpty) {
-      displaySurahName = controller.suratNameSimple;
+      if (isArabic) {
+        // ✅ Use Arabic name if language is Arabic
+        final metadataCache = MetadataCacheService();
+
+        // Try to get Arabic name from cache or current page
+        if (controller.currentPageAyats.isNotEmpty) {
+          final surahId = controller.currentPageAyats.first.surah_id;
+          displaySurahName = metadataCache.getPrimarySurahForPage(
+            controller.currentPage,
+            useArabic: true,
+          );
+
+          // Fallback if cache doesn't have it
+          if (displaySurahName.isEmpty || displaySurahName == 'Unknown Surah') {
+            displaySurahName = controller.suratNameSimple;
+          }
+        } else {
+          displaySurahName = controller.suratNameSimple;
+        }
+      } else {
+        // Use simple name for non-Arabic languages
+        displaySurahName = controller.suratNameSimple;
+      }
     } else if (controller.ayatList.isNotEmpty) {
       displaySurahName = 'Surah ${controller.ayatList.first.surah_id}';
     } else {
@@ -164,10 +191,10 @@ class _QuranAppBarState extends State<QuranAppBar> {
                 size: iconSize * 0.9,
               ),
               onPressed: () async {
-                // âœ… FIX: Await toggle completion
+                // ✅ FIX: Await toggle completion
                 await controller.toggleQuranMode();
 
-                // âœ… FORCE: Trigger rebuild immediately
+                // ✅ FORCE: Trigger rebuild immediately
                 if (context.mounted) {
                   // Scroll to correct position after mode change
                   WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -749,8 +776,8 @@ class QuranLoadingWidget extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
-    final containerSize = screenWidth * 0.15; // âœ… ~60px pada 400px width
-    final titleSize = screenWidth * 0.04; // âœ… ~16px pada 400px width
+    final containerSize = screenWidth * 0.15; // ✅ ~60px pada 400px width
+    final titleSize = screenWidth * 0.04; // ✅ ~16px pada 400px width
     final messageSize = screenWidth * 0.03;
 
     return Center(

@@ -1,5 +1,7 @@
 // lib/screens/main/home/screens/all_session_page.dart
 
+import 'package:cuda_qurani/core/utils/language_helper.dart';
+import 'package:cuda_qurani/main.dart';
 import 'package:flutter/material.dart';
 import 'package:cuda_qurani/screens/main/home/widgets/navigation_bar.dart';
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
@@ -16,6 +18,15 @@ class AllSessionPage extends StatefulWidget {
 }
 
 class _AllSessionPageState extends State<AllSessionPage> {
+  Map<String, dynamic> _translations = {};
+
+  Future<void> _loadTranslations() async {
+    // Ganti path sesuai file JSON yang dibutuhkan
+    final trans = await context.loadTranslations('home/home');
+    setState(() {
+      _translations = trans;
+    });
+  }
   // ==================== DATA STRUCTURE ====================
   final SupabaseService _supabaseService = SupabaseService();
   final AuthService _authService = AuthService(); // ✅ Add AuthService
@@ -26,6 +37,7 @@ class _AllSessionPageState extends State<AllSessionPage> {
   void initState() {
     super.initState();
     _loadSessions();
+    _loadTranslations();
   }
   
   Future<void> _loadSessions() async {
@@ -74,7 +86,11 @@ class _AllSessionPageState extends State<AllSessionPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
-      appBar: const ProfileAppBar(title: 'Session'),
+      appBar: ProfileAppBar(
+        title: _translations.isNotEmpty
+          ? LanguageHelper.tr(_translations, 'home.session.session_text')
+          : 'Session'
+      ),
       body: SafeArea(
         child: _isLoading 
           ? const Center(child: CircularProgressIndicator())
@@ -131,8 +147,11 @@ class _AllSessionPageState extends State<AllSessionPage> {
 
   // ==================== HEADER ====================
   Widget _buildHeader(BuildContext context) {
+    final String headerText = _translations.isNotEmpty
+      ? LanguageHelper.tr(_translations, 'home.session.sessions_text').toUpperCase()
+      : 'SESSIONS';
     return Text(
-      '${_sessions.length} SESSIONS',
+      '${context.formatNumber(_sessions.length)} $headerText',
       style: AppTypography.overline(
         context,
         color: AppColors.textTertiary,
@@ -163,7 +182,7 @@ class _AllSessionPageState extends State<AllSessionPage> {
             children: [
               // Session Type Label (smaller)
               Text(
-                session.type.displayName.toUpperCase(),
+                _getSessionTypeLabel(session.type).toUpperCase(),
                 style: AppTypography.captionSmall(
                   context,
                   color: AppColors.textDisabled,
@@ -218,6 +237,9 @@ class _AllSessionPageState extends State<AllSessionPage> {
 
   // ==================== SURAH INFO ====================
   Widget _buildSurahInfo(BuildContext context, SessionData session) {
+    final String versesText = _translations.isNotEmpty
+      ? LanguageHelper.tr(_translations, 'home.ayah_text').toLowerCase()
+      : 'Verses';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -238,7 +260,7 @@ class _AllSessionPageState extends State<AllSessionPage> {
         Row(
           children: [
             Text(
-              _formatDuration(session.duration),
+              _formatDurationWithContext(context, session.duration),
               style: AppTypography.captionSmall(context),
             ),
             
@@ -254,7 +276,7 @@ class _AllSessionPageState extends State<AllSessionPage> {
             ),
             
             Text(
-              '${session.verses} verses',
+              '${context.formatNumber(session.verses)} $versesText',
               style: AppTypography.captionSmall(context),
             ),
           ],
@@ -270,7 +292,7 @@ class _AllSessionPageState extends State<AllSessionPage> {
         // Timestamp (compact, no icon)
         Expanded(
           child: Text(
-            '${session.displayDate} ${session.displayTime}',
+            '${_formatDisplayDate(context, session.displayDate)} ${_formatDisplayTime(context, session.displayTime)}',
             style: AppTypography.captionSmall(
               context,
               color: AppColors.textDisabled,
@@ -290,6 +312,9 @@ class _AllSessionPageState extends State<AllSessionPage> {
 
   // ==================== CONTINUE BUTTON ====================
   Widget _buildContinueButton(BuildContext context) {
+    final String continueText = _translations.isNotEmpty
+      ? LanguageHelper.tr(_translations, 'home.session.continue_text')
+      : 'Continue';
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -308,7 +333,7 @@ class _AllSessionPageState extends State<AllSessionPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Continue',
+                continueText,
                 style: AppTypography.captionSmall(
                   context,
                   color: AppColors.primary,
@@ -329,6 +354,48 @@ class _AllSessionPageState extends State<AllSessionPage> {
   }
 
   // ==================== HELPER METHODS ====================
+  
+  String _formatDisplayDate(BuildContext context, String displayDate) {
+    // Format: "TODAY" or "JANUARY 15, 2024"
+    if (displayDate == 'TODAY') {
+      return displayDate;
+    }
+    // Extract and format numbers in date
+    final parts = displayDate.split(' ');
+    if (parts.length >= 3) {
+      final month = parts[0]; // JANUARY
+      final day = parts[1].replaceAll(',', ''); // 15
+      final year = parts[2]; // 2024
+      return '$month ${context.formatNumber(int.parse(day))}, ${context.formatNumber(int.parse(year))}';
+    }
+    return displayDate;
+  }
+
+  String _formatDisplayTime(BuildContext context, String displayTime) {
+    // Format: "3:45PM" -> format the numbers
+    final match = RegExp(r'(\d+):(\d+)([AP]M)').firstMatch(displayTime);
+    if (match != null) {
+      final hour = match.group(1)!;
+      final minute = match.group(2)!;
+      final period = match.group(3)!;
+      return '${context.formatNumber(int.parse(hour))}:${context.formatNumber(int.parse(minute))}$period';
+    }
+    return displayTime;
+  }
+  
+  String _getSessionTypeLabel(SessionType type) {
+    if (_translations.isEmpty) {
+      return type.displayName;
+    }
+    switch (type) {
+      case SessionType.reading:
+        return LanguageHelper.tr(_translations, 'home.session.reading_text');
+      case SessionType.memorization:
+        return 'Memorization'; // Add to JSON if needed
+      case SessionType.revision:
+        return 'Revision'; // Add to JSON if needed
+    }
+  }
   
   IconData _getSessionIcon(SessionType type) {
     switch (type) {
@@ -353,19 +420,41 @@ class _AllSessionPageState extends State<AllSessionPage> {
   }
 
   String _formatDuration(Duration duration) {
+    final String minText = _translations.isNotEmpty
+      ? LanguageHelper.tr(_translations, 'home.session.min_text').toLowerCase()
+      : 'min';
     if (duration.inMinutes == 0) {
-      return '< 1 min';
+      return '< 1 $minText';
     }
     final minutes = duration.inMinutes;
     if (minutes < 60) {
-      return '$minutes min';
+      return '$minutes $minText';
     }
     final hours = minutes ~/ 60;
     final remainingMinutes = minutes % 60;
     if (remainingMinutes == 0) {
       return '$hours hr';
     }
-    return '$hours hr $remainingMinutes min';
+    return '$hours hr $remainingMinutes $minText';
+  }
+
+  String _formatDurationWithContext(BuildContext context, Duration duration) {
+    final String minText = _translations.isNotEmpty
+      ? LanguageHelper.tr(_translations, 'home.session.min_text').toLowerCase()
+      : 'min';
+    if (duration.inMinutes == 0) {
+      return '< ${context.formatNumber(1)} $minText';
+    }
+    final minutes = duration.inMinutes;
+    if (minutes < 60) {
+      return '${context.formatNumber(minutes)} $minText';
+    }
+    final hours = minutes ~/ 60;
+    final remainingMinutes = minutes % 60;
+    if (remainingMinutes == 0) {
+      return '${context.formatNumber(hours)} hr';
+    }
+    return '${context.formatNumber(hours)} hr ${context.formatNumber(remainingMinutes)} $minText';
   }
 
   void _navigateToSession(BuildContext context, SessionData session) {

@@ -47,3 +47,4 @@ app.*.map.json
 
 .vscode/templates
 android/app/google-services.json
+lib/config/app_config.dart

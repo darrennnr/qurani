@@ -536,6 +536,8 @@ class _SurahListPageState extends State<SurahListPage> {
 
   Widget _buildSurahList() {
     final s = AppDesignSystem.getScaleFactor(context);
+    // ✅ Check if current language is Arabic
+    final isArabic = context.currentLanguage == 'ar';
 
     return _OptimizedList(
       itemCount: _surahs.length,
@@ -544,7 +546,10 @@ class _SurahListPageState extends State<SurahListPage> {
       itemBuilder: (context, index) {
         final surah = _surahs[index];
         final int id = surah['id'] as int;
-        final String name = surah['name_simple'] ?? 'Surah $id';
+        // ✅ Use name_arabic if language is Arabic, otherwise use name_simple
+        final String name = isArabic 
+            ? (surah['name_arabic'] ?? surah['name_simple'] ?? 'Surah $id')
+            : (surah['name_simple'] ?? 'Surah $id');
         final int ayat = surah['verses_count'] ?? 0;
         final String place = (surah['revelation_place'] ?? '')
             .toString()
@@ -740,7 +745,23 @@ subtitle: '${context.formatNumber(r['first_verse_key'])} - ${context.formatNumbe
 
   Widget _buildPageSearchTile(Map<String, dynamic> r) {
     final pageNum = r['page_number'] as int;
-    final surahName = _cache.getPrimarySurahForPage(pageNum);
+    // ✅ Check if current language is Arabic
+    final isArabic = context.currentLanguage == 'ar';
+    
+    // ✅ Get surah IDs for this page
+    final surahIds = _cache.getSurahIdsForPage(pageNum);
+    String surahName = 'Unknown Surah';
+    
+    if (surahIds.isNotEmpty) {
+      final surahData = _cache.getSurah(surahIds.first);
+      if (surahData != null) {
+        // ✅ Use name_arabic if language is Arabic, otherwise use name_simple
+        surahName = isArabic 
+            ? (surahData['name_arabic'] ?? surahData['name_simple'] ?? 'Unknown Surah')
+            : (surahData['name_simple'] ?? 'Unknown Surah');
+      }
+    }
+    
     final pageText = _translations.isNotEmpty
         ? LanguageHelper.tr(_translations, "surah_list.page_text")
         : "Page";
@@ -760,7 +781,12 @@ subtitle: '${context.formatNumber(r['first_verse_key'])} - ${context.formatNumbe
 
   Widget _buildSurahSearchTile(Map<String, dynamic> r) {
     final surahId = r['id'] as int;
-    final surahName = r['name_simple'] as String;
+    // ✅ Check if current language is Arabic
+    final isArabic = context.currentLanguage == 'ar';
+    // ✅ Use name_arabic if language is Arabic, otherwise use name_simple
+    final surahName = isArabic 
+        ? (r['name_arabic'] ?? r['name_simple'] ?? 'Surah $surahId')
+        : (r['name_simple'] as String? ?? 'Surah $surahId');
     final ayahText = _translations.isNotEmpty
         ? LanguageHelper.tr(_translations, 'surah_list.ayah_text')
         : 'Ayat';
@@ -1000,6 +1026,8 @@ class _OptimizedPageListState extends State<_OptimizedPageList> {
   @override
   Widget build(BuildContext context) {
     final s = AppDesignSystem.getScaleFactor(context);
+    // ✅ Check if current language is Arabic
+    final isArabic = context.currentLanguage == 'ar';
 
     return Stack(
       children: [
@@ -1020,8 +1048,20 @@ class _OptimizedPageListState extends State<_OptimizedPageList> {
               return SizedBox(height: 70 * s);
             }
 
-            // ✅ Get surah name dari cache
-            final surahName = widget.cache.getPrimarySurahForPage(pageNum);
+            // ✅ Get surah IDs for this page
+            final surahIds = widget.cache.getSurahIdsForPage(pageNum);
+            String surahName = 'Unknown Surah';
+            
+            if (surahIds.isNotEmpty) {
+              final surahData = widget.cache.getSurah(surahIds.first);
+              if (surahData != null) {
+                // ✅ Use name_arabic if language is Arabic, otherwise use name_simple
+                surahName = isArabic 
+                    ? (surahData['name_arabic'] ?? surahData['name_simple'] ?? 'Unknown Surah')
+                    : (surahData['name_simple'] ?? 'Unknown Surah');
+              }
+            }
+            
             final pageText = _translations.isNotEmpty
                 ? LanguageHelper.tr(_translations, "surah_list.page_text")
                 : "Page";

@@ -28,17 +28,27 @@ class MetadataCacheService {
   Map<String, dynamic>? getJuz(int number) => _juzMap[number];
 
   /// Get surah names that appear on a specific page
-  List<String> getSurahNamesForPage(int pageNumber) {
+  List<String> getSurahNamesForPage(int pageNumber, {bool useArabic = false}) {
     final surahIds = _pageSurahMap[pageNumber] ?? [];
     return surahIds
-        .map((id) => _surahMap[id]?['name_simple'] as String? ?? '')
+        .map((id) {
+          final surahData = _surahMap[id];
+          if (surahData == null) return '';
+          
+          // ✅ Return Arabic name if useArabic is true
+          if (useArabic) {
+            return surahData['name_arabic'] as String? ?? 
+                   surahData['name_simple'] as String? ?? '';
+          }
+          return surahData['name_simple'] as String? ?? '';
+        })
         .where((name) => name.isNotEmpty)
         .toList();
   }
 
   /// Get primary surah for a page (first surah on that page)
-  String getPrimarySurahForPage(int pageNumber) {
-    final names = getSurahNamesForPage(pageNumber);
+  String getPrimarySurahForPage(int pageNumber, {bool useArabic = false}) {
+    final names = getSurahNamesForPage(pageNumber, useArabic: useArabic);
     if (names.isNotEmpty) return names.first;
 
     // Fallback: try to get directly from database if cache empty
@@ -47,6 +57,12 @@ class MetadataCacheService {
       if (surahIds != null && surahIds.isNotEmpty) {
         final surahData = _surahMap[surahIds.first];
         if (surahData != null) {
+          // ✅ Return Arabic name if useArabic is true
+          if (useArabic) {
+            return surahData['name_arabic'] as String? ?? 
+                   surahData['name_simple'] as String? ?? 
+                   'Unknown Surah';
+          }
           return surahData['name_simple'] as String? ?? 'Unknown Surah';
         }
       }
