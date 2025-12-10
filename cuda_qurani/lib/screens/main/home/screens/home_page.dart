@@ -1,13 +1,14 @@
 // lib/screens/main/home/screens/home_page.dart
 
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
+import 'package:cuda_qurani/core/utils/language_helper.dart';
 import 'package:cuda_qurani/screens/main/home/screens/all_session_page.dart';
 import 'package:cuda_qurani/screens/main/home/screens/achievement_page.dart';
 import 'package:cuda_qurani/screens/main/home/widgets/navigation_bar.dart';
 import 'package:cuda_qurani/providers/auth_provider.dart';
-import 'package:cuda_qurani/services/supabase_service.dart'; // ✅ NEW
-import 'package:cuda_qurani/services/auth_service.dart'; // ✅ NEW
-import 'package:cuda_qurani/screens/main/stt/stt_page.dart'; // ✅ NEW: For navigation
+import 'package:cuda_qurani/services/supabase_service.dart';
+import 'package:cuda_qurani/services/auth_service.dart';
+import 'package:cuda_qurani/screens/main/stt/stt_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -20,6 +21,21 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  Map<String, dynamic> _translations = {};
+
+  Future<void> _loadTranslations() async {
+    final trans = await context.loadTranslations('home/home');
+    setState(() {
+      _translations = trans;
+    });
+  }
+
+  String _t(String key) {
+    return _translations.isNotEmpty
+        ? LanguageHelper.tr(_translations, key)
+        : key.split('.').last;
+  }
+
   // Stats data - fetched from database
   int _currentStreak = 0;
   int _longestStreak = 0;
@@ -41,11 +57,11 @@ class _HomePageState extends State<HomePage> {
   int _earnedBadgesCount = 0;
   int _totalBadgesCount = 0;
 
-  // ✅ NEW: Continue Reading & Recent Progress
+  // Continue Reading & Recent Progress
   Map<String, dynamic>? _continueReading;
   List<Map<String, dynamic>> _recentProgress = [];
 
-  // ✅ Backend integration
+  // Backend integration
   final SupabaseService _supabaseService = SupabaseService();
   final AuthService _authService = AuthService();
   Map<String, dynamic>? _latestSession;
@@ -55,10 +71,11 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _loadLatestSession();
-    _loadHomePageData(); // ✅ Single optimized call
+    _loadTranslations();
+    _loadHomePageData();
   }
 
-  /// ✅ OPTIMIZED: Load ALL home page data in ONE call
+  /// OPTIMIZED: Load ALL home page data in ONE call
   Future<void> _loadHomePageData() async {
     final userUuid = _authService.userId;
     if (userUuid == null) {
@@ -84,7 +101,8 @@ class _HomePageState extends State<HomePage> {
         final hours = totalSeconds ~/ 3600;
         final minutes = (totalSeconds % 3600) ~/ 60;
         final seconds = totalSeconds % 60;
-        _engagementTime = '$hours:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+        _engagementTime =
+            '$hours:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
         _completionPercentage = ((_versesRecited / 6236) * 100).round();
 
         // Parse today's goal
@@ -99,65 +117,56 @@ class _HomePageState extends State<HomePage> {
 
         // Parse recent badges
         final badges = data['recent_badges'] as List? ?? [];
-        _recentBadges = badges.map((b) => Map<String, dynamic>.from(b)).toList();
+        _recentBadges = badges
+            .map((b) => Map<String, dynamic>.from(b))
+            .toList();
 
         // Parse badges count
         final badgesCount = data['badges_count'] as Map<String, dynamic>? ?? {};
         _earnedBadgesCount = badgesCount['earned'] ?? 0;
         _totalBadgesCount = badgesCount['total'] ?? 0;
 
-        // ✅ NEW: Parse continue reading
-        final continueReading = data['continue_reading'] as Map<String, dynamic>?;
+        // Parse continue reading
+        final continueReading =
+            data['continue_reading'] as Map<String, dynamic>?;
         _continueReading = continueReading;
 
-        // ✅ NEW: Parse recent progress
+        // Parse recent progress
         final recentProgress = data['recent_progress'] as List? ?? [];
-        _recentProgress = recentProgress.map((p) => Map<String, dynamic>.from(p)).toList();
+        _recentProgress = recentProgress
+            .map((p) => Map<String, dynamic>.from(p))
+            .toList();
 
         setState(() => _isLoadingStats = false);
-        print('✅ HOME: Data loaded - streak: $_currentStreak, badges: $_earnedBadgesCount/$_totalBadgesCount, progress: ${_recentProgress.length} surahs');
+        print(
+          '✅ HOME: Data loaded - streak: $_currentStreak, badges: $_earnedBadgesCount/$_totalBadgesCount, progress: ${_recentProgress.length} surahs',
+        );
       } else {
         setState(() => _isLoadingStats = false);
       }
     } catch (e) {
-      print('❌ HOME: Error loading data: $e');
       if (mounted) setState(() => _isLoadingStats = false);
     }
   }
 
-  /// ✅ NEW: Load latest resumable session from backend
+  /// Load latest resumable session from backend
   Future<void> _loadLatestSession() async {
-    print('🔄 HOME: Loading latest session...');
-
     if (!_authService.isAuthenticated) {
-      print('⚠️ HOME: User not authenticated');
       if (mounted) setState(() => _isLoadingSession = false);
       return;
     }
 
     final userUuid = _authService.userId;
-    print('👤 HOME: User UUID: $userUuid');
 
     if (userUuid == null) {
-      print('⚠️ HOME: User UUID is null');
       if (mounted) setState(() => _isLoadingSession = false);
       return;
     }
 
     try {
-      print('📡 HOME: Fetching session from database...');
       final session = await _supabaseService.getResumableSession(userUuid);
 
-      if (!mounted) return; // ✅ FIX: Check mounted before setState
-
-      if (session != null) {
-        print('✅ HOME: Session found!');
-        print('   Session ID: ${session['session_id']}');
-        print('   Surah: ${session['surah_id']}, Ayah: ${session['ayah']}');
-        print('   Status: ${session['status']}');
-      } else {
-        print('⚠️ HOME: No resumable session found');
-      }
+      if (!mounted) return;
 
       setState(() {
         _latestSession = session;
@@ -175,12 +184,13 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: AppColors.backgroundLight,
       appBar: const MenuAppBar(selectedIndex: 0),
       body: SafeArea(
-        // ✅ Pull to Refresh
         child: RefreshIndicator(
           onRefresh: _refreshAllData,
           color: AppColors.primary,
           child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
             slivers: [
               SliverPadding(
                 padding: AppPadding.section(context),
@@ -242,14 +252,19 @@ class _HomePageState extends State<HomePage> {
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good Morning';
-    if (hour < 17) return 'Good Afternoon';
-    return 'Good Evening';
+    final goodText = _t('home.greeting_text');
+
+    if (hour < 12) {
+      return '$goodText ${_t('home.morning')}';
+    }
+    if (hour < 17) {
+      return '$goodText ${_t('home.afternoon')}';
+    }
+    return '$goodText ${_t('home.evening')}';
   }
 
   // ==================== LATEST SESSION CARD ====================
   Widget _buildLatestSession(BuildContext context) {
-    // ✅ Show loading state
     if (_isLoadingSession) {
       return Container(
         padding: AppPadding.card(context),
@@ -264,7 +279,6 @@ class _HomePageState extends State<HomePage> {
       );
     }
 
-    // ✅ No session found
     if (_latestSession == null) {
       return Container(
         padding: AppPadding.card(context),
@@ -297,26 +311,32 @@ class _HomePageState extends State<HomePage> {
       );
     }
 
-    // ✅ Extract session data from backend (now includes surah_name from view)
     final surahId = _latestSession!['surah_id'] ?? 0;
-    final surahName = _latestSession!['surah_name'] ?? 'Surah $surahId';
+    final surahName =
+        _latestSession!['surah_name'] ?? '${_t('home.surah_text')} $surahId';
     final totalAyahs = _latestSession!['total_ayahs'] ?? 0;
     final ayah = _latestSession!['ayah'] ?? 0;
     final position = _latestSession!['position'] ?? 0;
     final status = _latestSession!['status'] ?? 'unknown';
     final updatedAt = _latestSession!['updated_at'] ?? '';
 
-    // Calculate time ago
+    // Calculate time ago with translations
     String timeAgo = 'Just now';
     try {
       final updated = DateTime.parse(updatedAt);
       final diff = DateTime.now().difference(updated);
       if (diff.inMinutes < 60) {
-        timeAgo = '${diff.inMinutes} min ago';
+        final mins = diff.inMinutes;
+        timeAgo =
+            '$mins ${mins > 1 ? _t('home.minutes_text') : _t('home.minute_text')} ${_t('home.ago_text')}';
       } else if (diff.inHours < 24) {
-        timeAgo = '${diff.inHours} hour${diff.inHours > 1 ? 's' : ''} ago';
+        final hrs = diff.inHours;
+        timeAgo =
+            '$hrs ${hrs > 1 ? _t('home.hours_text') : _t('home.hour_text')} ${_t('home.ago_text')}';
       } else {
-        timeAgo = '${diff.inDays} day${diff.inDays > 1 ? 's' : ''} ago';
+        final dys = diff.inDays;
+        timeAgo =
+            '$dys ${dys > 1 ? _t('home.days_text') : _t('home.day_text')} ${_t('home.ago_text')}';
       }
     } catch (e) {
       // Keep default
@@ -327,7 +347,6 @@ class _HomePageState extends State<HomePage> {
       child: InkWell(
         onTap: () {
           AppHaptics.light();
-          // Navigate to continue reading
           _resumeSession();
         },
         borderRadius: BorderRadius.circular(AppDesignSystem.radiusLarge),
@@ -365,7 +384,7 @@ class _HomePageState extends State<HomePage> {
                       Text(
                         status == 'paused'
                             ? 'PAUSED SESSION'
-                            : 'LATEST SESSION',
+                            : _t('home.latest_Session_text').toUpperCase(),
                         style: AppTypography.overline(context),
                       ),
                     ],
@@ -393,7 +412,7 @@ class _HomePageState extends State<HomePage> {
                         child: Row(
                           children: [
                             Text(
-                              'See All',
+                              _t('home.see_all_text'),
                               style: AppTypography.caption(
                                 context,
                                 weight: AppTypography.semiBold,
@@ -416,14 +435,14 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
               AppMargin.gap(context),
-              // Surah Title - Now shows actual name from database
+              // Surah Title
               Text(
                 surahName,
                 style: AppTypography.h2(context, weight: AppTypography.bold),
               ),
               AppMargin.gapSmall(context),
               Text(
-                'Ayah $ayah${totalAyahs > 0 ? '/$totalAyahs' : ''}, Word ${position + 1} · $timeAgo',
+                '${_t('home.ayah_text')} $ayah${totalAyahs > 0 ? '/$totalAyahs' : ''}, ${_t('home.word_text')} ${position + 1} · $timeAgo',
                 style: AppTypography.caption(context),
               ),
               AppMargin.gap(context),
@@ -444,7 +463,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   child: Text(
-                    'Continue reading',
+                    _t('home.continue_reading_text'),
                     style: AppTypography.label(
                       context,
                       color: AppColors.textPrimary,
@@ -460,16 +479,13 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  /// ✅ Refresh all data (for pull-to-refresh and auto-refresh)
+  /// Refresh all data (for pull-to-refresh and auto-refresh)
   Future<void> _refreshAllData() async {
     setState(() => _isLoadingStats = true);
-    await Future.wait([
-      _loadHomePageData(),
-      _loadLatestSession(),
-    ]);
+    await Future.wait([_loadHomePageData(), _loadLatestSession()]);
   }
 
-  /// ✅ Resume session action
+  /// Resume session action
   Future<void> _resumeSession() async {
     if (_latestSession == null) return;
 
@@ -477,12 +493,14 @@ class _HomePageState extends State<HomePage> {
       final surahId = _latestSession!['surah_id'] as int;
       final ayah = _latestSession!['ayah'] as int?;
       final position = _latestSession!['position'] as int?;
-      final sessionId = _latestSession!['session_id'] as String?; // ✅ NEW
-      
-      // ✅ Extract word_status_map from session data
+      final sessionId = _latestSession!['session_id'] as String?;
+
       Map<String, dynamic>? wordStatusMap;
-      if (_latestSession!['data'] != null && _latestSession!['data']['word_status_map'] != null) {
-        wordStatusMap = Map<String, dynamic>.from(_latestSession!['data']['word_status_map']);
+      if (_latestSession!['data'] != null &&
+          _latestSession!['data']['word_status_map'] != null) {
+        wordStatusMap = Map<String, dynamic>.from(
+          _latestSession!['data']['word_status_map'],
+        );
       }
 
       print('▶️ Navigating to resume session:');
@@ -492,19 +510,17 @@ class _HomePageState extends State<HomePage> {
       print('   Session ID: $sessionId');
       print('   Word status map: ${wordStatusMap?.keys.length ?? 0} ayahs');
 
-      // ✅ Navigate to STT page with session_id and word_status_map
       await Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => SttPage(
             suratId: surahId,
             isFromHistory: true,
             initialWordStatusMap: wordStatusMap,
-            resumeSessionId: sessionId, // ✅ NEW: Pass session_id for backend resume
+            resumeSessionId: sessionId,
           ),
         ),
       );
-      
-      // ✅ Auto-refresh data after returning from recording
+
       if (mounted) {
         print('🔄 HOME: Auto-refreshing after recording...');
         _refreshAllData();
@@ -527,7 +543,7 @@ class _HomePageState extends State<HomePage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Streak',
+          _t('home.streak_text'),
           style: AppTypography.titleLarge(context, weight: AppTypography.bold),
         ),
         AppMargin.gap(context),
@@ -538,16 +554,20 @@ class _HomePageState extends State<HomePage> {
                 context: context,
                 label: 'Current Streak 🔥',
                 value: _currentStreak,
-                unit: 'day',
+                unit: _currentStreak > 1
+                    ? _t('home.days_text')
+                    : _t('home.day_text'),
               ),
             ),
             AppMargin.gapH(context),
             Expanded(
               child: _buildStreakCard(
                 context: context,
-                label: 'Longest Streak 🔥',
+                label: _t('home.treak'),
                 value: _longestStreak,
-                unit: 'days',
+                unit: _longestStreak > 1
+                    ? _t('home.days_text')
+                    : _t('home.day_text'),
               ),
             ),
           ],
@@ -602,7 +622,7 @@ class _HomePageState extends State<HomePage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Progress',
+          _t('home.progress_text'),
           style: AppTypography.titleLarge(context, weight: AppTypography.bold),
         ),
         AppMargin.gap(context),
@@ -611,7 +631,7 @@ class _HomePageState extends State<HomePage> {
             Expanded(
               child: _buildProgressCard(
                 context: context,
-                label: 'Completion',
+                label: _t('home.completion_text'),
                 value: '$_completionPercentage%',
                 color: AppColors.primary,
               ),
@@ -620,7 +640,7 @@ class _HomePageState extends State<HomePage> {
             Expanded(
               child: _buildProgressCard(
                 context: context,
-                label: 'Memorized',
+                label: _t('home.memorized_text'),
                 value: '$_memorizedPercentage%',
                 color: AppColors.accent,
               ),
@@ -633,7 +653,7 @@ class _HomePageState extends State<HomePage> {
             Expanded(
               child: _buildProgressCard(
                 context: context,
-                label: 'Time',
+                label: _t('home.time_text'),
                 value: _engagementTime,
                 color: AppColors.info,
               ),
@@ -642,7 +662,9 @@ class _HomePageState extends State<HomePage> {
             Expanded(
               child: _buildProgressCard(
                 context: context,
-                label: 'Verses',
+                label: _versesRecited > 1
+                    ? _t('home.verses_text')
+                    : _t('home.verse_text'),
                 value: '$_versesRecited',
                 color: AppColors.success,
               ),
@@ -690,26 +712,27 @@ class _HomePageState extends State<HomePage> {
 
   // ==================== TODAY'S GOAL ====================
   Widget _buildTodayGoal(BuildContext context) {
-    // Goal type labels
-    String goalLabel = 'Verses Goal';
+    String goalLabel = '${_t('home.verses_text')} Goal';
     String goalIcon = '📖';
     if (_goalType == 'minutes') {
-      goalLabel = 'Time Goal';
+      goalLabel = '${_t('home.time_text')} Goal';
       goalIcon = '⏱️';
     } else if (_goalType == 'pages') {
       goalLabel = 'Pages Goal';
       goalIcon = '📄';
     }
 
-    // Progress text
-    String progressText = '$_goalCurrent/$_goalTarget ${_goalType == 'minutes' ? 'min' : _goalType}';
-    double progressPercent = _goalTarget > 0 ? (_goalCurrent / _goalTarget).clamp(0.0, 1.0) : 0.0;
+    String progressText =
+        '$_goalCurrent/$_goalTarget ${_goalType == 'minutes' ? _t('home.session.min_text') : _goalType}';
+    double progressPercent = _goalTarget > 0
+        ? (_goalCurrent / _goalTarget).clamp(0.0, 1.0)
+        : 0.0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "Today's Goal",
+          _t('home.todays_goal_text'),
           style: AppTypography.titleLarge(context, weight: AppTypography.bold),
         ),
         AppMargin.gap(context),
@@ -718,7 +741,6 @@ class _HomePageState extends State<HomePage> {
           child: InkWell(
             onTap: () {
               AppHaptics.light();
-              // TODO: Navigate to goal settings
             },
             borderRadius: BorderRadius.circular(AppDesignSystem.radiusLarge),
             splashColor: AppComponentStyles.rippleColor,
@@ -740,11 +762,23 @@ class _HomePageState extends State<HomePage> {
                               width: AppDesignSystem.iconHuge,
                               height: AppDesignSystem.iconHuge,
                               decoration: BoxDecoration(
-                                color: _goalCompleted ? AppColors.success : AppColors.primary,
-                                borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium),
+                                color: _goalCompleted
+                                    ? AppColors.success
+                                    : AppColors.primary,
+                                borderRadius: BorderRadius.circular(
+                                  AppDesignSystem.radiusMedium,
+                                ),
                               ),
                               child: Center(
-                                child: Text(goalIcon, style: TextStyle(fontSize: AppDesignSystem.scale(context, 24))),
+                                child: Text(
+                                  goalIcon,
+                                  style: TextStyle(
+                                    fontSize: AppDesignSystem.scale(
+                                      context,
+                                      24,
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
                             AppMargin.gapH(context),
@@ -752,26 +786,52 @@ class _HomePageState extends State<HomePage> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(goalLabel, style: AppTypography.title(context, weight: AppTypography.semiBold)),
+                                  Text(
+                                    goalLabel,
+                                    style: AppTypography.title(
+                                      context,
+                                      weight: AppTypography.semiBold,
+                                    ),
+                                  ),
                                   AppMargin.gapSmall(context),
-                                  Text(progressText, style: AppTypography.caption(context, color: _goalCompleted ? AppColors.success : AppColors.textTertiary)),
+                                  Text(
+                                    progressText,
+                                    style: AppTypography.caption(
+                                      context,
+                                      color: _goalCompleted
+                                          ? AppColors.success
+                                          : AppColors.textTertiary,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
                             if (_goalCompleted)
-                              Icon(Icons.check_circle_rounded, color: AppColors.success, size: AppDesignSystem.iconLarge)
+                              Icon(
+                                Icons.check_circle_rounded,
+                                color: AppColors.success,
+                                size: AppDesignSystem.iconLarge,
+                              )
                             else
-                              Icon(Icons.arrow_forward_ios_rounded, size: AppDesignSystem.iconSmall, color: AppColors.textDisabled),
+                              Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                size: AppDesignSystem.iconSmall,
+                                color: AppColors.textDisabled,
+                              ),
                           ],
                         ),
                         if (!_goalCompleted) ...[
                           AppMargin.gap(context),
                           ClipRRect(
-                            borderRadius: BorderRadius.circular(AppDesignSystem.radiusSmall),
+                            borderRadius: BorderRadius.circular(
+                              AppDesignSystem.radiusSmall,
+                            ),
                             child: LinearProgressIndicator(
                               value: progressPercent,
                               backgroundColor: AppColors.borderLight,
-                              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                AppColors.primary,
+                              ),
                               minHeight: AppDesignSystem.scale(context, 6),
                             ),
                           ),
@@ -785,22 +845,41 @@ class _HomePageState extends State<HomePage> {
                           height: AppDesignSystem.iconHuge,
                           decoration: BoxDecoration(
                             color: AppColors.surfaceContainerLow,
-                            borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium),
+                            borderRadius: BorderRadius.circular(
+                              AppDesignSystem.radiusMedium,
+                            ),
                           ),
-                          child: Icon(Icons.add_rounded, color: AppColors.textTertiary, size: AppDesignSystem.iconLarge),
+                          child: Icon(
+                            Icons.add_rounded,
+                            color: AppColors.textTertiary,
+                            size: AppDesignSystem.iconLarge,
+                          ),
                         ),
                         AppMargin.gapH(context),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Set a Goal', style: AppTypography.title(context, weight: AppTypography.semiBold)),
+                              Text(
+                                'Set a Goal',
+                                style: AppTypography.title(
+                                  context,
+                                  weight: AppTypography.semiBold,
+                                ),
+                              ),
                               AppMargin.gapSmall(context),
-                              Text('Tap to create daily goal', style: AppTypography.caption(context)),
+                              Text(
+                                'Tap to create daily goal',
+                                style: AppTypography.caption(context),
+                              ),
                             ],
                           ),
                         ),
-                        Icon(Icons.arrow_forward_ios_rounded, size: AppDesignSystem.iconSmall, color: AppColors.textDisabled),
+                        Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: AppDesignSystem.iconSmall,
+                          color: AppColors.textDisabled,
+                        ),
                       ],
                     ),
             ),
@@ -821,20 +900,32 @@ class _HomePageState extends State<HomePage> {
             Row(
               children: [
                 Text(
-                  'Achievements',
-                  style: AppTypography.titleLarge(context, weight: AppTypography.bold),
+                  _t('home.achievements_text'),
+                  style: AppTypography.titleLarge(
+                    context,
+                    weight: AppTypography.bold,
+                  ),
                 ),
                 if (_earnedBadgesCount > 0) ...[
                   AppMargin.gapHSmall(context),
                   Container(
-                    padding: EdgeInsets.symmetric(horizontal: AppDesignSystem.space6, vertical: 2),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppDesignSystem.space6,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.primaryContainer,
-                      borderRadius: BorderRadius.circular(AppDesignSystem.radiusSmall),
+                      borderRadius: BorderRadius.circular(
+                        AppDesignSystem.radiusSmall,
+                      ),
                     ),
                     child: Text(
                       '$_earnedBadgesCount/$_totalBadgesCount',
-                      style: AppTypography.captionSmall(context, color: AppColors.primary, weight: AppTypography.bold),
+                      style: AppTypography.captionSmall(
+                        context,
+                        color: AppColors.primary,
+                        weight: AppTypography.bold,
+                      ),
                     ),
                   ),
                 ],
@@ -845,26 +936,51 @@ class _HomePageState extends State<HomePage> {
                 Navigator.push(
                   context,
                   PageRouteBuilder(
-                    pageBuilder: (context, animation, secondaryAnimation) => const AchievementPage(),
-                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                      const begin = Offset(-0.03, 0.0);
-                      const end = Offset.zero;
-                      const curve = Curves.easeInOut;
-                      var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-                      var offsetAnimation = animation.drive(tween);
-                      var fadeAnimation = animation.drive(Tween(begin: 0.0, end: 1.0).chain(CurveTween(curve: curve)));
-                      return FadeTransition(opacity: fadeAnimation, child: SlideTransition(position: offsetAnimation, child: child));
-                    },
+                    pageBuilder: (context, animation, secondaryAnimation) =>
+                        const AchievementPage(),
+                    transitionsBuilder:
+                        (context, animation, secondaryAnimation, child) {
+                          const begin = Offset(-0.03, 0.0);
+                          const end = Offset.zero;
+                          const curve = Curves.easeInOut;
+                          var tween = Tween(
+                            begin: begin,
+                            end: end,
+                          ).chain(CurveTween(curve: curve));
+                          var offsetAnimation = animation.drive(tween);
+                          var fadeAnimation = animation.drive(
+                            Tween(
+                              begin: 0.0,
+                              end: 1.0,
+                            ).chain(CurveTween(curve: curve)),
+                          );
+                          return FadeTransition(
+                            opacity: fadeAnimation,
+                            child: SlideTransition(
+                              position: offsetAnimation,
+                              child: child,
+                            ),
+                          );
+                        },
                     transitionDuration: AppDesignSystem.durationNormal,
                   ),
                 );
               },
               style: TextButton.styleFrom(
-                padding: EdgeInsets.symmetric(horizontal: AppDesignSystem.space8, vertical: AppDesignSystem.space4),
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppDesignSystem.space8,
+                  vertical: AppDesignSystem.space4,
+                ),
                 minimumSize: Size(0, 0),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: Text('More', style: AppTypography.caption(context, color: AppColors.textPrimary)),
+              child: Text(
+                'More',
+                style: AppTypography.caption(
+                  context,
+                  color: AppColors.textPrimary,
+                ),
+              ),
             ),
           ],
         ),
@@ -899,9 +1015,19 @@ class _HomePageState extends State<HomePage> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.emoji_events_outlined, color: AppColors.textDisabled, size: AppDesignSystem.iconLarge),
+            Icon(
+              Icons.emoji_events_outlined,
+              color: AppColors.textDisabled,
+              size: AppDesignSystem.iconLarge,
+            ),
             AppMargin.gapHSmall(context),
-            Text('Complete sessions to earn badges', style: AppTypography.caption(context, color: AppColors.textTertiary)),
+            Text(
+              'Complete sessions to earn badges',
+              style: AppTypography.caption(
+                context,
+                color: AppColors.textTertiary,
+              ),
+            ),
           ],
         ),
       ),

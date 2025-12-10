@@ -1,6 +1,7 @@
 // lib/screens/main/home/screens/surah_list_page.dart
 
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
+import 'package:cuda_qurani/core/utils/language_helper.dart';
 import 'package:cuda_qurani/core/widgets/app_components.dart';
 import 'package:cuda_qurani/screens/main/home/services/juz_service.dart';
 import 'package:cuda_qurani/screens/main/stt/stt_page.dart';
@@ -22,6 +23,16 @@ class SurahListPage extends StatefulWidget {
 }
 
 class _SurahListPageState extends State<SurahListPage> {
+  Map<String, dynamic> _translations = {};
+
+  Future<void> _loadTranslations() async {
+    // Ganti path sesuai file JSON yang dibutuhkan
+    final trans = await context.loadTranslations('home/surah_list');
+    setState(() {
+      _translations = trans;
+    });
+  }
+
   TabType _currentTab = TabType.surah;
   final TextEditingController _searchController = TextEditingController();
   final MetadataCacheService _cache = MetadataCacheService();
@@ -41,6 +52,7 @@ class _SurahListPageState extends State<SurahListPage> {
   @override
   void initState() {
     super.initState();
+    _loadTranslations();
     _searchController.addListener(_onSearchChanged);
 
     // ✅ Load dari cache (instant)
@@ -241,94 +253,102 @@ class _SurahListPageState extends State<SurahListPage> {
     );
   }
 
-// ==================== SEARCH BAR ====================
-Widget _buildSearchBar() {
-  final s = AppDesignSystem.getScaleFactor(context);
-  return Container(
-    color: AppColors.surface,
-    padding: EdgeInsets.symmetric(
-      horizontal: AppDesignSystem.space20 * s,
-      vertical: AppDesignSystem.space20 * s,
-    ),
-    child: Container(
-      height: 38 * s,
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium * s),
-        border: Border.all(
-          color: _searchController.text.isNotEmpty
-              ? AppColors.borderFocus
-              : Colors.transparent,
-          width: AppDesignSystem.borderThick * s,
-        ),
+  // ==================== SEARCH BAR ====================
+  Widget _buildSearchBar() {
+    final s = AppDesignSystem.getScaleFactor(context);
+    return Container(
+      color: AppColors.surface,
+      padding: EdgeInsets.symmetric(
+        horizontal: AppDesignSystem.space20 * s,
+        vertical: AppDesignSystem.space20 * s,
       ),
-      alignment: Alignment.center,
-      child: Row(
-        children: [
-          // PREFIX ICON
-          Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: AppDesignSystem.space12 * s,
-            ),
-            child: Icon(
-              Icons.search_rounded,
-              color: _searchController.text.isNotEmpty
-                  ? AppColors.primary
-                  : AppColors.textTertiary,
-              size: AppDesignSystem.iconMedium * s,
-            ),
+      child: Container(
+        height: 38 * s,
+        decoration: BoxDecoration(
+          color: AppColors.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium * s),
+          border: Border.all(
+            color: _searchController.text.isNotEmpty
+                ? AppColors.borderFocus
+                : Colors.transparent,
+            width: AppDesignSystem.borderThick * s,
           ),
-          
-          // TEXT FIELD
-          Expanded(
-            child: TextField(
-              controller: _searchController,
-              style: AppTypography.body(context, color: AppColors.textPrimary),
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                contentPadding: EdgeInsets.zero,
-                isDense: true,
-                hintText: 'Search surah, juz, or page...',
-                hintStyle: AppTypography.body(
-                  context,
-                  color: AppColors.textHint,
-                  weight: AppTypography.regular,
-                ),
-              ),
-            ),
-          ),
-          
-          // SUFFIX ICON
-          if (_searchController.text.isNotEmpty)
-            IconButton(
-              icon: Icon(
-                Icons.close_rounded,
-                color: AppColors.textTertiary,
-                size: AppDesignSystem.iconMedium * s,
-              ),
-              onPressed: () {
-                AppHaptics.light();
-                _searchController.clear();
-                setState(() {
-                  _isSearching = false;
-                  _searchResults = [];
-                });
-              },
+        ),
+        alignment: Alignment.center,
+        child: Row(
+          children: [
+            // PREFIX ICON
+            Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: AppDesignSystem.space12 * s,
               ),
-              constraints: BoxConstraints(),
-              splashRadius: 20 * s,
-            )
-          else
-            SizedBox(width: AppDesignSystem.space12 * s),
-        ],
+              child: Icon(
+                Icons.search_rounded,
+                color: _searchController.text.isNotEmpty
+                    ? AppColors.primary
+                    : AppColors.textTertiary,
+                size: AppDesignSystem.iconMedium * s,
+              ),
+            ),
+
+            // TEXT FIELD
+            Expanded(
+              child: TextField(
+                controller: _searchController,
+                style: AppTypography.body(
+                  context,
+                  color: AppColors.textPrimary,
+                ),
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  contentPadding: EdgeInsets.zero,
+                  isDense: true,
+                  hintText: _translations.isNotEmpty
+                      ? LanguageHelper.tr(
+                          _translations,
+                          'surah_list.search_hint',
+                        )
+                      : 'Search surah, juz, or page...',
+                  hintStyle: AppTypography.body(
+                    context,
+                    color: AppColors.textHint,
+                    weight: AppTypography.regular,
+                  ),
+                ),
+              ),
+            ),
+
+            // SUFFIX ICON
+            if (_searchController.text.isNotEmpty)
+              IconButton(
+                icon: Icon(
+                  Icons.close_rounded,
+                  color: AppColors.textTertiary,
+                  size: AppDesignSystem.iconMedium * s,
+                ),
+                onPressed: () {
+                  AppHaptics.light();
+                  _searchController.clear();
+                  setState(() {
+                    _isSearching = false;
+                    _searchResults = [];
+                  });
+                },
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppDesignSystem.space12 * s,
+                ),
+                constraints: BoxConstraints(),
+                splashRadius: 20 * s,
+              )
+            else
+              SizedBox(width: AppDesignSystem.space12 * s),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   // ==================== SEGMENTED BUTTON TAB BAR ====================
 
@@ -353,7 +373,12 @@ Widget _buildSearchBar() {
               children: [
                 _buildSegmentButton(
                   context: context,
-                  label: 'Surah',
+                  label: _translations.isNotEmpty
+                      ? LanguageHelper.tr(
+                          _translations,
+                          'surah_list.surah_text',
+                        )
+                      : 'Surah',
                   isSelected: _currentTab == TabType.surah,
                   onTap: () {
                     AppHaptics.light();
@@ -367,7 +392,9 @@ Widget _buildSearchBar() {
                 SizedBox(width: AppDesignSystem.space4 * s),
                 _buildSegmentButton(
                   context: context,
-                  label: 'Juz',
+                  label: _translations.isNotEmpty
+                      ? LanguageHelper.tr(_translations, 'surah_list.juz_text')
+                      : 'Juz',
                   isSelected: _currentTab == TabType.juz,
                   onTap: () {
                     AppHaptics.light();
@@ -381,7 +408,9 @@ Widget _buildSearchBar() {
                 SizedBox(width: AppDesignSystem.space4 * s),
                 _buildSegmentButton(
                   context: context,
-                  label: 'Page',
+                  label: _translations.isNotEmpty
+                      ? LanguageHelper.tr(_translations, 'surah_list.page_text')
+                      : 'Page',
                   isSelected: _currentTab == TabType.page,
                   onTap: () {
                     AppHaptics.light();
@@ -520,17 +549,33 @@ Widget _buildSearchBar() {
             .toString()
             .toLowerCase();
         final String type = place == 'makkah' || place == 'mecca'
-            ? 'Makkiyah'
+            ? _translations.isNotEmpty
+                  ? LanguageHelper.tr(_translations, 'surah_list.makkah_text')
+                  : 'Makkiyah'
             : place == 'madinah' || place == 'medina'
-            ? 'Madaniyah'
-            : (id < 90 ? 'Makkiyah' : 'Madaniyah');
+            ? _translations.isNotEmpty
+                  ? LanguageHelper.tr(_translations, 'surah_list.madinah_text')
+                  : 'Madaniyah'
+            : (id < 90
+                  ? _translations.isNotEmpty
+                        ? LanguageHelper.tr(
+                            _translations,
+                            'surah_list.makkah_text',
+                          )
+                        : 'Makkiyah'
+                  : _translations.isNotEmpty
+                  ? LanguageHelper.tr(_translations, 'surah_list.madinah_text')
+                  : 'Madinah');
+        final ayahText = _translations.isNotEmpty
+            ? LanguageHelper.tr(_translations, 'surah_list.ayah_text')
+            : 'Ayat';
 
         return AppListTile(
           leading: AppNumberBadge(number: id),
           title: name,
-          subtitle: '$type · $ayat Ayat',
+          subtitle: '$type · $ayat $ayahText',
           trailing: Text(
-            'surah${id.toString().padLeft(3, '0')}',
+            '${LanguageHelper.tr(_translations, "surah_list.surah_text")}${id.toString().padLeft(3, '0')}',
             style: AppTypography.surahName(context),
           ),
         );
@@ -558,10 +603,15 @@ Widget _buildSearchBar() {
         final String firstVerse = juz['first_verse_key'] as String;
         final String lastVerse = juz['last_verse_key'] as String;
         final int verseCount = juz['verses_count'] as int;
+        final juzText = _translations.isNotEmpty
+            ? LanguageHelper.tr(_translations, "surah_list.juz_text")
+            : "Juz";
 
         return AppListTile(
           leading: AppNumberBadge(number: juzNum),
-          title: 'Juz $juzNum',
+
+          title: '$juzText $juzNum',
+
           subtitle: '$firstVerse - $lastVerse',
           trailing: AppChip(label: '$verseCount Ayat'),
         );
@@ -590,8 +640,12 @@ Widget _buildSearchBar() {
     if (_searchResults.isEmpty) {
       return AppEmptyState(
         icon: Icons.search_off_rounded,
-        title: 'No Results Found',
-        subtitle: 'Try searching with different keywords',
+        title: _translations.isNotEmpty
+            ? LanguageHelper.tr(_translations, 'surah_list.null_result_text')
+            : 'No Results Found',
+        subtitle: _translations.isNotEmpty
+            ? LanguageHelper.tr(_translations, 'surah_list.null_result_desc')
+            : 'Try searching with different keywords',
       );
     }
 
@@ -636,6 +690,12 @@ Widget _buildSearchBar() {
   }
 
   Widget _buildJuzSearchTile(Map<String, dynamic> r) {
+    final juzText = _translations.isNotEmpty
+        ? LanguageHelper.tr(_translations, "surah_list.juz_text")
+        : "Juz";
+    final ayahText = _translations.isNotEmpty
+        ? LanguageHelper.tr(_translations, 'surah_list.ayah_text')
+        : 'Ayat';
     return AppListTile(
       onTap: () => _openJuz(
         context,
@@ -643,9 +703,9 @@ Widget _buildSearchBar() {
         r['first_verse_key'] as String,
       ),
       leading: AppIconContainer(icon: Icons.auto_stories_rounded),
-      title: 'Juz ${r['juz_number']}',
+      title: '$juzText ${r['juz_number']}',
       subtitle:
-          '${r['first_verse_key']} - ${r['last_verse_key']} · ${r['verses_count']} Ayat',
+          '${r['first_verse_key']} - ${r['last_verse_key']} · ${r['verses_count']} $ayahText',
       trailing: Icon(
         Icons.chevron_right_rounded,
         color: AppColors.borderDark,
@@ -671,22 +731,27 @@ Widget _buildSearchBar() {
     );
   }
 
-Widget _buildSurahSearchTile(Map<String, dynamic> r) {
-  final surahId = r['id'] as int;
-  final surahName = r['name_simple'] as String;
-  
-  return AppListTile(
-    onTap: () => _openSurah(context, surahId),
-    leading: AppIconContainer(icon: Icons.menu_book_rounded),
-    title: '$surahName ($surahId)',
-    subtitle: r['verses_count'] != null ? '${r['verses_count']} Ayat' : null,
-    trailing: Icon(
-      Icons.chevron_right_rounded,
-      color: AppColors.borderDark,
-      size: AppDesignSystem.iconMedium,
-    ),
-  );
-}
+  Widget _buildSurahSearchTile(Map<String, dynamic> r) {
+    final surahId = r['id'] as int;
+    final surahName = r['name_simple'] as String;
+    final ayahText = _translations.isNotEmpty
+        ? LanguageHelper.tr(_translations, 'surah_list.ayah_text')
+        : 'Ayat';
+
+    return AppListTile(
+      onTap: () => _openSurah(context, surahId),
+      leading: AppIconContainer(icon: Icons.menu_book_rounded),
+      title: '$surahName ($surahId)',
+      subtitle: r['verses_count'] != null
+          ? '${r['verses_count']} $ayahText'
+          : null,
+      trailing: Icon(
+        Icons.chevron_right_rounded,
+        color: AppColors.borderDark,
+        size: AppDesignSystem.iconMedium,
+      ),
+    );
+  }
 
   Widget _buildVerseSearchTile(Map<String, dynamic> r) {
     final s = AppDesignSystem.getScaleFactor(context);
@@ -836,6 +901,16 @@ class _OptimizedPageList extends StatefulWidget {
 }
 
 class _OptimizedPageListState extends State<_OptimizedPageList> {
+  Map<String, dynamic> _translations = {};
+
+  Future<void> _loadTranslations() async {
+    // Ganti path sesuai file JSON yang dibutuhkan
+    final trans = await context.loadTranslations('settings/notifications');
+    setState(() {
+      _translations = trans;
+    });
+  }
+
   final ScrollController _scrollController = ScrollController();
   final int totalPages = 604;
 
@@ -846,6 +921,7 @@ class _OptimizedPageListState extends State<_OptimizedPageList> {
   @override
   void initState() {
     super.initState();
+    _loadTranslations();
     _scrollController.addListener(_onScroll);
   }
 
@@ -919,11 +995,14 @@ class _OptimizedPageListState extends State<_OptimizedPageList> {
 
             // ✅ Get surah name dari cache
             final surahName = widget.cache.getPrimarySurahForPage(pageNum);
+            final pageText = _translations.isNotEmpty
+                ? LanguageHelper.tr(_translations, "surah_list.page_text")
+                : "Page";
 
             return AppListTile(
               onTap: () => widget.onPageTap(pageNum),
               leading: AppNumberBadge(number: pageNum),
-              title: 'Page $pageNum',
+              title: '$pageText $pageNum',
               subtitle: surahName,
               trailing: Icon(
                 Icons.chevron_right_rounded,

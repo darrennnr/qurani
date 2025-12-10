@@ -38,6 +38,8 @@ class MenuAppBar extends StatefulWidget implements PreferredSizeWidget {
 }
 
 class _MenuAppBarState extends State<MenuAppBar>
+
+
     with SingleTickerProviderStateMixin {
   bool _isSearchFocused = false;
   late FocusNode _searchFocusNode;
@@ -46,21 +48,41 @@ class _MenuAppBarState extends State<MenuAppBar>
 
   // Menu items with proper structure
   List<Map<String, dynamic>> get _menuItems => [
-    {'label': _translations.isNotEmpty 
-                      ? LanguageHelper.tr(_translations, 'appbar_widget.home_text')
-                      : 'Home', 'index': 0, 'icon': Icons.home_outlined},
-    {'label': _translations.isNotEmpty 
-                      ? LanguageHelper.tr(_translations, 'appbar_widget.quran_text')
-                      : 'Quran', 'index': 1, 'icon': Icons.menu_book_outlined},
-    {'label': _translations.isNotEmpty 
-                      ? LanguageHelper.tr(_translations, 'appbar_widget.completion_text')
-                      : 'Completion', 'index': 2, 'icon': Icons.flag_outlined},
-    {'label': _translations.isNotEmpty 
-                      ? LanguageHelper.tr(_translations, 'appbar_widget.activity_text')
-                      : 'Activity', 'index': 4, 'icon': Icons.analytics_outlined},
-    {'label': _translations.isNotEmpty 
-                      ? LanguageHelper.tr(_translations, 'appbar_widget.premium_text')
-                      : 'Premium', 'index': 6, 'icon': Icons.settings_outlined},
+    {
+      'label': _translations.isNotEmpty
+          ? LanguageHelper.tr(_translations, 'appbar_widget.home_text')
+          : 'Home',
+      'index': 0,
+      'icon': Icons.home_outlined,
+    },
+    {
+      'label': _translations.isNotEmpty
+          ? LanguageHelper.tr(_translations, 'appbar_widget.quran_text')
+          : 'Quran',
+      'index': 1,
+      'icon': Icons.menu_book_outlined,
+    },
+    {
+      'label': _translations.isNotEmpty
+          ? LanguageHelper.tr(_translations, 'appbar_widget.completion_text')
+          : 'Completion',
+      'index': 2,
+      'icon': Icons.flag_outlined,
+    },
+    {
+      'label': _translations.isNotEmpty
+          ? LanguageHelper.tr(_translations, 'appbar_widget.activity_text')
+          : 'Activity',
+      'index': 4,
+      'icon': Icons.analytics_outlined,
+    },
+    {
+      'label': _translations.isNotEmpty
+          ? LanguageHelper.tr(_translations, 'appbar_widget.premium_text')
+          : 'Premium',
+      'index': 6,
+      'icon': Icons.settings_outlined,
+    },
   ];
 
   Map<String, dynamic> _translations = {};

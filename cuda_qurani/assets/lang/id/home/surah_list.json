@@ -1,13 +1,13 @@
 {
-    "surah_list": {
-        "search_text": "Search surah, juz, or page...",
-        "surah_text": "Surah",
-        "juz_text": "Juz",
-        "page_text": "Page",
-        "ayah_text": "Ayah",
-        "makkah_text": "Makkah",
-        "madinah_text": "Madinah",
-        "null_result_text": "No Results Found",
-        "null_result_desc": "Try searching with different keywords"
-    }
+  "surah_list": {
+    "search_text": "Cari surah, juz, atau halaman...",
+    "surah_text": "Surah",
+    "juz_text": "Juz",
+    "page_text": "Halaman",
+    "ayah_text": "Ayat",
+    "makkah_text": "Makkah",
+    "madinah_text": "Madinah",
+    "null_result_text": "Tidak Ada Hasil",
+    "null_result_desc": "Coba cari dengan kata kunci yang berbeda"
+  }
 }

@@ -1,5 +1,6 @@
 // lib/screens/main/home/screens/completion_page.dart
 
+import 'package:cuda_qurani/core/utils/language_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
@@ -41,7 +42,7 @@ class SurahCompletion {
       totalVerses: json['total_ayahs'] as int? ?? 0,
       percentage: (json['percentage'] as num?)?.toDouble() ?? 0.0,
       lastAyah: json['last_ayah'] as int?,
-      lastSessionAt: json['last_session_at'] != null 
+      lastSessionAt: json['last_session_at'] != null
           ? DateTime.tryParse(json['last_session_at'].toString())
           : null,
     );
@@ -82,7 +83,8 @@ class CompletionStats {
       inProgressSurahs: json['in_progress_surahs'] as int? ?? 0,
       totalVersesRead: json['total_verses_read'] as int? ?? 0,
       totalQuranVerses: json['total_quran_verses'] as int? ?? 6236,
-      overallPercentage: (json['overall_percentage'] as num?)?.toDouble() ?? 0.0,
+      overallPercentage:
+          (json['overall_percentage'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }
@@ -102,17 +104,13 @@ class LastReadPosition {
 
   factory LastReadPosition.fromJson(Map<String, dynamic>? json) {
     if (json == null) {
-      return LastReadPosition(
-        surahId: 1,
-        surahName: 'Al-Fatihah',
-        ayah: 1,
-      );
+      return LastReadPosition(surahId: 1, surahName: 'Al-Fatihah', ayah: 1);
     }
     return LastReadPosition(
       surahId: json['surah_id'] as int? ?? 1,
       surahName: json['surah_name'] as String? ?? 'Al-Fatihah',
       ayah: json['ayah'] as int? ?? 1,
-      lastSessionAt: json['last_session_at'] != null 
+      lastSessionAt: json['last_session_at'] != null
           ? DateTime.tryParse(json['last_session_at'].toString())
           : null,
     );
@@ -129,13 +127,23 @@ class CompletionPage extends StatefulWidget {
 }
 
 class _CompletionPageState extends State<CompletionPage> {
+  Map<String, dynamic> _translations = {};
+
+  Future<void> _loadTranslations() async {
+    // Ganti path sesuai file JSON yang dibutuhkan
+    final trans = await context.loadTranslations('home/completion');
+    setState(() {
+      _translations = trans;
+    });
+  }
+
   final MetadataCacheService _cache = MetadataCacheService();
   final SupabaseService _supabaseService = SupabaseService();
   final TextEditingController _searchController = TextEditingController();
-  
+
   Timer? _searchDebounce;
   String _searchQuery = '';
-  
+
   // Filter states
   bool _filterComplete = true;
   bool _filterIncomplete = true;
@@ -147,7 +155,7 @@ class _CompletionPageState extends State<CompletionPage> {
   Map<int, SurahCompletion> _completionData = {};
   CompletionStats _stats = CompletionStats.fromJson(null);
   LastReadPosition _lastRead = LastReadPosition.fromJson(null);
-  
+
   bool _isInitialized = false;
   bool _isLoading = true;
   String? _errorMessage;
@@ -155,6 +163,7 @@ class _CompletionPageState extends State<CompletionPage> {
   @override
   void initState() {
     super.initState();
+    _loadTranslations();
     _loadData();
     _searchController.addListener(_onSearchChanged);
   }
@@ -184,21 +193,27 @@ class _CompletionPageState extends State<CompletionPage> {
       if (user != null) {
         // Fetch completion data from Supabase (1 call)
         final data = await _supabaseService.getCompletionData(user.id);
-        
+
         if (data != null) {
           // Parse progress data
           final progressList = data['progress'] as List? ?? [];
           _completionData = {};
           for (final item in progressList) {
-            final completion = SurahCompletion.fromJson(item as Map<String, dynamic>);
+            final completion = SurahCompletion.fromJson(
+              item as Map<String, dynamic>,
+            );
             _completionData[completion.surahId] = completion;
           }
-          
+
           // Parse stats
-          _stats = CompletionStats.fromJson(data['stats'] as Map<String, dynamic>?);
-          
+          _stats = CompletionStats.fromJson(
+            data['stats'] as Map<String, dynamic>?,
+          );
+
           // Parse last read
-          _lastRead = LastReadPosition.fromJson(data['last_read'] as Map<String, dynamic>?);
+          _lastRead = LastReadPosition.fromJson(
+            data['last_read'] as Map<String, dynamic>?,
+          );
         }
       }
 
@@ -246,17 +261,17 @@ class _CompletionPageState extends State<CompletionPage> {
         final name = (surah['name_simple'] as String? ?? '').toLowerCase();
         final nameArabic = surah['name_arabic'] as String? ?? '';
         final id = surah['id'].toString();
-        
-        return name.contains(_searchQuery) || 
-               nameArabic.contains(_searchQuery) ||
-               id.contains(_searchQuery);
+
+        return name.contains(_searchQuery) ||
+            nameArabic.contains(_searchQuery) ||
+            id.contains(_searchQuery);
       }).toList();
     }
 
     // Apply completion filters
     filtered = filtered.where((surah) {
       final completion = _getCompletion(surah['id'] as int);
-      
+
       // If no completion data, treat as not started
       if (completion == null) {
         return _filterIncomplete; // Show in incomplete if filter is on
@@ -267,11 +282,13 @@ class _CompletionPageState extends State<CompletionPage> {
       final isIncomplete = completion.isIncomplete;
 
       if (_filterComplete && _filterIncomplete && _filterStarted) return true;
-      
+
       if (_filterComplete && isComplete) return true;
-      if (_filterIncomplete && !isStarted) return true; // Not started = incomplete
-      if (_filterStarted && isIncomplete) return true; // Started but not complete
-      
+      if (_filterIncomplete && !isStarted)
+        return true; // Not started = incomplete
+      if (_filterStarted && isIncomplete)
+        return true; // Started but not complete
+
       return false;
     }).toList();
 
@@ -308,9 +325,7 @@ class _CompletionPageState extends State<CompletionPage> {
   Future<void> _continueReading() async {
     AppHaptics.medium();
     await Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => SttPage(suratId: _lastRead.surahId),
-      ),
+      MaterialPageRoute(builder: (_) => SttPage(suratId: _lastRead.surahId)),
     );
   }
 
@@ -337,9 +352,7 @@ class _CompletionPageState extends State<CompletionPage> {
             slivers: [
               // Error message if any
               if (_errorMessage != null)
-                SliverToBoxAdapter(
-                  child: _buildErrorBanner(),
-                ),
+                SliverToBoxAdapter(child: _buildErrorBanner()),
 
               // Top Section: Progress Circle + Stats
               SliverToBoxAdapter(
@@ -354,17 +367,14 @@ class _CompletionPageState extends State<CompletionPage> {
 
               // List Section: Surah Completion List
               SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    if (index == 0) {
-                      return _buildSectionHeader();
-                    }
-                    
-                    final surah = _filteredSurahs[index - 1];
-                    return _buildSurahCompletionTile(surah);
-                  },
-                  childCount: _filteredSurahs.length + 1,
-                ),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  if (index == 0) {
+                    return _buildSectionHeader();
+                  }
+
+                  final surah = _filteredSurahs[index - 1];
+                  return _buildSurahCompletionTile(surah);
+                }, childCount: _filteredSurahs.length + 1),
               ),
 
               // Bottom padding
@@ -382,7 +392,7 @@ class _CompletionPageState extends State<CompletionPage> {
 
   Widget _buildErrorBanner() {
     final s = AppDesignSystem.getScaleFactor(context);
-    
+
     return Container(
       margin: EdgeInsets.all(AppDesignSystem.space16 * s),
       padding: EdgeInsets.all(AppDesignSystem.space12 * s),
@@ -463,12 +473,30 @@ class _CompletionPageState extends State<CompletionPage> {
 
           SizedBox(height: AppDesignSystem.space12 * s),
 
-          Text(
-            'Complete the Quran (khatm)',
-            style: AppTypography.title(
-              context,
-              weight: AppTypography.semiBold,
-            ),
+          Column(
+            children: [
+              Text(
+                _translations.isNotEmpty
+                    ? LanguageHelper.tr(
+                        _translations,
+                        'completion.completeion_banner',
+                      )
+                    : 'Complete the Quran',
+                style: AppTypography.title(
+                  context,
+                  weight: AppTypography.semiBold,
+                ),
+              ),
+              Text(
+                _translations.isNotEmpty
+                    ? LanguageHelper.tr(_translations, 'completion.khatm_text')
+                    : '(khatm)',
+                style: AppTypography.body(
+                  context,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
           ),
 
           SizedBox(height: AppDesignSystem.space16 * s),
@@ -478,21 +506,40 @@ class _CompletionPageState extends State<CompletionPage> {
             children: [
               Expanded(
                 child: _buildStatCard(
-                  label: 'Verses Read',
+                  label:
+                      _translations.isNotEmpty
+                          ? LanguageHelper.tr(
+                            _translations,
+                            'completion.total_pages_text',
+                          )
+                          : 'Verses Read',
                   value: _stats.totalVersesRead.toString(),
                 ),
               ),
               SizedBox(width: AppDesignSystem.space8 * s),
               Expanded(
                 child: _buildStatCard(
-                  label: 'Remaining',
-                  value: (_stats.totalQuranVerses - _stats.totalVersesRead).toString(),
+                  label:
+                      _translations.isNotEmpty
+                          ? LanguageHelper.tr(
+                            _translations,
+                            'completion.Remaining_pages_textq',
+                          )
+                          : 'Remaining',
+                  value: (_stats.totalQuranVerses - _stats.totalVersesRead)
+                      .toString(),
                 ),
               ),
               SizedBox(width: AppDesignSystem.space8 * s),
               Expanded(
                 child: _buildStatCard(
-                  label: 'Completed',
+                  label:
+                      _translations.isNotEmpty
+                          ? LanguageHelper.tr(
+                            _translations,
+                            'completion.completions_text',
+                          )
+                          : 'Completed',
                   value: '${_stats.completedSurahs} Surah',
                 ),
               ),
@@ -557,23 +604,29 @@ class _CompletionPageState extends State<CompletionPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Continue Reading',
-            style: AppTypography.title(
-              context,
-              weight: AppTypography.semiBold,
-            ),
+            _translations.isNotEmpty
+                ? LanguageHelper.tr(
+                  _translations,
+                  'completion.continue_reading_text',
+                )
+                : 'Continue Reading',
+            style: AppTypography.title(context, weight: AppTypography.semiBold),
           ),
           SizedBox(height: AppDesignSystem.space8 * s),
           Material(
             color: Colors.transparent,
             child: InkWell(
               onTap: _continueReading,
-              borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium * s),
+              borderRadius: BorderRadius.circular(
+                AppDesignSystem.radiusMedium * s,
+              ),
               child: Container(
                 padding: EdgeInsets.all(AppDesignSystem.space16 * s),
                 decoration: BoxDecoration(
                   color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium * s),
+                  borderRadius: BorderRadius.circular(
+                    AppDesignSystem.radiusMedium * s,
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -588,7 +641,7 @@ class _CompletionPageState extends State<CompletionPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '${_lastRead.surahName}, Ayah ${_lastRead.ayah}',
+                            '${_lastRead.surahName}, ${_translations.isNotEmpty ? LanguageHelper.tr(_translations, 'completion.page_text') : 'Ayah'} ${_lastRead.ayah}',
                             style: AppTypography.body(
                               context,
                               color: Colors.white,
@@ -636,7 +689,9 @@ class _CompletionPageState extends State<CompletionPage> {
           Container(
             decoration: BoxDecoration(
               color: AppColors.surface,
-              borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium * s),
+              borderRadius: BorderRadius.circular(
+                AppDesignSystem.radiusMedium * s,
+              ),
               border: Border.all(
                 color: _searchController.text.isNotEmpty
                     ? AppColors.borderFocus
@@ -648,7 +703,13 @@ class _CompletionPageState extends State<CompletionPage> {
               controller: _searchController,
               style: AppTypography.body(context),
               decoration: InputDecoration(
-                hintText: 'Search by surah',
+                hintText:
+                    _translations.isNotEmpty
+                        ? LanguageHelper.tr(
+                          _translations,
+                          'completion.search_text',
+                        )
+                        : 'Search by surah',
                 hintStyle: AppTypography.body(
                   context,
                   color: AppColors.textHint,
@@ -697,19 +758,37 @@ class _CompletionPageState extends State<CompletionPage> {
           Row(
             children: [
               _buildFilterToggle(
-                label: 'Complete',
+                label:
+                    _translations.isNotEmpty
+                        ? LanguageHelper.tr(
+                          _translations,
+                          'completion.complete_text',
+                        )
+                        : 'Complete',
                 isSelected: _filterComplete,
                 onTap: () => _toggleFilter('complete'),
               ),
               SizedBox(width: AppDesignSystem.space8 * s),
               _buildFilterToggle(
-                label: 'In Progress',
+                label:
+                    _translations.isNotEmpty
+                        ? LanguageHelper.tr(
+                          _translations,
+                          'completion.started_text',
+                        )
+                        : 'In Progress',
                 isSelected: _filterStarted,
                 onTap: () => _toggleFilter('started'),
               ),
               SizedBox(width: AppDesignSystem.space8 * s),
               _buildFilterToggle(
-                label: 'Not Started',
+                label:
+                    _translations.isNotEmpty
+                        ? LanguageHelper.tr(
+                          _translations,
+                          'completion.incomplete_text',
+                        )
+                        : 'Not Started',
                 isSelected: _filterIncomplete,
                 onTap: () => _toggleFilter('incomplete'),
               ),
@@ -744,11 +823,11 @@ class _CompletionPageState extends State<CompletionPage> {
             color: isSelected
                 ? AppColors.primary
                 : AppColors.surfaceContainerLowest,
-            borderRadius: BorderRadius.circular(AppDesignSystem.radiusSmall * s),
+            borderRadius: BorderRadius.circular(
+              AppDesignSystem.radiusSmall * s,
+            ),
             border: Border.all(
-              color: isSelected
-                  ? AppColors.primary
-                  : AppColors.borderMedium,
+              color: isSelected ? AppColors.primary : AppColors.borderMedium,
               width: AppDesignSystem.borderNormal * s,
             ),
           ),
@@ -789,7 +868,13 @@ class _CompletionPageState extends State<CompletionPage> {
         AppDesignSystem.space8 * s,
       ),
       child: Text(
-        'COMPLETION BY CHAPTER',
+        (_translations.isNotEmpty
+                ? LanguageHelper.tr(
+                  _translations,
+                  'completion.completion_by_chapter_text',
+                )
+                : 'COMPLETION BY CHAPTER')
+            .toUpperCase(),
         style: AppTypography.overline(context),
       ),
     );
@@ -802,17 +887,31 @@ class _CompletionPageState extends State<CompletionPage> {
     final int id = surah['id'] as int;
     final String name = surah['name_simple'] ?? 'Surah $id';
     final int totalVerses = surah['verses_count'] ?? 0;
-    
+
     final completion = _getCompletion(id);
     final percentage = completion?.percentage ?? 0.0;
     final versesRead = completion?.versesRead ?? 0;
 
     // Calculate remaining ranges
-    String remainingText = 'Not started';
+    String remainingText =
+        _translations.isNotEmpty
+            ? LanguageHelper.tr(_translations, 'completion.incomplete_text')
+            : 'Not started';
+
     if (versesRead > 0 && versesRead < totalVerses) {
-      remainingText = 'Remaining: ${versesRead + 1}-$totalVerses';
+      final remLabel =
+          _translations.isNotEmpty
+              ? LanguageHelper.tr(_translations, 'completion.remaining_text')
+              : 'Remaining';
+      remainingText = '$remLabel: ${versesRead + 1}-$totalVerses';
     } else if (versesRead >= totalVerses) {
-      remainingText = 'Completed';
+      remainingText =
+          _translations.isNotEmpty
+              ? LanguageHelper.tr(
+                _translations,
+                'completion.none_remaining_text',
+              )
+              : 'Completed';
     }
 
     return Material(
@@ -866,7 +965,9 @@ class _CompletionPageState extends State<CompletionPage> {
 
               // Progress Bar
               ClipRRect(
-                borderRadius: BorderRadius.circular(AppDesignSystem.radiusRound * s),
+                borderRadius: BorderRadius.circular(
+                  AppDesignSystem.radiusRound * s,
+                ),
                 child: LinearProgressIndicator(
                   value: percentage / 100,
                   minHeight: 6 * s,
@@ -875,10 +976,10 @@ class _CompletionPageState extends State<CompletionPage> {
                     percentage >= 100
                         ? AppColors.success
                         : percentage >= 50
-                            ? AppColors.primary
-                            : percentage > 0
-                                ? AppColors.warning
-                                : AppColors.borderLight,
+                        ? AppColors.primary
+                        : percentage > 0
+                        ? AppColors.warning
+                        : AppColors.borderLight,
                   ),
                 ),
               ),
