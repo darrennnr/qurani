@@ -3,6 +3,7 @@
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
 import 'package:cuda_qurani/core/utils/language_helper.dart';
 import 'package:cuda_qurani/core/widgets/app_components.dart';
+import 'package:cuda_qurani/main.dart';
 import 'package:cuda_qurani/screens/main/home/services/juz_service.dart';
 import 'package:cuda_qurani/screens/main/stt/stt_page.dart';
 import 'package:cuda_qurani/services/local_database_service.dart';
@@ -571,9 +572,9 @@ class _SurahListPageState extends State<SurahListPage> {
             : 'Ayat';
 
         return AppListTile(
-          leading: AppNumberBadge(number: id),
+          leading: AppNumberBadge(number: context.formatNumber(id)),
           title: name,
-          subtitle: '$type · $ayat $ayahText',
+          subtitle: '$type · ${context.formatNumber(ayat)} $ayahText',
           trailing: Text(
             'surah${id.toString().padLeft(3, '0')}',
             style: AppTypography.surahName(context),
@@ -606,14 +607,17 @@ class _SurahListPageState extends State<SurahListPage> {
         final juzText = _translations.isNotEmpty
             ? LanguageHelper.tr(_translations, "surah_list.juz_text")
             : "Juz";
+                final ayatText = _translations.isNotEmpty
+            ? LanguageHelper.tr(_translations, "surah_list.ayah_text")
+            : "Ayah";
 
         return AppListTile(
-          leading: AppNumberBadge(number: juzNum),
+          leading: AppNumberBadge(number: context.formatNumber(juzNum)),
 
-          title: '$juzText $juzNum',
+          title: '$juzText ${context.formatNumber(juzNum)}',
 
-          subtitle: '$firstVerse - $lastVerse',
-          trailing: AppChip(label: '$verseCount Ayat'),
+          subtitle: '${context.formatNumber(firstVerse)} - ${context.formatNumber(lastVerse)}',
+          trailing: AppChip(label: '${context.formatNumber(verseCount)} $ayatText'),
         );
       },
     );
@@ -666,26 +670,46 @@ class _SurahListPageState extends State<SurahListPage> {
         bottom: AppDesignSystem.space32 * s,
       ),
       children: [
-        if (juzResults.isNotEmpty) ...[
-          AppCategoryHeader(title: 'JUZ', count: juzResults.length),
-          ...juzResults.map((r) => _buildJuzSearchTile(r)),
-          SizedBox(height: AppDesignSystem.space12 * s),
-        ],
-        if (pageResults.isNotEmpty) ...[
-          AppCategoryHeader(title: 'PAGE', count: pageResults.length),
-          ...pageResults.map((r) => _buildPageSearchTile(r)),
-          SizedBox(height: AppDesignSystem.space12 * s),
-        ],
-        if (surahResults.isNotEmpty) ...[
-          AppCategoryHeader(title: 'SURAH', count: surahResults.length),
-          ...surahResults.map((r) => _buildSurahSearchTile(r)),
-          SizedBox(height: AppDesignSystem.space12 * s),
-        ],
-        if (verseResults.isNotEmpty) ...[
-          AppCategoryHeader(title: 'VERSES', count: verseResults.length),
-          ...verseResults.map((r) => _buildVerseSearchTile(r)),
-        ],
-      ],
+  if (juzResults.isNotEmpty) ...[
+    AppCategoryHeader(
+      title: _translations.isNotEmpty
+        ? LanguageHelper.tr(_translations, 'surah_list.juz_text').toUpperCase()
+        : 'JUZ', 
+      count: context.formatNumber(juzResults.length)  // ✅ Tanpa ${}
+    ),
+    ...juzResults.map((r) => _buildJuzSearchTile(r)),
+    SizedBox(height: AppDesignSystem.space12 * s),
+  ],
+  if (pageResults.isNotEmpty) ...[
+    AppCategoryHeader(
+      title: _translations.isNotEmpty
+        ? LanguageHelper.tr(_translations, 'surah_list.page_text').toUpperCase()
+        : 'PAGE', 
+      count: context.formatNumber(pageResults.length)  // ✅ Tanpa ${}
+    ),
+    ...pageResults.map((r) => _buildPageSearchTile(r)),
+    SizedBox(height: AppDesignSystem.space12 * s),
+  ],
+  if (surahResults.isNotEmpty) ...[
+    AppCategoryHeader(
+      title: _translations.isNotEmpty
+        ? LanguageHelper.tr(_translations, 'surah_list.surah_text').toUpperCase()
+        : 'SURAH', 
+      count: context.formatNumber(surahResults.length)  // ✅ Tanpa ${}
+    ),
+    ...surahResults.map((r) => _buildSurahSearchTile(r)),
+    SizedBox(height: AppDesignSystem.space12 * s),
+  ],
+  if (verseResults.isNotEmpty) ...[
+    AppCategoryHeader(
+      title: _translations.isNotEmpty
+        ? LanguageHelper.tr(_translations, 'surah_list.ayah_text').toUpperCase()
+        : 'VERSES', 
+      count: context.formatNumber(verseResults.length)  // ✅ Tanpa ${}
+    ),
+    ...verseResults.map((r) => _buildVerseSearchTile(r)),
+  ],
+],
     );
   }
 
@@ -703,9 +727,9 @@ class _SurahListPageState extends State<SurahListPage> {
         r['first_verse_key'] as String,
       ),
       leading: AppIconContainer(icon: Icons.auto_stories_rounded),
-      title: '$juzText ${r['juz_number']}',
-      subtitle:
-          '${r['first_verse_key']} - ${r['last_verse_key']} · ${r['verses_count']} $ayahText',
+title: '$juzText ${context.formatNumber(r['juz_number'])}',
+subtitle: '${context.formatNumber(r['first_verse_key'])} - ${context.formatNumber(r['last_verse_key'])} · ${context.formatNumber(r['verses_count'])} $ayahText',
+
       trailing: Icon(
         Icons.chevron_right_rounded,
         color: AppColors.borderDark,
@@ -717,11 +741,14 @@ class _SurahListPageState extends State<SurahListPage> {
   Widget _buildPageSearchTile(Map<String, dynamic> r) {
     final pageNum = r['page_number'] as int;
     final surahName = _cache.getPrimarySurahForPage(pageNum);
+    final pageText = _translations.isNotEmpty
+        ? LanguageHelper.tr(_translations, "surah_list.page_text")
+        : "Page";
 
     return AppListTile(
       onTap: () => _openPage(context, pageNum),
       leading: AppIconContainer(icon: Icons.description_rounded),
-      title: 'Page $pageNum',
+      title: '$pageText ${context.formatNumber(pageNum)}',
       subtitle: surahName,
       trailing: Icon(
         Icons.chevron_right_rounded,
@@ -741,9 +768,9 @@ class _SurahListPageState extends State<SurahListPage> {
     return AppListTile(
       onTap: () => _openSurah(context, surahId),
       leading: AppIconContainer(icon: Icons.menu_book_rounded),
-      title: '$surahName ($surahId)',
+      title: '$surahName (${context.formatNumber(surahId)})',
       subtitle: r['verses_count'] != null
-          ? '${r['verses_count']} $ayahText'
+          ? '${context.formatNumber(r['verses_count'])} ${ayahText}'
           : null,
       trailing: Icon(
         Icons.chevron_right_rounded,
@@ -1001,8 +1028,8 @@ class _OptimizedPageListState extends State<_OptimizedPageList> {
 
             return AppListTile(
               onTap: () => widget.onPageTap(pageNum),
-              leading: AppNumberBadge(number: pageNum),
-              title: '$pageText $pageNum',
+              leading: AppNumberBadge(number: context.formatNumber(pageNum)),
+              title: '$pageText ${context.formatNumber(pageNum)}',
               subtitle: surahName,
               trailing: Icon(
                 Icons.chevron_right_rounded,

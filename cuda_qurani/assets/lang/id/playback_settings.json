@@ -8,11 +8,12 @@
     "done_text": "Selesai",
     "reciter_text": "Qari",
     "manage_downloads_text": "Kelola Unduhan",
-    "play_speed": "Kecepatan Putar",
+    "play_speed": "Kecepatan Pemutaran",
     "play_each_verse_text": "Putar setiap ayat",
     "play_each_range_text": "Putar setiap rentang",
-    "times_text": "Kali",
-    "loop_text": "Ulangi",
+    "time_text": "kali",
+    "times_text": "kali",
+    "loop_text": "ulang",
     "play_audio_text": "Putar Audio"
   }
 }

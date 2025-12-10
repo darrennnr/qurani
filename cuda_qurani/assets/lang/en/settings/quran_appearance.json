@@ -27,6 +27,7 @@
         "highlight_mistake_history_text": "Highlight Mistake History",
         "highlight_mistake_history_desc": "Highlight the mistakes you commonly make according to how often you've been making them.",
         "similar_phrases_text": "Similar Phrases",
+        "color_similar_phrases_text": "Color similar phrases",
         "similar_phrases_desc": "Color similar phrases (Mutashabihat) with distinct colors to identity patterns and avoid confusing different verses."
     }
 }

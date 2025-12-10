@@ -1,6 +1,7 @@
 // lib/screens/main/home/screens/settings/widgets/audio_manager.dart
 
 import 'package:cuda_qurani/core/utils/language_helper.dart';
+import 'package:cuda_qurani/main.dart';
 import 'package:cuda_qurani/services/audio_download_services.dart';
 import 'package:cuda_qurani/services/reciter_manager_services.dart';
 import 'package:flutter/material.dart';
@@ -257,7 +258,7 @@ class _AudioManagerPageState extends State<AudioManagerPage> {
           '${LanguageHelper.tr(_translations, "reciters.audio_manager.clear_cache_desc")} '
           '${widget.reciterName}?\n\n'
           '${LanguageHelper.tr(_translations, "reciters.audio_manager.using_text")} '
-          '${_storageInfo['formattedSize']}.',
+          '${context.formatNumber(_storageInfo['formattedSize'])}.',
         ),
         actions: [
           TextButton(
@@ -494,8 +495,8 @@ class _AudioManagerPageState extends State<AudioManagerPage> {
                             SizedBox(width: AppDesignSystem.space8 * s),
                             Text(
                               '${LanguageHelper.tr(_translations, "reciters.audio_manager.using_text")} '
-                              '${_storageInfo['formattedSize']} '
-                              '(${_storageInfo['fileCount']} ${LanguageHelper.tr(_translations, "reciters.files_text")})',
+                              '${context.formatNumber(_storageInfo['formattedSize'])} '
+                              '(${context.formatNumber(_storageInfo['fileCount'])} ${LanguageHelper.tr(_translations, "reciters.files_text")})',
                               style: TextStyle(
                                 fontSize: 14 * s,
                                 fontWeight: AppTypography.regular,
