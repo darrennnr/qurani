@@ -13,6 +13,8 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
+  flutter_dotenv: ^6.0.0
+
   flutter_localization: ^0.3.3
   # UI Needs
   font_awesome_flutter: ^10.12.0

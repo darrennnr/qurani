@@ -3,6 +3,7 @@ import 'package:cuda_qurani/services/local_database_service.dart';
 import 'package:cuda_qurani/services/reciter_database_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'providers/recitation_provider.dart';
@@ -22,6 +23,7 @@ bool _isDatabaseInitialized = false;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+    await dotenv.load(fileName: ".env");
   await Supabase.initialize(
     url: AppConfig.supabaseUrl,
     anonKey: AppConfig.supabaseAnonKey,
