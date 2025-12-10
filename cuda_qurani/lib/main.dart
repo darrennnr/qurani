@@ -23,7 +23,6 @@ bool _isDatabaseInitialized = false;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-    await dotenv.load(fileName: ".env");
   await Supabase.initialize(
     url: AppConfig.supabaseUrl,
     anonKey: AppConfig.supabaseAnonKey,
