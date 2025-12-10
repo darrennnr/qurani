@@ -1,41 +1,40 @@
 {
-    "experiences_menu": {
-        "recitation_text": "Tilawah",
-        "recitation_page": {
-            "mistake_detection_text": "Deteksi Kesalahan",
-            "detect_mistakes_text": "Deteksi kesalahan",
-            "detect_tashkeel_text": "Deteksi kesalahan Tashkeel (harakat)",
-            "detect_tashkeel_desc": "Deteksi kesalahan tashkeel adalah fitur baru dan mungkin melewatkan beberapa kesalahan tashkeel Anda.",
-            "dont_progress_text": "Jangan lanjut sebelum kesalahan diperbaiki",
-            "dont_progress_desc": "Setiap kata harus dibaca dengan benar sebelum melanjutkan ke kata berikutnya.",
-            "sessions_text": "Sesi",
-            "resumable_sessions_text": "Sesi yang Dapat Dilanjutkan",
-            "resumable_sessions_desc": "Atur apakah ingin melanjutkan sesi saat ini atau memulai sesi baru setiap kali perekaman dimulai."
-        },
-        "listening_text": "Mendengarkan",
-        "listening_page": {
-            "reciter_text": "Qari",
-            "manage_downloads_text": "Kelola Unduhan",
-            "manage_download_page": {
-                "total_storage_text": "Total Penyimpanan Terpakai",
-                "available_reciters_text": "Qari Tersedia",
-                "clear_all_caches_text": "Hapus Semua Cache",
-                "clear_all_caches_desc": "Apakah Anda yakin ingin menghapus semua audio yang diunduh untuk semua qari?",
-                "clear_all_caches_desc2": "Tindakan ini tidak dapat dibatalkan.",
-                "cancel_text": "Batal",
-                "delete_text": "Hapus",
-                "delete_all_text": "Hapus Semua",
-                "audio_manager_page": {
-                    "audio_manager_text": "Pengelola Audio",
-                    "using_text": "Menggunakan",
-                    "files_text": "Berkas",
-                    "download_all_text": "Unduh Semua",
-                    "clear_caches_text": "Hapus Cache",
-                    "clear_caches_desc": "Apakah Anda yakin ingin menghapus semua audio yang diunduh untuk ",
-                    "clear_caches_desc2": "Ini akan mengosongkan "
-                }
-            }
-        }
+  "experiences_menu": {
+    "recitation_text": "Tilawah",
+    "recitation_page": {
+      "mistake_detection_text": "Deteksi Kesalahan",
+      "detect_mistakes_text": "Deteksi kesalahan",
+      "detect_tashkeel_text": "Deteksi kesalahan Tashkeel (harakat)",
+      "detect_tashkeel_desc": "Fitur deteksi kesalahan Tashkeel masih baru dan mungkin melewatkan beberapa kesalahan harakat Anda.",
+      "dont_progress_text": "Jangan lanjutkan hingga kesalahan diperbaiki",
+      "dont_progress_desc": "Mengharuskan setiap kata dibaca dengan benar sebelum melanjutkan ke kata berikutnya.",
+      "sessions_text": "Sesi",
+      "resumable_sessions_text": "Sesi Dapat Dilanjutkan",
+      "resumable_sessions_desc": "Atur apakah ingin melanjutkan sesi yang sedang berjalan atau memulai sesi baru setiap kali perekaman dimulai."
     },
-    "quran_appearance": {}
+    "listening_text": "Mendengarkan",
+    "listening_page": {
+      "reciter_text": "Qari",
+      "manage_downloads_text": "Kelola Unduhan",
+      "manage_download_page": {
+        "total_storage_text": "Total Penyimpanan Digunakan",
+        "available_reciters_text": "Qari Tersedia",
+        "clear_all_caches_text": "Hapus Semua Cache",
+        "clear_all_caches_desc": "Apakah Anda yakin ingin menghapus semua audio yang telah diunduh untuk semua qari?",
+        "clear_all_caches_desc2": "Tindakan ini tidak dapat dibatalkan.",
+        "cancel_text": "Batal",
+        "delete_text": "Hapus",
+        "delete_all_text": "Hapus Semua",
+        "audio_manager_page": {
+          "audio_manager_text": "Manajer Audio",
+          "using_text": "Menggunakan",
+          "files_text": "Berkas",
+          "download_all_text": "Unduh Semua",
+          "clear_caches_text": "Hapus Cache",
+          "clear_caches_desc": "Apakah Anda yakin ingin menghapus semua audio yang telah diunduh untuk ",
+          "clear_caches_desc2": "Ini akan mengosongkan "
+        }
+      }
+    }
+  }
 }

@@ -1,1 +1,32 @@
-{}
+{
+    "mushaf_layout": {
+        "mushaf_layout_text": "Mushaf Layout",
+        "select_text": "Select Reading Layout",
+        "book_text": "Book",
+        "translation_text": "Translation/Transliteration",
+        "madani_text": "Madani Mushaf",
+        "indopak_text": "Indopak Mushaf",
+        "translation_desc": "Dr. Mustafa Khattab, The Clear Quran",
+        "mushaf_layout_and_font_text": "Mushaf Layout And Font",
+        "mushaf_layout_and_font_desc": "Choose the different Mushaf you wish to use.",
+        "preview_text": "Preview"
+    },
+    "hidden_verses": {
+        "hidden_verses_text": "Hidden Verses",
+        "ayah_adjustments_text": "Ayah Adjustments",
+        "hide_verses_text": "Hide Verses",
+        "hide_verse_markers_text": "Hide verse markers",
+        "hidden_verses_desc": "Hide the words that you haven't recited yet, to practice your memorization"
+    },
+    "marking": {
+        "marking_text": "Marking",
+        "tajweed_text": "Tajweed",
+        "show_tajweed_colors_text": "Show Tajweed Colors",
+        "show_tajweed_colors_desc": "Color letters with distinct colors according to Tajweed rules to make it easier to know which rules to apply while reciting.",
+        "mistakes_text": "Mistakes",
+        "Highlight_mistake_history_text": "Highlight Mistake History",
+        "Highlight_mistake_history_desc": "Highlight the mistakes you commonly make according to how often you've been making them.",
+        "similar_phrases_text": "Similar Phrases",
+        "similar_phrases_desc": "Color similar phrases (Mutashabihat) with distinct colors to identity patterns and avoid confusing different verses."
+    }
+}

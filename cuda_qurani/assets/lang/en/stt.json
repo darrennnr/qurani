@@ -6,7 +6,9 @@
     },
     "bottom_bar": {
         "listen_text": "Listen",
-        "recite_text": "Recite"
+        "recite_text": "Recite",
+        "quick_guide_text":"Quick Guide",
+        "quick_guide_desc":"Slide left to listen, right to recite"
     },
     "mushaf_view": {
         "juz_text": "Juz"

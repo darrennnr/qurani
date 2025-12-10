@@ -653,12 +653,22 @@ class _CompletionPageState extends State<CompletionPage> {
                   context,
                   color: AppColors.textHint,
                 ),
-                prefixIcon: Icon(
-                  Icons.search_rounded,
-                  color: _searchController.text.isNotEmpty
-                      ? AppColors.primary
-                      : AppColors.textTertiary,
-                  size: AppDesignSystem.iconMedium * s,
+                prefixIcon: Padding(
+                  padding: EdgeInsets.only(
+                    left: AppDesignSystem.space12 * s,
+                    right: AppDesignSystem.space8 * s,
+                  ),
+                  child: Icon(
+                    Icons.search_rounded,
+                    color: _searchController.text.isNotEmpty
+                        ? AppColors.primary
+                        : AppColors.textTertiary,
+                    size: AppDesignSystem.iconMedium * s,
+                  ),
+                ),
+                prefixIconConstraints: BoxConstraints(
+                  minWidth: 0,
+                  minHeight: 0,
                 ),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
@@ -674,7 +684,8 @@ class _CompletionPageState extends State<CompletionPage> {
                     : null,
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.symmetric(
-                  vertical: AppDesignSystem.space10 * s,
+                  vertical: AppDesignSystem.space12 * s,
+                  horizontal: AppDesignSystem.space4 * s,
                 ),
               ),
             ),

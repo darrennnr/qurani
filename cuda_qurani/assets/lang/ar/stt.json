@@ -1,0 +1,19 @@
+{
+    "app_bar": {
+        "juz_text": "جزء",
+        "ayah_text": "آية",
+        "page_text": "صفحة"
+    },
+    "bottom_bar": {
+        "listen_text": "استمع",
+        "recite_text": "تلاوة",
+        "quick_guide_text": "دليل سريع",
+        "quick_guide_desc": "اسحب لليسار للاستماع، ولليمين للتلاوة"
+    },
+    "mushaf_view": {
+        "juz_text": "جزء"
+    },
+    "list_view": {
+        "juz_text": "جزء"
+    }
+}

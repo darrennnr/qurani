@@ -1,0 +1,27 @@
+{
+  "sound_and_haptics": {
+    "sound_text": "الصوت",
+    "play_a_sound_text": "تشغيل صوت",
+    "sound_effect_text": "تأثير الصوت",
+    "haptic_text": "الاهتزاز",
+    "Vibrate_my_device_text": "اهتزاز الجهاز",
+
+    "mistake_feedback": {
+      "mistake_feedback_text": "ملاحظات الأخطاء",
+      "sound_effect_desc": "ضبط الصوت الذي يتم تشغيله عند اكتشاف خطأ أثناء التلاوة.",
+      "haptic_desc": "ضبط الاهتزاز عند اكتشاف خطأ أثناء التلاوة."
+    },
+
+    "session_start_and_stop": {
+      "session_start_and_stop_text": "بدء وإيقاف الجلسة",
+      "session_start_and_stop_sound_desc": "ضبط الصوت الذي يتم تشغيله عند بدء أو إيقاف جلسة التلاوة.",
+      "session_start_and_stop_haptic_desc": "ضبط الاهتزاز عند بدء أو إيقاف جلسة التلاوة."
+    },
+
+    "dropped_connection": {
+      "dropped_connection_text": "انقطاع الاتصال",
+      "dropped_connection_sound_desc": "ضبط الصوت الذي يتم تشغيله عند فقدان اتصال الشبكة أثناء التلاوة.",
+      "dropped_connection_stop_haptic_desc": "ضبط الاهتزاز عند فقدان اتصال الشبكة أثناء التلاوة."
+    }
+  }
+}

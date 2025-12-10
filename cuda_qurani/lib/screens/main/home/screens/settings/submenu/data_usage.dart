@@ -143,7 +143,7 @@ class _DataUsagePageState extends State<DataUsagePage> {
 
             // Description text for audio data
             _buildDescriptionText(
-              'Tarteel securely stores your audio in the cloud to provide you with unique features such as replaying mistakes, listening to your audio, and sharing audio. If you disable this setting, you will lose access to these features. This setting is not applied retroactively.',
+              'Qurani securely stores your audio in the cloud to provide you with unique features such as replaying mistakes, listening to your audio, and sharing audio. If you disable this setting, you will lose access to these features. This setting is not applied retroactively.',
             ),
 
             SizedBox(height: AppDesignSystem.space32 * s * 0.9),

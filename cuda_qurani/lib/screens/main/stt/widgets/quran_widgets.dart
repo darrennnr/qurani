@@ -137,10 +137,10 @@ class QuranAppBar extends StatelessWidget implements PreferredSizeWidget {
                 size: iconSize * 0.9,
               ),
               onPressed: () async {
-                // ✅ FIX: Await toggle completion
+                // âœ… FIX: Await toggle completion
                 await controller.toggleQuranMode();
 
-                // ✅ FORCE: Trigger rebuild immediately
+                // âœ… FORCE: Trigger rebuild immediately
                 if (context.mounted) {
                   // Scroll to correct position after mode change
                   WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -280,14 +280,15 @@ class _QuranBottomBarState extends State<QuranBottomBar>
     });
 
     if (mode == 'listen') {
+      // ✅ PENTING: Reset posisi button ke tengah SEBELUM membuka settings
+      _resetToCenter(keepActiveMode: true);
+
       // Open playback settings
       final settings = await Navigator.push<PlaybackSettings>(
         context,
         PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) =>
-              PlaybackSettingsPage(
-          currentPage: controller.currentPage, // ✅ BENAR
-        ),
+              PlaybackSettingsPage(currentPage: controller.currentPage),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             const begin = Offset(0.0, 0.3);
             const end = Offset.zero;
@@ -312,6 +313,7 @@ class _QuranBottomBarState extends State<QuranBottomBar>
       if (settings != null) {
         try {
           await controller.startListening(settings);
+          // ✅ Button tetap di tengah setelah listening dimulai
         } catch (e) {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -322,20 +324,26 @@ class _QuranBottomBarState extends State<QuranBottomBar>
               ),
             );
           }
+          // ✅ Jika gagal, reset button
+          _resetToCenter(keepActiveMode: false);
         }
+      } else {
+        // ✅ User cancel settings, reset button
+        _resetToCenter(keepActiveMode: false);
       }
-      _resetToCenter();
     } else if (mode == 'recite') {
       await controller.startRecording();
-      _resetToCenter();
+      _resetToCenter(keepActiveMode: false); // Recite mode tetap reset penuh
     }
   }
 
-  void _resetToCenter() {
+  void _resetToCenter({bool keepActiveMode = false}) {
     _slideController.reverse(from: 1.0);
     setState(() {
       _dragPosition = 0.0;
-      _activeMode = null;
+      if (!keepActiveMode) {
+        _activeMode = null;
+      }
     });
   }
 
@@ -350,6 +358,9 @@ class _QuranBottomBarState extends State<QuranBottomBar>
         } else {
           await controller.pauseListening();
         }
+
+        // ✅ CRITICAL: Force rebuild untuk update icon
+        setState(() {});
       }
     } else if (controller.isRecording) {
       await controller.stopRecording();
@@ -359,6 +370,14 @@ class _QuranBottomBarState extends State<QuranBottomBar>
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<SttController>();
+    if (_activeMode == 'listen' && !controller.isListeningMode) {
+      // Listening mode telah selesai, reset button
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _resetToCenter(keepActiveMode: false);
+        }
+      });
+    }
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
@@ -506,7 +525,15 @@ class _QuranBottomBarState extends State<QuranBottomBar>
                               ),
                               child: Center(
                                 child: AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 200),
+                                  duration: const Duration(
+                                    milliseconds: 150,
+                                  ), // ✅ Kurangi delay
+                                  transitionBuilder: (child, animation) {
+                                    return ScaleTransition(
+                                      scale: animation,
+                                      child: child,
+                                    );
+                                  },
                                   child: Icon(
                                     _getThumbIcon(
                                       controller,
@@ -514,8 +541,8 @@ class _QuranBottomBarState extends State<QuranBottomBar>
                                       isRecordingActive,
                                     ),
                                     key: ValueKey(
-                                      '${isListeningActive}_${isRecordingActive}_${_dragPosition.toStringAsFixed(1)}',
-                                    ),
+                                      '${isListeningActive}_${isRecordingActive}_${controller.listeningAudioService?.isPaused ?? false}_${_dragPosition.toStringAsFixed(1)}',
+                                    ), // ✅ CRITICAL: Tambahkan isPaused ke key!
                                     color: Colors.white,
                                     size: iconSize,
                                   ),
@@ -546,7 +573,7 @@ class _QuranBottomBarState extends State<QuranBottomBar>
                             pageBuilder:
                                 (context, animation, secondaryAnimation) =>
                                     PlaybackSettingsPage(
-                                      currentPage: controller.currentPage
+                                      currentPage: controller.currentPage,
                                     ),
                             transitionsBuilder:
                                 (
@@ -661,9 +688,6 @@ class _QuranBottomBarState extends State<QuranBottomBar>
     }
 
     return Icons.code;
-    // return Icons.swap_horiz;
-    //  return Icons.sync_alt;
-    //  return Icons.settings_ethernet;
   }
 }
 
@@ -677,8 +701,8 @@ class QuranLoadingWidget extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
-    final containerSize = screenWidth * 0.15; // ✅ ~60px pada 400px width
-    final titleSize = screenWidth * 0.04; // ✅ ~16px pada 400px width
+    final containerSize = screenWidth * 0.15; // âœ… ~60px pada 400px width
+    final titleSize = screenWidth * 0.04; // âœ… ~16px pada 400px width
     final messageSize = screenWidth * 0.03;
 
     return Center(
@@ -830,12 +854,12 @@ class QuranLogsPanel extends StatelessWidget {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
 
-    final panelHeight = screenHeight * 0.1875; // ✅ ~150px pada 800px
-    final iconSize = screenWidth * 0.04; // ✅ ~16px
+    final panelHeight = screenHeight * 0.1875; // âœ… ~150px pada 800px
+    final iconSize = screenWidth * 0.04; // âœ… ~16px
     final titleSize = screenWidth * 0.03;
-    final logFontSize = screenWidth * 0.02; // ✅ ~8px
-    final paddingH = screenWidth * 0.02; // ✅ ~8px
-    final paddingV = screenHeight * 0.0075; // ✅ ~6px
+    final logFontSize = screenWidth * 0.02; // âœ… ~8px
+    final paddingH = screenWidth * 0.02; // âœ… ~8px
+    final paddingV = screenHeight * 0.0075; // âœ… ~6px
 
     return Container(
       height: panelHeight,
@@ -967,7 +991,7 @@ void showCompletionDialog(BuildContext context, SttController controller) {
               child: Column(
                 children: [
                   Text(
-                    '🎉 Congratulations! 🎉',
+                    'ðŸŽ‰ Congratulations! ðŸŽ‰',
                     style: TextStyle(
                       fontSize: congratsSize,
                       fontWeight: FontWeight.bold,

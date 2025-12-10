@@ -1,0 +1,10 @@
+{
+  "appbar_widget": {
+    "home_text": "الرئيسية",
+    "quran_text": "القرآن",
+    "completion_text": "الإكمال",
+    "activity_text": "النشاط",
+    "history_text": "السجل",
+    "premium_text": "المميزة"
+  }
+}

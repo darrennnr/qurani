@@ -1,0 +1,8 @@
+{
+    "data_usage": {
+        "data_usage_text": "Data Usage",
+        "audio_data_text": "Audio Data",
+        "save_audio_data_text": "Save audio data",
+        "save_audio_data_desc": "Qurani securely stores your audio in the cloud to provide you with unique features such as replaying mistakes, listening to your audio, and sharing audio. If you disable this setting, you will lose access to these features. This setting is not applied retroactively."
+    }
+}
