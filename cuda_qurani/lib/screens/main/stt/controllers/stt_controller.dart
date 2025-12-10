@@ -1767,6 +1767,33 @@ class SttController with ChangeNotifier {
         });
         break;
 
+      // 🔵 DISABLED: word_processing handler - backend no longer sends this
+      // Processing status is now set via next_word_index in word_feedback
+      // case 'word_processing':
+      //   final int procAyah = message['ayah'] ?? 0;
+      //   final int procWordIndex = message['word_index'] ?? 0;
+      //   final int procSurah = message['surah'] ?? suratId ?? _determinedSurahId ?? 1;
+      //   
+      //   // Update word status to processing (blue/yellow)
+      //   final procKey = _wordKey(procSurah, procAyah);
+      //   if (!_wordStatusMap.containsKey(procKey)) {
+      //     _wordStatusMap[procKey] = {};
+      //   }
+      //   _wordStatusMap[procKey]![procWordIndex] = WordStatus.processing;
+      //   
+      //   // Also update _currentWords if available
+      //   if (_currentWords.isNotEmpty && procWordIndex < _currentWords.length) {
+      //     _currentWords[procWordIndex] = WordFeedback(
+      //       text: _currentWords[procWordIndex].text,
+      //       status: WordStatus.processing,
+      //       wordIndex: procWordIndex,
+      //       similarity: 0.0,
+      //     );
+      //   }
+      //   
+      //   notifyListeners();
+      //   break;
+
       case 'word_feedback':
         final int feedbackAyah = message['ayah'] ?? 0;
         final int feedbackWordIndex = message['word_index'] ?? 0;
@@ -1823,6 +1850,25 @@ class SttController with ChangeNotifier {
           print(
             'ðŸ”¥ STT REALTIME: Updated _currentWords[$feedbackWordIndex] = $expectedWord (${_mapWordStatus(status)})',
           );
+        }
+        
+        // ✅ NEW: Set NEXT word to processing (blue) based on next_word_index from backend
+        final int? nextWordIndex = message['next_word_index'];
+        if (nextWordIndex != null && 
+            nextWordIndex < totalWords && 
+            nextWordIndex >= 0 &&
+            nextWordIndex < _currentWords.length) {
+          // Only set processing if word is still pending (not already matched/mismatched)
+          final currentNextStatus = _wordStatusMap[feedbackKey]?[nextWordIndex];
+          if (currentNextStatus == null || currentNextStatus == WordStatus.pending) {
+            _wordStatusMap[feedbackKey]![nextWordIndex] = WordStatus.processing;
+            _currentWords[nextWordIndex] = WordFeedback(
+              text: _currentWords[nextWordIndex].text,
+              status: WordStatus.processing,
+              wordIndex: nextWordIndex,
+              similarity: 0.0,
+            );
+          }
         }
 
         notifyListeners();
@@ -1897,6 +1943,19 @@ class SttController with ChangeNotifier {
         _currentAyatIndex = _ayatList.indexWhere(
           (a) => a.ayah == nextAyah && a.surah_id == completedSurah,
         );
+        
+        // 🔵 TARTEEL-STYLE: Set first word of NEXT ayah to processing immediately
+        // This ensures smooth transition - new ayah starts with blue indicator
+        if (nextAyah > 0) {
+          final nextAyahKey = _wordKey(completedSurah, nextAyah);
+          if (!_wordStatusMap.containsKey(nextAyahKey)) {
+            _wordStatusMap[nextAyahKey] = {};
+          }
+          // Set word 0 to processing (blue)
+          _wordStatusMap[nextAyahKey]![0] = WordStatus.processing;
+          print('🔵 STT: Ayah complete! Set first word of next ayah to processing - $nextAyahKey[0]');
+        }
+        
         notifyListeners();
         break;
 
@@ -1954,6 +2013,20 @@ class SttController with ChangeNotifier {
         } else {
           _wordStatusMap.clear();
           print('📝 STT: Fresh session, no previous word status');
+        }
+
+        // 🔵 TARTEEL-STYLE: Set first word to processing immediately when session starts
+        // This gives immediate visual feedback that system is ready and listening
+        final int startAyah = message['expected_ayah'] ?? 1;
+        final firstWordKey = _wordKey(startedSurah, startAyah);
+        if (!_wordStatusMap.containsKey(firstWordKey)) {
+          _wordStatusMap[firstWordKey] = {};
+        }
+        // Only set if word 0 is not already matched/mismatched (for resume sessions)
+        if (_wordStatusMap[firstWordKey]![0] == null || 
+            _wordStatusMap[firstWordKey]![0] == WordStatus.pending) {
+          _wordStatusMap[firstWordKey]![0] = WordStatus.processing;
+          print('🔵 STT: Set first word to processing (Tarteel-style) - $firstWordKey[0]');
         }
 
         appLogger.log(
@@ -2573,14 +2646,18 @@ class SttController with ChangeNotifier {
 
       // ✅ Send with page/juz info if available
       final firstAyah = _ayatList.isNotEmpty ? _ayatList.first.ayah : 1;
+      
+      // ✅ FIX: isResume true ONLY when resumeSessionId is set (from Resume History)
+      final bool shouldResume = resumeSessionId != null;
+      
       _webSocketService.sendStartRecording(
         recordingSurahId,
         pageId: pageId,
         juzId: juzId,
         ayah: firstAyah,
         isFromHistory: isFromHistory,
-        sessionId:
-            resumeSessionId, // ✅ NEW: Pass existing session_id for resume
+        sessionId: resumeSessionId,
+        isResume: shouldResume,  // ✅ NEW: Backend will restore words only if true
       );
 
       print('ðŸŽ™ï¸ startRecording(): Starting audio recording...');

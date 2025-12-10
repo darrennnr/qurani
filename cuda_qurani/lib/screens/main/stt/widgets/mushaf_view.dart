@@ -440,8 +440,9 @@ Widget build(BuildContext context) {
             wordBg = errorColor.withOpacity(0.4);
             break;
           case WordStatus.processing:
-            if (controller.isListeningMode) {
-              wordBg = Colors.grey.withOpacity(0.5);
+            // ✅ FIX: Show blue when RECORDING or LISTENING mode
+            if (controller.isRecording || controller.isListeningMode) {
+              wordBg = Colors.blue.withOpacity(0.4);  // 🔵 BIRU untuk processing
             } else {
               wordBg = Colors.transparent;
             }
