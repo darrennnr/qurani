@@ -1,6 +1,7 @@
 // lib/screens/main/home/screens/completion_page.dart
 
 import 'package:cuda_qurani/core/utils/language_helper.dart';
+import 'package:cuda_qurani/main.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
@@ -12,6 +13,7 @@ import 'package:cuda_qurani/screens/main/home/widgets/navigation_bar.dart';
 import 'package:cuda_qurani/services/metadata_cache_service.dart';
 import 'package:cuda_qurani/services/supabase_service.dart';
 import 'package:cuda_qurani/screens/main/stt/stt_page.dart';
+import 'package:cuda_qurani/core/providers/language_provider.dart';
 
 // ==================== MODELS ====================
 
@@ -459,7 +461,7 @@ class _CompletionPageState extends State<CompletionPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      '${percentage.toStringAsFixed(1)}%',
+                      '${context.formatNumber(percentage.toStringAsFixed(1))}%',
                       style: AppTypography.h2(
                         context,
                         weight: AppTypography.bold,
@@ -513,7 +515,7 @@ class _CompletionPageState extends State<CompletionPage> {
                             'completion.total_pages_text',
                           )
                           : 'Verses Read',
-                  value: _stats.totalVersesRead.toString(),
+                  value: context.formatNumber(_stats.totalVersesRead),
                 ),
               ),
               SizedBox(width: AppDesignSystem.space8 * s),
@@ -526,8 +528,7 @@ class _CompletionPageState extends State<CompletionPage> {
                             'completion.Remaining_pages_textq',
                           )
                           : 'Remaining',
-                  value: (_stats.totalQuranVerses - _stats.totalVersesRead)
-                      .toString(),
+                  value: context.formatNumber(_stats.totalQuranVerses - _stats.totalVersesRead),
                 ),
               ),
               SizedBox(width: AppDesignSystem.space8 * s),
@@ -540,7 +541,7 @@ class _CompletionPageState extends State<CompletionPage> {
                             'completion.completions_text',
                           )
                           : 'Completed',
-                  value: '${_stats.completedSurahs} Surah',
+                  value: '${context.formatNumber(_stats.completedSurahs)} Surah',
                 ),
               ),
             ],
@@ -552,6 +553,8 @@ class _CompletionPageState extends State<CompletionPage> {
 
   Widget _buildStatCard({required String label, required String value}) {
     final s = AppDesignSystem.getScaleFactor(context);
+    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+    final isRTL = languageProvider.currentLanguageCode == 'ar';
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -575,13 +578,16 @@ class _CompletionPageState extends State<CompletionPage> {
             overflow: TextOverflow.ellipsis,
           ),
           SizedBox(height: AppDesignSystem.space4 * s),
-          Text(
-            value,
-            style: AppTypography.titleLarge(
-              context,
-              weight: AppTypography.bold,
+          Directionality(
+            textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
+            child: Text(
+              value,
+              style: AppTypography.titleLarge(
+                context,
+                weight: AppTypography.bold,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -641,7 +647,7 @@ class _CompletionPageState extends State<CompletionPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '${_lastRead.surahName}, ${_translations.isNotEmpty ? LanguageHelper.tr(_translations, 'completion.page_text') : 'Ayah'} ${_lastRead.ayah}',
+                            '${_lastRead.surahName}, ${_translations.isNotEmpty ? LanguageHelper.tr(_translations, 'completion.page_text') : 'Ayah'} ${context.formatNumber(_lastRead.ayah)}',
                             style: AppTypography.body(
                               context,
                               color: Colors.white,
@@ -650,7 +656,7 @@ class _CompletionPageState extends State<CompletionPage> {
                           ),
                           SizedBox(height: AppDesignSystem.space2 * s),
                           Text(
-                            'Surah ${_lastRead.surahId}',
+                            'Surah ${context.formatNumber(_lastRead.surahId)}',
                             style: AppTypography.captionSmall(
                               context,
                               color: Colors.white.withOpacity(0.9),
@@ -903,7 +909,7 @@ class _CompletionPageState extends State<CompletionPage> {
           _translations.isNotEmpty
               ? LanguageHelper.tr(_translations, 'completion.remaining_text')
               : 'Remaining';
-      remainingText = '$remLabel: ${versesRead + 1}-$totalVerses';
+      remainingText = '$remLabel: ${context.formatNumber(versesRead + 1)}-${context.formatNumber(totalVerses)}';
     } else if (versesRead >= totalVerses) {
       remainingText =
           _translations.isNotEmpty
@@ -936,7 +942,7 @@ class _CompletionPageState extends State<CompletionPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '$name - ${percentage.toStringAsFixed(0)}% ($versesRead/$totalVerses)',
+                          '$name - ${context.formatNumber(percentage.toStringAsFixed(0))}% (${context.formatNumber(versesRead)}/${context.formatNumber(totalVerses)})',
                           style: AppTypography.body(
                             context,
                             weight: AppTypography.semiBold,

@@ -2,6 +2,7 @@
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
 import 'package:cuda_qurani/core/utils/language_helper.dart';
 import 'package:cuda_qurani/core/widgets/app_components.dart';
+import 'package:cuda_qurani/main.dart';
 import 'package:cuda_qurani/screens/main/home/widgets/navigation_bar.dart';
 import 'package:cuda_qurani/screens/main/auth/login/login_page.dart';
 import 'package:cuda_qurani/providers/auth_provider.dart';
@@ -233,7 +234,7 @@ class _ProfilePageState extends State<ProfilePage> {
             _translations.isNotEmpty
                 ? LanguageHelper.tr(_translations, 'profile.joined_text')
                 : 'Joined',
-            joinedDate,
+            context.formatNumber(joinedDate),
             showDivider: true,
           ),
           _buildInfoRow(
@@ -536,9 +537,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 : 'Delete Account',
             style: AppTypography.body(
               context,
-              color: _isLoggingOut
-                  ? AppColors.textDisabled
-                  : AppColors.error,
+              color: _isLoggingOut ? AppColors.textDisabled : AppColors.error,
               weight: AppTypography.medium,
             ),
           ),

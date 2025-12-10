@@ -3,6 +3,7 @@ import 'package:cuda_qurani/services/local_database_service.dart';
 import 'package:cuda_qurani/services/reciter_database_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'providers/recitation_provider.dart';
@@ -69,6 +70,7 @@ Future<void> _initializeDatabases() async {
     _isDatabaseInitialized = true;
   } catch (e, stackTrace) {}
 }
+
 class MainApp extends StatelessWidget {
   const MainApp({super.key});
 
@@ -175,5 +177,48 @@ class _InitialSplashScreenState extends State<InitialSplashScreen> {
   @override
   Widget build(BuildContext context) {
     return const SplashScreen(); // Reuse existing SplashScreen widget
+  }
+}
+
+// ============================================================================
+// ✅ ARABIC NUMERALS HELPER - Tambahkan di bawah semua class
+// ============================================================================
+
+/// Utility class untuk convert angka Western (0-9) ke Eastern Arabic Numerals (٠-٩)
+class AppLocalizations {
+  /// Format number berdasarkan bahasa saat ini
+  /// Jika bahasa Arab, convert ke Eastern Arabic Numerals
+  static String formatNumber(BuildContext context, dynamic number) {
+    try {
+      final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+      
+      if (languageProvider.currentLanguageCode == 'ar') {
+        return _toArabicNumerals(number.toString());
+      }
+      return number.toString();
+    } catch (e) {
+      // Fallback jika error
+      return number.toString();
+    }
+  }
+  
+  /// Convert Western digits (0-9) to Eastern Arabic Numerals (٠-٩)
+  static String _toArabicNumerals(String input) {
+    const english = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+    const arabic = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+    
+    String result = input;
+    for (int i = 0; i < english.length; i++) {
+      result = result.replaceAll(english[i], arabic[i]);
+    }
+    return result;
+  }
+}
+
+/// Extension untuk akses lebih mudah dari BuildContext
+extension NumberFormattingExtension on BuildContext {
+  /// Format number ke bahasa saat ini (Arab = ٠-٩, lainnya = 0-9)
+  String formatNumber(dynamic number) {
+    return AppLocalizations.formatNumber(this, number);
   }
 }

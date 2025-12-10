@@ -1,6 +1,7 @@
 // lib\screens\main\stt\widgets\quran_widgets.dart
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
 import 'package:cuda_qurani/core/utils/language_helper.dart';
+import 'package:cuda_qurani/main.dart';
 import 'package:cuda_qurani/models/playback_settings_model.dart';
 import 'package:cuda_qurani/screens/main/home/screens/settings/settings_page.dart';
 import 'package:cuda_qurani/screens/main/home/screens/surah_list_page.dart';
@@ -120,7 +121,7 @@ class _QuranAppBarState extends State<QuranAppBar> {
                   SizedBox(width: screenWidth * 0.015),
                   // Juz Badge
                   Text(
-                    '${LanguageHelper.tr(_translations, "app_bar.juz_text")} $currentJuz',
+                    '${LanguageHelper.tr(_translations, "app_bar.juz_text")} ${context.formatNumber(currentJuz)}',
                     style: TextStyle(
                       fontSize: badgeSize,
                       fontWeight: FontWeight.w400,
@@ -139,7 +140,7 @@ class _QuranAppBarState extends State<QuranAppBar> {
                   SizedBox(width: screenWidth * 0.015),
                   // Page Number
                   Text(
-                    '${LanguageHelper.tr(_translations, "app_bar.page_text")} ${controller.currentPage}',
+                    '${LanguageHelper.tr(_translations, "app_bar.page_text")} ${context.formatNumber(controller.currentPage)}',
                     style: TextStyle(
                       fontSize: subtitleSize,
                       fontWeight: FontWeight.w400,

@@ -1,18 +1,19 @@
 {
-    "playback_settings": {
-        "playback_settings_text": "Playback Settings",
-        "select_range_text": "Select Range",
-        "starting_verse_text": "Starting Verse",
-        "ending_verse_text": "Ending Verse",
-        "cancel_text": "Cancel",
-        "done_text": "Done",
-        "reciter_text": "Reciter",
-        "manage_downloads_text": "Manage Downloads",
-        "play_speed": "Play speed",
-        "play_each_verse_text": "Play each verse",
-        "play_each_range_text": "Play each range",
-        "times_text": "Times",
-        "loop_text": "Loop",
-        "play_audio_text": "Play Audio"
-    }
+  "playback_settings": {
+    "playback_settings_text": "Playback Settings",
+    "select_range_text": "Select Range",
+    "starting_verse_text": "Starting Verse",
+    "ending_verse_text": "Ending Verse",
+    "cancel_text": "Cancel",
+    "done_text": "Done",
+    "reciter_text": "Reciter",
+    "manage_downloads_text": "Manage Downloads",
+    "play_speed": "Playback Speed",
+    "play_each_verse_text": "Play each verse",
+    "play_each_range_text": "Play each range",
+    "time_text": "time",
+    "times_text": "times",
+    "loop_text": "loop", 
+    "play_audio_text": "Play Audio"
+  }
 }

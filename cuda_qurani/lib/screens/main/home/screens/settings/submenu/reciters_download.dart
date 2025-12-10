@@ -1,6 +1,7 @@
 // lib/screens/main/home/screens/settings/submenu/reciters_download.dart
 
 import 'package:cuda_qurani/core/utils/language_helper.dart';
+import 'package:cuda_qurani/main.dart';
 import 'package:cuda_qurani/screens/main/home/screens/settings/widgets/audio_manager.dart';
 import 'package:cuda_qurani/services/audio_download_services.dart';
 import 'package:cuda_qurani/services/reciter_manager_services.dart';
@@ -206,7 +207,7 @@ class _RecitersDownloadPageState extends State<RecitersDownloadPage> {
                         ),
                         SizedBox(width: 4 * s),
                         Text(
-                          storageSize,
+                          context.formatNumber(storageSize),
                           style: TextStyle(
                             fontSize: 12 * s,
                             color: AppColors.textSecondary,
@@ -302,7 +303,7 @@ class _RecitersDownloadPageState extends State<RecitersDownloadPage> {
                               ),
                               SizedBox(width: AppDesignSystem.space8 * s),
                               Text(
-                                totalSize,
+                                context.formatNumber(totalSize),
                                 style: TextStyle(
                                   fontSize: 24 * s,
                                   fontWeight: AppTypography.bold,
@@ -312,7 +313,7 @@ class _RecitersDownloadPageState extends State<RecitersDownloadPage> {
                               SizedBox(width: AppDesignSystem.space8 * s),
                               Text(
                                 _translations.isNotEmpty
-                                    ? '${totalFiles} ${LanguageHelper.tr(_translations, 'reciters.files_text')}'
+                                    ? '${context.formatNumber(totalFiles)} ${LanguageHelper.tr(_translations, 'reciters.files_text')}'
                                     : '$totalFiles files',
                                 style: TextStyle(
                                   fontSize: 14 * s,
