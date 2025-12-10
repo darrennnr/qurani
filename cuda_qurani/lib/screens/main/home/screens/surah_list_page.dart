@@ -192,38 +192,138 @@ class _SurahListPageState extends State<SurahListPage> {
 
   // ==================== NAVIGATION ====================
 
-  Future<void> _openSurah(BuildContext context, int surahId) async {
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => SttPage(suratId: surahId)));
-  }
+Future<void> _openSurah(BuildContext context, int surahId) async {
+  await Navigator.of(context).push(
+    PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) =>
+          SttPage(suratId: surahId),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeInOut,
+          ),
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.0, 0.02),
+              end: Offset.zero,
+            ).animate(
+              CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeInOut,
+              ),
+            ),
+            child: child,
+          ),
+        );
+      },
+      transitionDuration: const Duration(milliseconds: 250),
+      reverseTransitionDuration: const Duration(milliseconds: 200),
+    ),
+  );
+}
 
-  Future<void> _openPage(BuildContext context, int pageNumber) async {
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => SttPage(pageId: pageNumber)));
-  }
+Future<void> _openPage(BuildContext context, int pageNumber) async {
+  await Navigator.of(context).push(
+    PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) =>
+          SttPage(pageId: pageNumber),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeInOut,
+          ),
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.0, 0.02),
+              end: Offset.zero,
+            ).animate(
+              CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeInOut,
+              ),
+            ),
+            child: child,
+          ),
+        );
+      },
+      transitionDuration: const Duration(milliseconds: 250),
+      reverseTransitionDuration: const Duration(milliseconds: 200),
+    ),
+  );
+}
 
-  Future<void> _openSurahAtAyah(
-    BuildContext context,
-    int surahId,
-    int ayahNumber,
-  ) async {
-    final page = await LocalDatabaseService.getPageNumber(surahId, ayahNumber);
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => SttPage(pageId: page)));
-  }
+Future<void> _openSurahAtAyah(
+  BuildContext context,
+  int surahId,
+  int ayahNumber,
+) async {
+  final page = await LocalDatabaseService.getPageNumber(surahId, ayahNumber);
+  await Navigator.of(context).push(
+    PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) =>
+          SttPage(pageId: page),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeInOut,
+          ),
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.0, 0.02),
+              end: Offset.zero,
+            ).animate(
+              CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeInOut,
+              ),
+            ),
+            child: child,
+          ),
+        );
+      },
+      transitionDuration: const Duration(milliseconds: 250),
+      reverseTransitionDuration: const Duration(milliseconds: 200),
+    ),
+  );
+}
 
-  Future<void> _openJuz(
-    BuildContext context,
-    int juzNumber,
-    String firstVerseKey,
-  ) async {
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => SttPage(juzId: juzNumber)));
-  }
+Future<void> _openJuz(
+  BuildContext context,
+  int juzNumber,
+  String firstVerseKey,
+) async {
+  await Navigator.of(context).push(
+    PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) =>
+          SttPage(juzId: juzNumber),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeInOut,
+          ),
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.0, 0.02),
+              end: Offset.zero,
+            ).animate(
+              CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeInOut,
+              ),
+            ),
+            child: child,
+          ),
+        );
+      },
+      transitionDuration: const Duration(milliseconds: 250),
+      reverseTransitionDuration: const Duration(milliseconds: 200),
+    ),
+  );
+}
 
   // ==================== BUILD ====================
 
@@ -481,36 +581,37 @@ class _SurahListPageState extends State<SurahListPage> {
   // ==================== BODY CONTENT ====================
 
   Widget _buildBodyContent() {
-    if (_isSearching) {
-      return _buildSearchResults();
-    }
-
-    // ✅ WRAP dengan AnimatedSwitcher
-    final slideDirection = _getSlideDirection(_previousTab, _currentTab);
-
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 300),
-      switchInCurve: Curves.easeOutCubic,
-      switchOutCurve: Curves.easeInCubic,
-      transitionBuilder: (Widget child, Animation<double> animation) {
-        final offsetAnimation =
-            Tween<Offset>(
-              begin: slideDirection == SlideDirection.leftToRight
-                  ? const Offset(-1.0, 0.0)
-                  : const Offset(1.0, 0.0),
-              end: Offset.zero,
-            ).animate(
-              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
-            );
-
-        return SlideTransition(
-          position: offsetAnimation,
-          child: FadeTransition(opacity: animation, child: child),
-        );
-      },
-      child: _buildTabContent(),
-    );
+  if (_isSearching) {
+    return _buildSearchResults();
   }
+
+  return AnimatedSwitcher(
+    duration: const Duration(milliseconds: 200),
+    switchInCurve: Curves.easeIn,
+    switchOutCurve: Curves.easeOut,
+    transitionBuilder: (Widget child, Animation<double> animation) {
+      return FadeTransition(
+        opacity: animation,
+        child: child,
+      );
+    },
+    child: KeyedSubtree(
+      key: ValueKey<TabType>(_currentTab),
+      child: Builder(
+        builder: (context) {
+          switch (_currentTab) {
+            case TabType.surah:
+              return _buildSurahList();
+            case TabType.juz:
+              return _buildJuzList();
+            case TabType.page:
+              return _buildPageList();
+          }
+        },
+      ),
+    ),
+  );
+}
 
   Widget _buildTabContent() {
     // Key unik agar AnimatedSwitcher detect perubahan
