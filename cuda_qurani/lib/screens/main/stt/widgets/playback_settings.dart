@@ -13,6 +13,8 @@ import 'dart:io';
 import 'package:cuda_qurani/services/global_ayat_services.dart';
 import 'package:path/path.dart' as path;
 import 'package:sqflite/sqflite.dart';
+import 'package:provider/provider.dart';
+import 'package:cuda_qurani/core/providers/language_provider.dart';
 
 class PlaybackSettingsPage extends StatefulWidget {
   final int? currentPage;
@@ -78,29 +80,29 @@ class _PlaybackSettingsPageState extends State<PlaybackSettingsPage> {
   ];
   String _selectedSpeed = '1x';
 
-String get timeText => _translations.isNotEmpty
-    ? LanguageHelper.tr(_translations, 'playback_settings.time_text')
-    : 'time';
+  String get timeText => _translations.isNotEmpty
+      ? LanguageHelper.tr(_translations, 'playback_settings.time_text')
+      : 'time';
 
-String get timesText => _translations.isNotEmpty
-    ? LanguageHelper.tr(_translations, 'playback_settings.times_text')
-    : 'times';
+  String get timesText => _translations.isNotEmpty
+      ? LanguageHelper.tr(_translations, 'playback_settings.times_text')
+      : 'times';
 
-String get loopText => _translations.isNotEmpty
-    ? LanguageHelper.tr(_translations, 'playback_settings.loop_text')
-    : 'loop';
+  String get loopText => _translations.isNotEmpty
+      ? LanguageHelper.tr(_translations, 'playback_settings.loop_text')
+      : 'loop';
 
-// ✅ JANGAN format angka di sini
-List<String> get _repetitions => [
-  '1 $timeText',
-  '2 $timesText',
-  '3 $timesText',
-  '$loopText',
-];
+  // ✅ JANGAN format angka di sini
+  List<String> get _repetitions => [
+    '1 $timeText',
+    '2 $timesText',
+    '3 $timesText',
+    '$loopText',
+  ];
 
-// ✅ Variable biasa, bukan getter
-String _eachVerseRepeat = '1 time';
-String _rangeRepeat = '1 time';
+  // ✅ Variable biasa, bukan getter
+  String _eachVerseRepeat = '1 time';
+  String _rangeRepeat = '1 time';
   bool _isAutoFillApplied = false;
 
   @override
@@ -211,7 +213,7 @@ String _rangeRepeat = '1 time';
 
       // Check if database exists
       if (!await File(glyphsPath).exists()) {
-        print('📥 Glyphs DB not found, copying...');
+        print('🔥 Glyphs DB not found, copying...');
         final data = await rootBundle.load(
           'assets/data/qpc-v1-ayah-by-ayah-glyphs.db',
         );
@@ -256,19 +258,42 @@ String _rangeRepeat = '1 time';
         setState(() {
           _isLoading = false;
           _surahs = [
-            {'id': 1, 'name_simple': 'Al-Fatihah', 'verses_count': 7},
-            {'id': 2, 'name_simple': 'Al-Baqarah', 'verses_count': 286},
+            {
+              'id': 1,
+              'name_simple': 'Al-Fatihah',
+              'name_arabic': 'الفاتحة',
+              'verses_count': 7,
+            },
+            {
+              'id': 2,
+              'name_simple': 'Al-Baqarah',
+              'name_arabic': 'البقرة',
+              'verses_count': 286,
+            },
           ];
         });
       }
     }
   }
 
+  // ✅ NEW: Helper function untuk get nama surah berdasarkan bahasa
   String _getSurahName(int id) {
     final surah = _surahs.firstWhere(
       (s) => s['id'] == id,
-      orElse: () => {'name_simple': 'Unknown'},
+      orElse: () => {'name_simple': 'Unknown', 'name_arabic': 'غير معروف'},
     );
+
+    // ✅ Check current language
+    final languageProvider = Provider.of<LanguageProvider>(
+      context,
+      listen: false,
+    );
+    final isArabic = languageProvider.currentLanguageCode == 'ar';
+
+    // ✅ Return name_arabic if Arabic, otherwise name_simple
+    if (isArabic && surah.containsKey('name_arabic')) {
+      return surah['name_arabic'] ?? surah['name_simple'];
+    }
     return surah['name_simple'];
   }
 
@@ -406,9 +431,22 @@ String _rangeRepeat = '1 time';
                             childCount: _surahs.length,
                             itemBuilder: (context, index) {
                               final surah = _surahs[index];
+                              // ✅ Get surah name berdasarkan bahasa
+                              final languageProvider =
+                                  Provider.of<LanguageProvider>(
+                                    context,
+                                    listen: false,
+                                  );
+                              final isArabic =
+                                  languageProvider.currentLanguageCode == 'ar';
+                              final surahName =
+                                  isArabic && surah.containsKey('name_arabic')
+                                  ? surah['name_arabic']
+                                  : surah['name_simple'];
+
                               return Center(
                                 child: Text(
-                                  "${context.formatNumber(surah['id'])} - ${surah['name_simple']}",
+                                  "${context.formatNumber(surah['id'])} - $surahName",
                                   style: AppTypography.body(context),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -689,84 +727,84 @@ String _rangeRepeat = '1 time';
     );
   }
 
- Widget _buildSelectionRow(
-  String title,
-  List<String> options,
-  String selectedValue,
-  Function(String) onSelect,
-) {
-  final s = AppDesignSystem.getScaleFactor(context);
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        title,
-        style: AppTypography.caption(context, weight: AppTypography.semiBold),
-      ),
-      SizedBox(height: AppDesignSystem.space10 * s),
-      SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: options.map((option) {
-            final isSelected = option == selectedValue;
-            
-            // ✅ Format DISPLAY TEXT (angka aja, bukan seluruh string)
-            String displayText = option;
-            if (option.startsWith('1 ')) {
-              displayText = option.replaceFirst('1', context.formatNumber(1));
-            } else if (option.startsWith('2 ')) {
-              displayText = option.replaceFirst('2', context.formatNumber(2));
-            } else if (option.startsWith('3 ')) {
-              displayText = option.replaceFirst('3', context.formatNumber(3));
-            }
-            
-            return Padding(
-              padding: EdgeInsets.only(right: AppDesignSystem.space8 * s),
-              child: GestureDetector(
-                onTap: () {
-                  onSelect(option);  // ✅ Pass value asli
-                  AppHaptics.light();
-                },
-                child: AnimatedContainer(
-                  duration: AppDesignSystem.durationFast,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: AppDesignSystem.space20 * s + 180 / 100,
-                    vertical: AppDesignSystem.space10 * s,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppColors.textPrimary
-                        : AppColors.surface,
-                    border: Border.all(
+  Widget _buildSelectionRow(
+    String title,
+    List<String> options,
+    String selectedValue,
+    Function(String) onSelect,
+  ) {
+    final s = AppDesignSystem.getScaleFactor(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: AppTypography.caption(context, weight: AppTypography.semiBold),
+        ),
+        SizedBox(height: AppDesignSystem.space10 * s),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: options.map((option) {
+              final isSelected = option == selectedValue;
+
+              // ✅ Format DISPLAY TEXT (angka aja, bukan seluruh string)
+              String displayText = option;
+              if (option.startsWith('1 ')) {
+                displayText = option.replaceFirst('1', context.formatNumber(1));
+              } else if (option.startsWith('2 ')) {
+                displayText = option.replaceFirst('2', context.formatNumber(2));
+              } else if (option.startsWith('3 ')) {
+                displayText = option.replaceFirst('3', context.formatNumber(3));
+              }
+
+              return Padding(
+                padding: EdgeInsets.only(right: AppDesignSystem.space8 * s),
+                child: GestureDetector(
+                  onTap: () {
+                    onSelect(option); // ✅ Pass value asli
+                    AppHaptics.light();
+                  },
+                  child: AnimatedContainer(
+                    duration: AppDesignSystem.durationFast,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppDesignSystem.space20 * s + 180 / 100,
+                      vertical: AppDesignSystem.space10 * s,
+                    ),
+                    decoration: BoxDecoration(
                       color: isSelected
                           ? AppColors.textPrimary
-                          : AppColors.borderMedium,
+                          : AppColors.surface,
+                      border: Border.all(
+                        color: isSelected
+                            ? AppColors.textPrimary
+                            : AppColors.borderMedium,
+                      ),
+                      borderRadius: BorderRadius.circular(
+                        AppDesignSystem.radiusSmall * s,
+                      ),
                     ),
-                    borderRadius: BorderRadius.circular(
-                      AppDesignSystem.radiusSmall * s,
-                    ),
-                  ),
-                  child: Text(
-                    displayText,  // ✅ Tampilkan yang sudah di-format
-                    style: AppTypography.labelSmall(
-                      context,
-                      color: isSelected
-                          ? Colors.white
-                          : AppColors.textPrimary,
-                      weight: isSelected
-                          ? AppTypography.semiBold
-                          : AppTypography.regular,
+                    child: Text(
+                      displayText, // ✅ Tampilkan yang sudah di-format
+                      style: AppTypography.labelSmall(
+                        context,
+                        color: isSelected
+                            ? Colors.white
+                            : AppColors.textPrimary,
+                        weight: isSelected
+                            ? AppTypography.semiBold
+                            : AppTypography.regular,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            );
-          }).toList(),
+              );
+            }).toList(),
+          ),
         ),
-      ),
-    ],
-  );
-}
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
