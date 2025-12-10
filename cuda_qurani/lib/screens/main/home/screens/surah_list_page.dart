@@ -905,7 +905,7 @@ class _OptimizedPageListState extends State<_OptimizedPageList> {
 
   Future<void> _loadTranslations() async {
     // Ganti path sesuai file JSON yang dibutuhkan
-    final trans = await context.loadTranslations('settings/notifications');
+    final trans = await context.loadTranslations('home/surah_list');
     setState(() {
       _translations = trans;
     });
