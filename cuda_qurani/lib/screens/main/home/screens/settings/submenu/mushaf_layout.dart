@@ -1,4 +1,5 @@
 // lib/screens/main/home/screens/settings/submenu/mushaf_layout.dart
+import 'package:cuda_qurani/core/utils/language_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
 import 'package:cuda_qurani/screens/main/home/screens/settings/widgets/appbar.dart';
@@ -19,6 +20,22 @@ class MushafLayoutPage extends StatefulWidget {
 }
 
 class _MushafLayoutPageState extends State<MushafLayoutPage> {
+  Map<String, dynamic> _translations = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTranslations();
+  }
+
+  Future<void> _loadTranslations() async {
+    // Ganti path sesuai file JSON yang dibutuhkan
+    final trans = await context.loadTranslations('settings/quran_appearance');
+    setState(() {
+      _translations = trans;
+    });
+  }
+
   // Selected layout mode
   String _selectedLayout = 'Book'; // 'Book' or 'Translation/Transliteration'
 
@@ -46,8 +63,13 @@ class _MushafLayoutPageState extends State<MushafLayoutPage> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const SettingsAppBar(
-        title: 'Mushaf Layout',
+      appBar: SettingsAppBar(
+        title: _translations.isNotEmpty
+            ? LanguageHelper.tr(
+                _translations,
+                'mushaf_layout.mushaf_layout_text',
+              )
+            : 'Mushaf Layout',
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -58,7 +80,12 @@ class _MushafLayoutPageState extends State<MushafLayoutPage> {
               children: [
                 // Section Header
                 Text(
-                  'Select Reading Layout',
+                  _translations.isNotEmpty
+                      ? LanguageHelper.tr(
+                          _translations,
+                          'mushaf_layout.select_text',
+                        )
+                      : 'Select Reading Layout',
                   style: TextStyle(
                     fontSize: 14 * s * 0.9,
                     fontWeight: AppTypography.regular,
@@ -86,8 +113,18 @@ class _MushafLayoutPageState extends State<MushafLayoutPage> {
                       _buildLayoutOption(
                         context: context,
                         icon: Icons.book_outlined,
-                        title: 'Book',
-                        subtitle: 'Madani Mushaf (1405)',
+                        title: _translations.isNotEmpty
+                            ? LanguageHelper.tr(
+                                _translations,
+                                'mushaf_layout.book_text',
+                              )
+                            : 'Book',
+                        subtitle: _translations.isNotEmpty
+                            ? LanguageHelper.tr(
+                                _translations,
+                                'mushaf_layout.madani_text',
+                              )
+                            : 'Madani Mushaf (1405)',
                         isSelected: _selectedLayout == 'Book',
                         onTap: () => _selectLayout('Book'),
                         isFirst: true,
@@ -105,10 +142,17 @@ class _MushafLayoutPageState extends State<MushafLayoutPage> {
                       _buildLayoutOption(
                         context: context,
                         icon: Icons.translate_outlined,
-                        title: 'Translation / Transliteration',
+                        title: _translations.isNotEmpty
+                            ? LanguageHelper.tr(
+                                _translations,
+                                'mushaf_layout.translation_text',
+                              )
+                            : 'Translation / Transliteration',
                         subtitle: 'Dr. Mustafa Khattab, The Clear Quran',
-                        isSelected: _selectedLayout == 'Translation/Transliteration',
-                        onTap: () => _selectLayout('Translation/Transliteration'),
+                        isSelected:
+                            _selectedLayout == 'Translation/Transliteration',
+                        onTap: () =>
+                            _selectLayout('Translation/Transliteration'),
                         isFirst: false,
                         isLast: true,
                       ),
@@ -146,7 +190,12 @@ class _MushafLayoutPageState extends State<MushafLayoutPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'MUSHAF LAYOUT AND FONT',
+                                _translations.isNotEmpty
+                                    ? LanguageHelper.tr(
+                                        _translations,
+                                        'mushaf_layout.mushaf_layout_and_font_text',
+                                      ).toUpperCase()
+                                    : 'MUSHAF LAYOUT AND FONT',
                                 style: TextStyle(
                                   fontSize: 11 * s * 0.9,
                                   fontWeight: AppTypography.semiBold,
@@ -156,7 +205,12 @@ class _MushafLayoutPageState extends State<MushafLayoutPage> {
                               ),
                               SizedBox(height: 4 * s * 0.9),
                               Text(
-                                'Choose the different Mushaf you wish to use.',
+                                _translations.isNotEmpty
+                                    ? LanguageHelper.tr(
+                                        _translations,
+                                        'mushaf_layout.mushaf_layout_and_font_desc',
+                                      )
+                                    : 'Choose the different Mushaf you wish to use.',
                                 style: TextStyle(
                                   fontSize: 14 * s * 0.9,
                                   fontWeight: AppTypography.regular,
@@ -180,7 +234,12 @@ class _MushafLayoutPageState extends State<MushafLayoutPage> {
 
                 // Preview Section
                 Text(
-                  'Preview',
+                  _translations.isNotEmpty
+                      ? LanguageHelper.tr(
+                          _translations,
+                          'mushaf_layout.preview_text',
+                        )
+                      : 'Preview',
                   style: TextStyle(
                     fontSize: 14 * s * 0.9,
                     fontWeight: AppTypography.regular,
@@ -236,11 +295,7 @@ class _MushafLayoutPageState extends State<MushafLayoutPage> {
         child: Row(
           children: [
             // Icon
-            Icon(
-              icon,
-              size: 24 * s * 0.9,
-              color: AppColors.textPrimary,
-            ),
+            Icon(icon, size: 24 * s * 0.9, color: AppColors.textPrimary),
 
             SizedBox(width: AppDesignSystem.space12 * s * 0.9),
 
@@ -301,10 +356,7 @@ class _MushafLayoutPageState extends State<MushafLayoutPage> {
         borderRadius: BorderRadius.circular(
           AppDesignSystem.radiusMedium * s * 0.9,
         ),
-        border: Border.all(
-          color: AppColors.borderLight,
-          width: 1.0 * s * 0.9,
-        ),
+        border: Border.all(color: AppColors.borderLight, width: 1.0 * s * 0.9),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(
@@ -369,11 +421,7 @@ class _MushafLayoutPageState extends State<MushafLayoutPage> {
               ),
 
               // Overlay to prevent interaction
-              Positioned.fill(
-                child: Container(
-                  color: Colors.transparent,
-                ),
-              ),
+              Positioned.fill(child: Container(color: Colors.transparent)),
             ],
           );
         },
@@ -433,11 +481,7 @@ class _MushafLayoutPageState extends State<MushafLayoutPage> {
               ),
 
               // Overlay to prevent interaction
-              Positioned.fill(
-                child: Container(
-                  color: Colors.transparent,
-                ),
-              ),
+              Positioned.fill(child: Container(color: Colors.transparent)),
             ],
           );
         },

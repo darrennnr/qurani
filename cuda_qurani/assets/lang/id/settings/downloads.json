@@ -12,9 +12,10 @@
     "audio_manager": {
       "audio_manager_text": "Manajer Audio",
       "download_all_text": "Unduh Semua",
+      "downloading_all_text":"Sedang Mengunduh Semua",
       "using_text": "Menggunakan",
       "clear_cache_text": "Hapus Cache",
-      "clear_cache_desc": "Apakah Anda yakin ingin menghapus semua audio yang telah diunduh untuk \n\nIni akan mengosongkan .",
+      "clear_cache_desc": "Apakah Anda yakin ingin menghapus semua audio yang telah diunduh untuk \n\nIni akan mengosongkan data",
       "cancel_text": "Batal",
       "delete_text": "Hapus Semua"
     }

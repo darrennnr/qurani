@@ -1,5 +1,7 @@
 // lib/screens/main/stt/widgets/playback_settings.dart
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
+import 'package:cuda_qurani/core/utils/language_helper.dart';
+import 'package:cuda_qurani/main.dart';
 import 'package:cuda_qurani/models/playback_settings_model.dart';
 import 'package:cuda_qurani/screens/main/home/screens/settings/submenu/reciters_download.dart';
 import 'package:cuda_qurani/services/reciter_manager_services.dart';
@@ -11,22 +13,40 @@ import 'dart:io';
 import 'package:cuda_qurani/services/global_ayat_services.dart';
 import 'package:path/path.dart' as path;
 import 'package:sqflite/sqflite.dart';
+import 'package:provider/provider.dart';
+import 'package:cuda_qurani/core/providers/language_provider.dart';
 
 class PlaybackSettingsPage extends StatefulWidget {
-    final int? currentPage;
-  const PlaybackSettingsPage({Key? key,this.currentPage}) : super(key: key);
-  
+  final int? currentPage;
+  const PlaybackSettingsPage({Key? key, this.currentPage}) : super(key: key);
 
   @override
   State<PlaybackSettingsPage> createState() => _PlaybackSettingsPageState();
 }
 
 class _PlaybackSettingsPageState extends State<PlaybackSettingsPage> {
+  Map<String, dynamic> _translations = {};
+
+  Future<void> _loadTranslations() async {
+    // Ganti path sesuai file JSON yang dibutuhkan
+    final trans = await context.loadTranslations('playback_settings');
+    setState(() {
+      _translations = trans;
+      // Update default values setelah translations dimuat
+      if (_eachVerseRepeat == '1 time') {
+        _eachVerseRepeat = '1 $timeText';
+      }
+      if (_rangeRepeat == '1 time') {
+        _rangeRepeat = '1 $timeText';
+      }
+    });
+  }
+
   bool _isLoading = true;
   List<Map<String, dynamic>> _surahs = [];
 
   int _parseRepeatValue(String value) {
-    if (value == 'Loop') return -1;
+    if (value == 'Loop' || value == loopText) return -1;
     // Extract number from "1 time", "2 times", etc.
     final match = RegExp(r'\d+').firstMatch(value);
     return match != null ? int.parse(match.group(0)!) : 1;
@@ -59,22 +79,45 @@ class _PlaybackSettingsPageState extends State<PlaybackSettingsPage> {
     '1.75x',
   ];
   String _selectedSpeed = '1x';
-  final List<String> _repetitions = ['1 time', '2 times', '3 times', 'Loop'];
+
+  String get timeText => _translations.isNotEmpty
+      ? LanguageHelper.tr(_translations, 'playback_settings.time_text')
+      : 'time';
+
+  String get timesText => _translations.isNotEmpty
+      ? LanguageHelper.tr(_translations, 'playback_settings.times_text')
+      : 'times';
+
+  String get loopText => _translations.isNotEmpty
+      ? LanguageHelper.tr(_translations, 'playback_settings.loop_text')
+      : 'loop';
+
+  // ✅ JANGAN format angka di sini
+  List<String> get _repetitions => [
+    '1 $timeText',
+    '2 $timesText',
+    '3 $timesText',
+    '$loopText',
+  ];
+
+  // ✅ Variable biasa, bukan getter
   String _eachVerseRepeat = '1 time';
   String _rangeRepeat = '1 time';
-  bool _isAutoFillApplied = false; 
+  bool _isAutoFillApplied = false;
 
-@override
-void initState() {
-  super.initState();
-  _loadDatabaseData();
-  _loadReciters();
-  
-  // ✅ NEW: Auto-fill range if currentPage is provided
-  if (widget.currentPage != null) {
-    _autoFillRangeFromPage(widget.currentPage!);
+  @override
+  void initState() {
+    super.initState();
+    _loadDatabaseData();
+    _loadReciters();
+    _loadTranslations();
+
+    // ✅ NEW: Auto-fill range if currentPage is provided
+    if (widget.currentPage != null) {
+      _autoFillRangeFromPage(widget.currentPage!);
+    }
   }
-}
+
   Future<void> _loadReciters() async {
     print('🔍 Loading reciters...'); // ✅ Debug
     final reciters = await ReciterManagerService.getAllReciters();
@@ -97,91 +140,106 @@ void initState() {
   }
 
   /// ✅ NEW: Auto-fill starting & ending verse from current page
-Future<void> _autoFillRangeFromPage(int pageNumber) async {
-  try {
-    print('🎯 Auto-filling range from page $pageNumber...');
-    
-    // Get first ayah in page
-    final firstAyahInfo = await LocalDatabaseService.getFirstAyahInPage(pageNumber);
-    final firstSurah = firstAyahInfo['surah'] as int;
-    final firstAyah = firstAyahInfo['ayah'] as int;
-    
-    // Convert to GLOBAL ayat number (CRITICAL!)
-    final firstGlobalAyat = GlobalAyatService.toGlobalAyat(firstSurah, firstAyah);
-    
-    print('   First ayat: $firstSurah:$firstAyah (Global #$firstGlobalAyat)');
-    
-    // Get last ayah in page by loading all ayats on page
-    final pageAyats = await _getAyatsOnPage(pageNumber);
-    
-    if (pageAyats.isEmpty) {
-      print('⚠️ No ayats found on page $pageNumber');
-      return;
-    }
-    
-    // Last ayat is the last element in sorted list
-    final lastAyat = pageAyats.last;
-    final lastSurah = lastAyat['surah'] as int;
-    final lastAyahNum = lastAyat['ayah'] as int;
-    
-    // Convert to GLOBAL ayat number (CRITICAL!)
-    final lastGlobalAyat = GlobalAyatService.toGlobalAyat(lastSurah, lastAyahNum);
-    
-    print('   Last ayat: $lastSurah:$lastAyahNum (Global #$lastGlobalAyat)');
-    print('   ✅ Range: Global #$firstGlobalAyat → #$lastGlobalAyat');
-    
-    // Apply to UI
-    if (mounted) {
-      setState(() {
-        _startSurahId = firstSurah;
-        _startVerse = firstAyah;
-        _endSurahId = lastSurah;
-        _endVerse = lastAyahNum;
-        _isAutoFillApplied = true;
-      });
-      
-      print('✅ Auto-fill applied: $_startSurahId:$_startVerse → $_endSurahId:$_endVerse');
-    }
-  } catch (e) {
-    print('❌ Auto-fill error: $e');
-  }
-}
+  Future<void> _autoFillRangeFromPage(int pageNumber) async {
+    try {
+      print('🎯 Auto-filling range from page $pageNumber...');
 
-/// ✅ NEW: Get all ayats on a specific page (sorted order)
-Future<List<Map<String, dynamic>>> _getAyatsOnPage(int pageNumber) async {
-  try {
-    // Query database for all ayats on this page
-    // Using qpc-v1-ayah-by-ayah-glyphs.db
-    final databasesPath = await getDatabasesPath();
-    final glyphsPath = path.join(databasesPath, 'qpc-v1-ayah-by-ayah-glyphs.db');
-    
-    // Check if database exists
-    if (!await File(glyphsPath).exists()) {
-      print('📥 Glyphs DB not found, copying...');
-      final data = await rootBundle.load('assets/data/qpc-v1-ayah-by-ayah-glyphs.db');
-      final bytes = data.buffer.asUint8List();
-      await File(glyphsPath).writeAsBytes(bytes, flush: true);
+      // Get first ayah in page
+      final firstAyahInfo = await LocalDatabaseService.getFirstAyahInPage(
+        pageNumber,
+      );
+      final firstSurah = firstAyahInfo['surah'] as int;
+      final firstAyah = firstAyahInfo['ayah'] as int;
+
+      // Convert to GLOBAL ayat number (CRITICAL!)
+      final firstGlobalAyat = GlobalAyatService.toGlobalAyat(
+        firstSurah,
+        firstAyah,
+      );
+
+      print('   First ayat: $firstSurah:$firstAyah (Global #$firstGlobalAyat)');
+
+      // Get last ayah in page by loading all ayats on page
+      final pageAyats = await _getAyatsOnPage(pageNumber);
+
+      if (pageAyats.isEmpty) {
+        print('⚠️ No ayats found on page $pageNumber');
+        return;
+      }
+
+      // Last ayat is the last element in sorted list
+      final lastAyat = pageAyats.last;
+      final lastSurah = lastAyat['surah'] as int;
+      final lastAyahNum = lastAyat['ayah'] as int;
+
+      // Convert to GLOBAL ayat number (CRITICAL!)
+      final lastGlobalAyat = GlobalAyatService.toGlobalAyat(
+        lastSurah,
+        lastAyahNum,
+      );
+
+      print('   Last ayat: $lastSurah:$lastAyahNum (Global #$lastGlobalAyat)');
+      print('   ✅ Range: Global #$firstGlobalAyat → #$lastGlobalAyat');
+
+      // Apply to UI
+      if (mounted) {
+        setState(() {
+          _startSurahId = firstSurah;
+          _startVerse = firstAyah;
+          _endSurahId = lastSurah;
+          _endVerse = lastAyahNum;
+          _isAutoFillApplied = true;
+        });
+
+        print(
+          '✅ Auto-fill applied: $_startSurahId:$_startVerse → $_endSurahId:$_endVerse',
+        );
+      }
+    } catch (e) {
+      print('❌ Auto-fill error: $e');
     }
-    
-    final db = await openDatabase(glyphsPath, readOnly: true);
-    
-    // Query all verses on this page
-    final result = await db.query(
-      'verses',
-      where: 'page_number = ?',
-      whereArgs: [pageNumber],
-      orderBy: 'surah ASC, ayah ASC', // ✅ CRITICAL: Sort by surah then ayah
-    );
-    
-    await db.close();
-    
-    print('📖 Found ${result.length} ayats on page $pageNumber');
-    return result;
-  } catch (e) {
-    print('❌ Error loading ayats from page: $e');
-    return [];
   }
-}
+
+  /// ✅ NEW: Get all ayats on a specific page (sorted order)
+  Future<List<Map<String, dynamic>>> _getAyatsOnPage(int pageNumber) async {
+    try {
+      // Query database for all ayats on this page
+      // Using qpc-v1-ayah-by-ayah-glyphs.db
+      final databasesPath = await getDatabasesPath();
+      final glyphsPath = path.join(
+        databasesPath,
+        'qpc-v1-ayah-by-ayah-glyphs.db',
+      );
+
+      // Check if database exists
+      if (!await File(glyphsPath).exists()) {
+        print('🔥 Glyphs DB not found, copying...');
+        final data = await rootBundle.load(
+          'assets/data/qpc-v1-ayah-by-ayah-glyphs.db',
+        );
+        final bytes = data.buffer.asUint8List();
+        await File(glyphsPath).writeAsBytes(bytes, flush: true);
+      }
+
+      final db = await openDatabase(glyphsPath, readOnly: true);
+
+      // Query all verses on this page
+      final result = await db.query(
+        'verses',
+        where: 'page_number = ?',
+        whereArgs: [pageNumber],
+        orderBy: 'surah ASC, ayah ASC', // ✅ CRITICAL: Sort by surah then ayah
+      );
+
+      await db.close();
+
+      print('📖 Found ${result.length} ayats on page $pageNumber');
+      return result;
+    } catch (e) {
+      print('❌ Error loading ayats from page: $e');
+      return [];
+    }
+  }
 
   /// Loads Surah data from SQLite using your LocalDatabaseService
   Future<void> _loadDatabaseData() async {
@@ -200,19 +258,42 @@ Future<List<Map<String, dynamic>>> _getAyatsOnPage(int pageNumber) async {
         setState(() {
           _isLoading = false;
           _surahs = [
-            {'id': 1, 'name_simple': 'Al-Fatihah', 'verses_count': 7},
-            {'id': 2, 'name_simple': 'Al-Baqarah', 'verses_count': 286},
+            {
+              'id': 1,
+              'name_simple': 'Al-Fatihah',
+              'name_arabic': 'الفاتحة',
+              'verses_count': 7,
+            },
+            {
+              'id': 2,
+              'name_simple': 'Al-Baqarah',
+              'name_arabic': 'البقرة',
+              'verses_count': 286,
+            },
           ];
         });
       }
     }
   }
 
+  // ✅ NEW: Helper function untuk get nama surah berdasarkan bahasa
   String _getSurahName(int id) {
     final surah = _surahs.firstWhere(
       (s) => s['id'] == id,
-      orElse: () => {'name_simple': 'Unknown'},
+      orElse: () => {'name_simple': 'Unknown', 'name_arabic': 'غير معروف'},
     );
+
+    // ✅ Check current language
+    final languageProvider = Provider.of<LanguageProvider>(
+      context,
+      listen: false,
+    );
+    final isArabic = languageProvider.currentLanguageCode == 'ar';
+
+    // ✅ Return name_arabic if Arabic, otherwise name_simple
+    if (isArabic && surah.containsKey('name_arabic')) {
+      return surah['name_arabic'] ?? surah['name_simple'];
+    }
     return surah['name_simple'];
   }
 
@@ -264,7 +345,12 @@ Future<List<Map<String, dynamic>>> _getAyatsOnPage(int pageNumber) async {
                         TextButton(
                           onPressed: () => Navigator.pop(context),
                           child: Text(
-                            'Cancel',
+                            _translations.isNotEmpty
+                                ? LanguageHelper.tr(
+                                    _translations,
+                                    'playback_settings.cancel_text',
+                                  )
+                                : 'Cancel',
                             style: AppTypography.label(
                               context,
                               color: AppColors.textSecondary,
@@ -272,7 +358,19 @@ Future<List<Map<String, dynamic>>> _getAyatsOnPage(int pageNumber) async {
                           ),
                         ),
                         Text(
-                          isStart ? 'Starting Verse' : 'Ending Verse',
+                          isStart
+                              ? _translations.isNotEmpty
+                                    ? LanguageHelper.tr(
+                                        _translations,
+                                        'playback_settings.starting_verse_text',
+                                      )
+                                    : 'Starting Verse'
+                              : _translations.isNotEmpty
+                              ? LanguageHelper.tr(
+                                  _translations,
+                                  'playback_settings.ending_verse_text',
+                                )
+                              : 'Ending Verse',
                           style: AppTypography.titleLarge(context),
                         ),
                         TextButton(
@@ -295,7 +393,12 @@ Future<List<Map<String, dynamic>>> _getAyatsOnPage(int pageNumber) async {
                             Navigator.pop(context);
                           },
                           child: Text(
-                            'Done',
+                            _translations.isNotEmpty
+                                ? LanguageHelper.tr(
+                                    _translations,
+                                    'playback_settings.done_text',
+                                  )
+                                : 'Done',
                             style: AppTypography.label(
                               context,
                               color: AppColors.textPrimary,
@@ -328,9 +431,22 @@ Future<List<Map<String, dynamic>>> _getAyatsOnPage(int pageNumber) async {
                             childCount: _surahs.length,
                             itemBuilder: (context, index) {
                               final surah = _surahs[index];
+                              // ✅ Get surah name berdasarkan bahasa
+                              final languageProvider =
+                                  Provider.of<LanguageProvider>(
+                                    context,
+                                    listen: false,
+                                  );
+                              final isArabic =
+                                  languageProvider.currentLanguageCode == 'ar';
+                              final surahName =
+                                  isArabic && surah.containsKey('name_arabic')
+                                  ? surah['name_arabic']
+                                  : surah['name_simple'];
+
                               return Center(
                                 child: Text(
-                                  "${surah['id']} - ${surah['name_simple']}",
+                                  "${context.formatNumber(surah['id'])} - $surahName",
                                   style: AppTypography.body(context),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -352,7 +468,7 @@ Future<List<Map<String, dynamic>>> _getAyatsOnPage(int pageNumber) async {
                             itemBuilder: (context, index) {
                               return Center(
                                 child: Text(
-                                  "${index + 1}",
+                                  "${context.formatNumber(index + 1)}",
                                   style: AppTypography.body(context),
                                 ),
                               );
@@ -430,7 +546,12 @@ Future<List<Map<String, dynamic>>> _getAyatsOnPage(int pageNumber) async {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "Reciter",
+          _translations.isNotEmpty
+              ? LanguageHelper.tr(
+                  _translations,
+                  'playback_settings.reciter_text',
+                )
+              : 'Reciter',
           style: AppTypography.caption(context, weight: AppTypography.semiBold),
         ),
         SizedBox(height: AppDesignSystem.space10 * s),
@@ -574,7 +695,12 @@ Future<List<Map<String, dynamic>>> _getAyatsOnPage(int pageNumber) async {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          "Manage downloads",
+                          _translations.isNotEmpty
+                              ? LanguageHelper.tr(
+                                  _translations,
+                                  'playback_settings.manage_downloads_text',
+                                )
+                              : 'Manage Downloads',
                           style: AppTypography.body(context),
                         ),
                         Container(
@@ -621,11 +747,22 @@ Future<List<Map<String, dynamic>>> _getAyatsOnPage(int pageNumber) async {
           child: Row(
             children: options.map((option) {
               final isSelected = option == selectedValue;
+
+              // ✅ Format DISPLAY TEXT (angka aja, bukan seluruh string)
+              String displayText = option;
+              if (option.startsWith('1 ')) {
+                displayText = option.replaceFirst('1', context.formatNumber(1));
+              } else if (option.startsWith('2 ')) {
+                displayText = option.replaceFirst('2', context.formatNumber(2));
+              } else if (option.startsWith('3 ')) {
+                displayText = option.replaceFirst('3', context.formatNumber(3));
+              }
+
               return Padding(
                 padding: EdgeInsets.only(right: AppDesignSystem.space8 * s),
                 child: GestureDetector(
                   onTap: () {
-                    onSelect(option);
+                    onSelect(option); // ✅ Pass value asli
                     AppHaptics.light();
                   },
                   child: AnimatedContainer(
@@ -648,7 +785,7 @@ Future<List<Map<String, dynamic>>> _getAyatsOnPage(int pageNumber) async {
                       ),
                     ),
                     child: Text(
-                      option,
+                      displayText, // ✅ Tampilkan yang sudah di-format
                       style: AppTypography.labelSmall(
                         context,
                         color: isSelected
@@ -695,7 +832,12 @@ Future<List<Map<String, dynamic>>> _getAyatsOnPage(int pageNumber) async {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "Playback Settings",
+                    _translations.isNotEmpty
+                        ? LanguageHelper.tr(
+                            _translations,
+                            'playback_settings.playback_settings_text',
+                          )
+                        : 'Playback Settings',
                     style: AppTypography.h2(
                       context,
                       weight: AppTypography.bold,
@@ -720,7 +862,12 @@ Future<List<Map<String, dynamic>>> _getAyatsOnPage(int pageNumber) async {
                 physics: const BouncingScrollPhysics(),
                 children: [
                   Text(
-                    "Select Range",
+                    _translations.isNotEmpty
+                        ? LanguageHelper.tr(
+                            _translations,
+                            'playback_settings.select_range_text',
+                          )
+                        : 'Select Range',
                     style: AppTypography.caption(
                       context,
                       weight: AppTypography.semiBold,
@@ -728,37 +875,64 @@ Future<List<Map<String, dynamic>>> _getAyatsOnPage(int pageNumber) async {
                   ),
                   SizedBox(height: AppDesignSystem.space12 * s),
                   _buildDropdownTrigger(
-                    label: "Starting Verse",
+                    label: _translations.isNotEmpty
+                        ? LanguageHelper.tr(
+                            _translations,
+                            'playback_settings.starting_verse_text',
+                          )
+                        : 'Starting Verse',
                     value:
-                        "${_getSurahName(_startSurahId)} - $_startSurahId:$_startVerse",
+                        "${_getSurahName(_startSurahId)} - ${context.formatNumber(_startSurahId)}:${context.formatNumber(_startVerse)}",
                     onTap: () => _showVersePicker(isStart: true),
                   ),
                   SizedBox(height: AppDesignSystem.space12 * s),
                   _buildDropdownTrigger(
-                    label: "Ending Verse",
+                    label: _translations.isNotEmpty
+                        ? LanguageHelper.tr(
+                            _translations,
+                            'playback_settings.ending_verse_text',
+                          )
+                        : 'Ending Verse',
                     value:
-                        "${_getSurahName(_endSurahId)} - $_endSurahId:$_endVerse",
+                        "${_getSurahName(_endSurahId)} - ${context.formatNumber(_endSurahId)}:${context.formatNumber(_endVerse)}",
                     onTap: () => _showVersePicker(isStart: false),
                   ),
                   SizedBox(height: AppDesignSystem.space24 * s),
                   _buildReciterSection(),
                   SizedBox(height: AppDesignSystem.space24 * s),
                   _buildSelectionRow(
-                    "Play speed",
-                    _speeds,
-                    _selectedSpeed,
+                    _translations.isNotEmpty
+                        ? LanguageHelper.tr(
+                            _translations,
+                            'playback_settings.play_speed',
+                          )
+                        : 'Play Speed',
+                    _speeds
+                        .map((speed) => context.formatNumber(speed))
+                        .toList(), // ✅ Format setiap item
+                    context.formatNumber(_selectedSpeed),
                     (val) => setState(() => _selectedSpeed = val),
                   ),
                   SizedBox(height: AppDesignSystem.space24 * s),
                   _buildSelectionRow(
-                    "Play each verse",
+                    _translations.isNotEmpty
+                        ? LanguageHelper.tr(
+                            _translations,
+                            'playback_settings.play_each_verse_text',
+                          )
+                        : 'Play Each Verse',
                     _repetitions,
                     _eachVerseRepeat,
                     (val) => setState(() => _eachVerseRepeat = val),
                   ),
                   SizedBox(height: AppDesignSystem.space24 * s),
                   _buildSelectionRow(
-                    "Play the range",
+                    _translations.isNotEmpty
+                        ? LanguageHelper.tr(
+                            _translations,
+                            'playback_settings.play_each_range_text',
+                          )
+                        : 'Play Each Range',
                     _repetitions,
                     _rangeRepeat,
                     (val) => setState(() => _rangeRepeat = val),
@@ -814,7 +988,12 @@ Future<List<Map<String, dynamic>>> _getAyatsOnPage(int pageNumber) async {
                 size: AppDesignSystem.iconMedium * s,
               ),
               label: Text(
-                "Play Audio",
+                _translations.isNotEmpty
+                    ? LanguageHelper.tr(
+                        _translations,
+                        'playback_settings.play_audio_text',
+                      )
+                    : 'Play Audio',
                 style: AppTypography.label(
                   context,
                   color: Colors.white,

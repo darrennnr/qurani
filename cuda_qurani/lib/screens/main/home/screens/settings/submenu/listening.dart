@@ -1,4 +1,5 @@
 // lib/screens/main/home/screens/settings/submenu/listening.dart
+import 'package:cuda_qurani/core/utils/language_helper.dart';
 import 'package:cuda_qurani/screens/main/home/screens/settings/submenu/reciters_download.dart';
 import 'package:flutter/material.dart';
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
@@ -15,6 +16,22 @@ class ListeningPage extends StatefulWidget {
 }
 
 class _ListeningPageState extends State<ListeningPage> {
+  Map<String, dynamic> _translations = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTranslations();
+  }
+
+  Future<void> _loadTranslations() async {
+    // Ganti path sesuai file JSON yang dibutuhkan
+    final trans = await context.loadTranslations('settings/experiences');
+    setState(() {
+      _translations = trans;
+    });
+  }
+
   // Dummy data untuk reciters
   final List<String> _reciters = [
     'Abdul-Rahman Al-Sudais',
@@ -148,7 +165,14 @@ class _ListeningPageState extends State<ListeningPage> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const SettingsAppBar(title: 'Listening'),
+      appBar: SettingsAppBar(
+        title: _translations.isNotEmpty
+            ? LanguageHelper.tr(
+                _translations,
+                'experiences_menu.listening_text',
+              )
+            : 'Listening',
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -158,7 +182,12 @@ class _ListeningPageState extends State<ListeningPage> {
               children: [
                 // Reciter Section
                 Text(
-                  'Reciter',
+                  _translations.isNotEmpty
+                      ? LanguageHelper.tr(
+                          _translations,
+                          'experiences_menu.listening_page.reciter_text',
+                        )
+                      : 'Reciter',
                   style: TextStyle(
                     fontSize: 14 * s * 0.9,
                     fontWeight: AppTypography.medium,
@@ -313,7 +342,12 @@ class _ListeningPageState extends State<ListeningPage> {
                               children: [
                                 Expanded(
                                   child: Text(
-                                    'Manage downloads',
+                                    _translations.isNotEmpty
+                                        ? LanguageHelper.tr(
+                                            _translations,
+                                            'experiences_menu.listening_page.manage_downloads_text',
+                                          )
+                                        : 'Manage downloads',
                                     style: TextStyle(
                                       fontSize: 16 * s * 0.9,
                                       fontWeight: AppTypography.regular,

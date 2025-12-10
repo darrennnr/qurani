@@ -1,4 +1,5 @@
 // lib/screens/main/home/screens/settings/submenu/translation_download.dart
+import 'package:cuda_qurani/core/utils/language_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
 import 'package:cuda_qurani/screens/main/home/screens/settings/widgets/appbar.dart';
@@ -15,6 +16,22 @@ class TranslationDownloadPage extends StatefulWidget {
 }
 
 class _TranslationDownloadPageState extends State<TranslationDownloadPage> {
+  Map<String, dynamic> _translations = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTranslations();
+  }
+
+  Future<void> _loadTranslations() async {
+    // Ganti path sesuai file JSON yang dibutuhkan
+    final trans = await context.loadTranslations('settings/downloads');
+    setState(() {
+      _translations = trans;
+    });
+  }
+
   // Track which language sections are expanded
   final Map<String, bool> _expandedLanguages = {};
 
@@ -30,126 +47,57 @@ class _TranslationDownloadPageState extends State<TranslationDownloadPage> {
   // Available translations grouped by language
   final Map<String, List<Map<String, String>>> _availableTranslations = {
     'English': [
-      {
-        'name': 'Dr. Mustafa Khattab, The Clear Quran',
-        'language': 'English',
-      },
-      {
-        'name': 'Sahih International',
-        'language': 'English',
-      },
-      {
-        'name': 'Pickthall',
-        'language': 'English',
-      },
+      {'name': 'Dr. Mustafa Khattab, The Clear Quran', 'language': 'English'},
+      {'name': 'Sahih International', 'language': 'English'},
+      {'name': 'Pickthall', 'language': 'English'},
     ],
     'Bahasa Indonesia': [
       {
         'name': 'Indonesian Islamic affairs ministry',
         'language': 'Bahasa Indonesia',
       },
-      {
-        'name': 'King Fahad Quran Complex',
-        'language': 'Bahasa Indonesia',
-      },
-      {
-        'name': 'The Sabiq company',
-        'language': 'Bahasa Indonesia',
-      },
+      {'name': 'King Fahad Quran Complex', 'language': 'Bahasa Indonesia'},
+      {'name': 'The Sabiq company', 'language': 'Bahasa Indonesia'},
     ],
     'Bahasa Melayu': [
-      {
-        'name': 'Syeikh Abdullah Muhammad Basmeih',
-        'language': 'Bahasa Melayu',
-      },
+      {'name': 'Syeikh Abdullah Muhammad Basmeih', 'language': 'Bahasa Melayu'},
     ],
     'বাংলা': [
-      {
-        'name': 'Fathul Majid',
-        'language': 'বাংলা',
-      },
-      {
-        'name': 'Sheikh Mujibur Rahman',
-        'language': 'বাংলা',
-      },
+      {'name': 'Fathul Majid', 'language': 'বাংলা'},
+      {'name': 'Sheikh Mujibur Rahman', 'language': 'বাংলা'},
     ],
     'اردو': [
-      {
-        'name': 'Maulana Fateh Muhammad Jalandhari',
-        'language': 'اردو',
-      },
-      {
-        'name': 'Ahmed Raza Khan',
-        'language': 'اردو',
-      },
+      {'name': 'Maulana Fateh Muhammad Jalandhari', 'language': 'اردو'},
+      {'name': 'Ahmed Raza Khan', 'language': 'اردو'},
     ],
     'Türkçe': [
-      {
-        'name': 'Diyanet İşleri',
-        'language': 'Türkçe',
-      },
-      {
-        'name': 'Elmalılı Hamdi Yazır',
-        'language': 'Türkçe',
-      },
+      {'name': 'Diyanet İşleri', 'language': 'Türkçe'},
+      {'name': 'Elmalılı Hamdi Yazır', 'language': 'Türkçe'},
     ],
     'فارسی': [
-      {
-        'name': 'Hussain Ansarian',
-        'language': 'فارسی',
-      },
-      {
-        'name': 'Makarem Shirazi',
-        'language': 'فارسی',
-      },
+      {'name': 'Hussain Ansarian', 'language': 'فارسی'},
+      {'name': 'Makarem Shirazi', 'language': 'فارسی'},
     ],
     'Hausa': [
-      {
-        'name': 'Abubakar Mahmud Gumi',
-        'language': 'Hausa',
-      },
+      {'name': 'Abubakar Mahmud Gumi', 'language': 'Hausa'},
     ],
     'Kiswahili': [
-      {
-        'name': 'Ali Muhsin Al-Barwani',
-        'language': 'Kiswahili',
-      },
+      {'name': 'Ali Muhsin Al-Barwani', 'language': 'Kiswahili'},
     ],
     'Français': [
-      {
-        'name': 'Muhammad Hamidullah',
-        'language': 'Français',
-      },
-      {
-        'name': 'Rashid Maash',
-        'language': 'Français',
-      },
+      {'name': 'Muhammad Hamidullah', 'language': 'Français'},
+      {'name': 'Rashid Maash', 'language': 'Français'},
     ],
     'پښتو': [
-      {
-        'name': 'Zakaria Abasin',
-        'language': 'پښتو',
-      },
+      {'name': 'Zakaria Abasin', 'language': 'پښتو'},
     ],
     'Русский': [
-      {
-        'name': 'Elmir Kuliev',
-        'language': 'Русский',
-      },
-      {
-        'name': 'Kuliev and Osmanov',
-        'language': 'Русский',
-      },
+      {'name': 'Elmir Kuliev', 'language': 'Русский'},
+      {'name': 'Kuliev and Osmanov', 'language': 'Русский'},
     ],
     'Español': [
-      {
-        'name': 'Abdel Ghani Navio',
-        'language': 'Español',
-      },
-      {
-        'name': 'Muhammad Isa García',
-        'language': 'Español',
-      },
+      {'name': 'Abdel Ghani Navio', 'language': 'Español'},
+      {'name': 'Muhammad Isa García', 'language': 'Español'},
     ],
     'हिन्दी': [
       {
@@ -158,10 +106,7 @@ class _TranslationDownloadPageState extends State<TranslationDownloadPage> {
       },
     ],
     'Uzbek': [
-      {
-        'name': 'Muhammad Sodik Muhammad Yusuf',
-        'language': 'Uzbek',
-      },
+      {'name': 'Muhammad Sodik Muhammad Yusuf', 'language': 'Uzbek'},
     ],
   };
 
@@ -190,7 +135,9 @@ class _TranslationDownloadPageState extends State<TranslationDownloadPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Downloaded',
+          _translations.isNotEmpty
+              ? LanguageHelper.tr(_translations, 'translation.downloaded_text')
+              : 'Downloaded',
           style: TextStyle(
             fontSize: 14 * s * 0.9,
             fontWeight: AppTypography.medium,
@@ -205,8 +152,9 @@ class _TranslationDownloadPageState extends State<TranslationDownloadPage> {
           ),
           decoration: BoxDecoration(
             color: AppColors.surface,
-            borderRadius:
-                BorderRadius.circular(AppDesignSystem.radiusMedium * s * 0.9),
+            borderRadius: BorderRadius.circular(
+              AppDesignSystem.radiusMedium * s * 0.9,
+            ),
             border: Border.all(
               color: AppColors.borderLight,
               width: 1.0 * s * 0.9,
@@ -246,7 +194,12 @@ class _TranslationDownloadPageState extends State<TranslationDownloadPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Available Downloads',
+          _translations.isNotEmpty
+              ? LanguageHelper.tr(
+                  _translations,
+                  'translation.available_downloads_text',
+                )
+              : 'Available Downloads',
           style: TextStyle(
             fontSize: 14 * s * 0.9,
             fontWeight: AppTypography.medium,
@@ -278,12 +231,10 @@ class _TranslationDownloadPageState extends State<TranslationDownloadPage> {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius:
-            BorderRadius.circular(AppDesignSystem.radiusMedium * s * 0.9),
-        border: Border.all(
-          color: AppColors.borderLight,
-          width: 1.0 * s * 0.9,
+        borderRadius: BorderRadius.circular(
+          AppDesignSystem.radiusMedium * s * 0.9,
         ),
+        border: Border.all(color: AppColors.borderLight, width: 1.0 * s * 0.9),
       ),
       child: Column(
         children: [
@@ -414,8 +365,10 @@ class _TranslationDownloadPageState extends State<TranslationDownloadPage> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const SettingsAppBar(
-        title: 'Translation',
+      appBar: SettingsAppBar(
+        title: _translations.isNotEmpty
+            ? LanguageHelper.tr(_translations, 'translation.translation_text')
+            : 'Translation',
       ),
       body: SafeArea(
         child: ListView(

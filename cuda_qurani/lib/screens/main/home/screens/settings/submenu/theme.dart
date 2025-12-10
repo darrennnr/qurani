@@ -1,4 +1,5 @@
 // lib/screens/main/home/screens/settings/submenu/theme.dart
+import 'package:cuda_qurani/core/utils/language_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
 import 'package:cuda_qurani/screens/main/home/screens/settings/widgets/appbar.dart';
@@ -16,6 +17,22 @@ class ThemePage extends StatefulWidget {
 }
 
 class _ThemePageState extends State<ThemePage> {
+  Map<String, dynamic> _translations = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTranslations();
+  }
+
+  Future<void> _loadTranslations() async {
+    // Ganti path sesuai file JSON yang dibutuhkan
+    final trans = await context.loadTranslations('settings/appearances');
+    setState(() {
+      _translations = trans;
+    });
+  }
+
   // Default selected theme (dummy state)
   ThemeMode _selectedTheme = ThemeMode.light;
 
@@ -24,7 +41,7 @@ class _ThemePageState extends State<ThemePage> {
       _selectedTheme = theme;
     });
     AppHaptics.selection();
-    
+
     // TODO: Implement theme change logic
     // Example: Provider.of<ThemeProvider>(context, listen: false).setTheme(theme);
   }
@@ -38,7 +55,9 @@ class _ThemePageState extends State<ThemePage> {
 
     return InkWell(
       onTap: () => _selectTheme(themeMode),
-      borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium * s * 0.9),
+      borderRadius: BorderRadius.circular(
+        AppDesignSystem.radiusMedium * s * 0.9,
+      ),
       child: Container(
         padding: EdgeInsets.symmetric(
           horizontal: AppDesignSystem.space16 * s * 0.9,
@@ -46,7 +65,9 @@ class _ThemePageState extends State<ThemePage> {
         ),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium * s * 0.9),
+          borderRadius: BorderRadius.circular(
+            AppDesignSystem.radiusMedium * s * 0.9,
+          ),
           border: Border.all(
             color: isSelected ? Colors.black : AppColors.borderLight,
             width: isSelected ? 1.5 * s * 0.9 : 1.0 * s * 0.9,
@@ -59,8 +80,12 @@ class _ThemePageState extends State<ThemePage> {
                 label,
                 style: TextStyle(
                   fontSize: 16 * s * 0.9,
-                  fontWeight: isSelected ? AppTypography.semiBold : AppTypography.regular,
-                  color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
+                  fontWeight: isSelected
+                      ? AppTypography.semiBold
+                      : AppTypography.regular,
+                  color: isSelected
+                      ? AppColors.textPrimary
+                      : AppColors.textSecondary,
                 ),
               ),
             ),
@@ -101,8 +126,10 @@ class _ThemePageState extends State<ThemePage> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const SettingsAppBar(
-        title: 'Theme',
+      appBar: SettingsAppBar(
+        title: _translations.isNotEmpty
+            ? LanguageHelper.tr(_translations, 'theme_page.theme_text')
+            : 'Theme',
       ),
       body: SafeArea(
         child: Padding(
@@ -111,7 +138,9 @@ class _ThemePageState extends State<ThemePage> {
             children: [
               // Auto (Light/Dark) Option
               _buildThemeOption(
-                label: 'Auto (Light/Dark)',
+                label: _translations.isNotEmpty
+                    ? LanguageHelper.tr(_translations, 'theme_page.auto_text')
+                    : 'Auto (Light/Dark)',
                 themeMode: ThemeMode.auto,
                 isSelected: _selectedTheme == ThemeMode.auto,
               ),
@@ -120,7 +149,9 @@ class _ThemePageState extends State<ThemePage> {
 
               // Light Option
               _buildThemeOption(
-                label: 'Light',
+                label: _translations.isNotEmpty
+                    ? LanguageHelper.tr(_translations, 'theme_page.light_text')
+                    : 'Light',
                 themeMode: ThemeMode.light,
                 isSelected: _selectedTheme == ThemeMode.light,
               ),
@@ -129,7 +160,9 @@ class _ThemePageState extends State<ThemePage> {
 
               // Dark Option
               _buildThemeOption(
-                label: 'Dark',
+                label: _translations.isNotEmpty
+                    ? LanguageHelper.tr(_translations, 'theme_page.dark_text')
+                    : 'Dark',
                 themeMode: ThemeMode.dark,
                 isSelected: _selectedTheme == ThemeMode.dark,
               ),

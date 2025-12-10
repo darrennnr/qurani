@@ -1,7 +1,9 @@
 // lib/screens/main/home/screens/surah_list_page.dart
 
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
+import 'package:cuda_qurani/core/utils/language_helper.dart';
 import 'package:cuda_qurani/core/widgets/app_components.dart';
+import 'package:cuda_qurani/main.dart';
 import 'package:cuda_qurani/screens/main/home/services/juz_service.dart';
 import 'package:cuda_qurani/screens/main/stt/stt_page.dart';
 import 'package:cuda_qurani/services/local_database_service.dart';
@@ -22,6 +24,16 @@ class SurahListPage extends StatefulWidget {
 }
 
 class _SurahListPageState extends State<SurahListPage> {
+  Map<String, dynamic> _translations = {};
+
+  Future<void> _loadTranslations() async {
+    // Ganti path sesuai file JSON yang dibutuhkan
+    final trans = await context.loadTranslations('home/surah_list');
+    setState(() {
+      _translations = trans;
+    });
+  }
+
   TabType _currentTab = TabType.surah;
   final TextEditingController _searchController = TextEditingController();
   final MetadataCacheService _cache = MetadataCacheService();
@@ -41,6 +53,7 @@ class _SurahListPageState extends State<SurahListPage> {
   @override
   void initState() {
     super.initState();
+    _loadTranslations();
     _searchController.addListener(_onSearchChanged);
 
     // ✅ Load dari cache (instant)
@@ -180,38 +193,138 @@ class _SurahListPageState extends State<SurahListPage> {
 
   // ==================== NAVIGATION ====================
 
-  Future<void> _openSurah(BuildContext context, int surahId) async {
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => SttPage(suratId: surahId)));
-  }
+Future<void> _openSurah(BuildContext context, int surahId) async {
+  await Navigator.of(context).push(
+    PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) =>
+          SttPage(suratId: surahId),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeInOut,
+          ),
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.0, 0.02),
+              end: Offset.zero,
+            ).animate(
+              CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeInOut,
+              ),
+            ),
+            child: child,
+          ),
+        );
+      },
+      transitionDuration: const Duration(milliseconds: 250),
+      reverseTransitionDuration: const Duration(milliseconds: 200),
+    ),
+  );
+}
 
-  Future<void> _openPage(BuildContext context, int pageNumber) async {
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => SttPage(pageId: pageNumber)));
-  }
+Future<void> _openPage(BuildContext context, int pageNumber) async {
+  await Navigator.of(context).push(
+    PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) =>
+          SttPage(pageId: pageNumber),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeInOut,
+          ),
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.0, 0.02),
+              end: Offset.zero,
+            ).animate(
+              CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeInOut,
+              ),
+            ),
+            child: child,
+          ),
+        );
+      },
+      transitionDuration: const Duration(milliseconds: 250),
+      reverseTransitionDuration: const Duration(milliseconds: 200),
+    ),
+  );
+}
 
-  Future<void> _openSurahAtAyah(
-    BuildContext context,
-    int surahId,
-    int ayahNumber,
-  ) async {
-    final page = await LocalDatabaseService.getPageNumber(surahId, ayahNumber);
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => SttPage(pageId: page)));
-  }
+Future<void> _openSurahAtAyah(
+  BuildContext context,
+  int surahId,
+  int ayahNumber,
+) async {
+  final page = await LocalDatabaseService.getPageNumber(surahId, ayahNumber);
+  await Navigator.of(context).push(
+    PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) =>
+          SttPage(pageId: page),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeInOut,
+          ),
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.0, 0.02),
+              end: Offset.zero,
+            ).animate(
+              CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeInOut,
+              ),
+            ),
+            child: child,
+          ),
+        );
+      },
+      transitionDuration: const Duration(milliseconds: 250),
+      reverseTransitionDuration: const Duration(milliseconds: 200),
+    ),
+  );
+}
 
-  Future<void> _openJuz(
-    BuildContext context,
-    int juzNumber,
-    String firstVerseKey,
-  ) async {
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => SttPage(juzId: juzNumber)));
-  }
+Future<void> _openJuz(
+  BuildContext context,
+  int juzNumber,
+  String firstVerseKey,
+) async {
+  await Navigator.of(context).push(
+    PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) =>
+          SttPage(juzId: juzNumber),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeInOut,
+          ),
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.0, 0.02),
+              end: Offset.zero,
+            ).animate(
+              CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeInOut,
+              ),
+            ),
+            child: child,
+          ),
+        );
+      },
+      transitionDuration: const Duration(milliseconds: 250),
+      reverseTransitionDuration: const Duration(milliseconds: 200),
+    ),
+  );
+}
 
   // ==================== BUILD ====================
 
@@ -241,94 +354,102 @@ class _SurahListPageState extends State<SurahListPage> {
     );
   }
 
-// ==================== SEARCH BAR ====================
-Widget _buildSearchBar() {
-  final s = AppDesignSystem.getScaleFactor(context);
-  return Container(
-    color: AppColors.surface,
-    padding: EdgeInsets.symmetric(
-      horizontal: AppDesignSystem.space20 * s,
-      vertical: AppDesignSystem.space20 * s,
-    ),
-    child: Container(
-      height: 38 * s,
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium * s),
-        border: Border.all(
-          color: _searchController.text.isNotEmpty
-              ? AppColors.borderFocus
-              : Colors.transparent,
-          width: AppDesignSystem.borderThick * s,
-        ),
+  // ==================== SEARCH BAR ====================
+  Widget _buildSearchBar() {
+    final s = AppDesignSystem.getScaleFactor(context);
+    return Container(
+      color: AppColors.surface,
+      padding: EdgeInsets.symmetric(
+        horizontal: AppDesignSystem.space20 * s,
+        vertical: AppDesignSystem.space20 * s,
       ),
-      alignment: Alignment.center,
-      child: Row(
-        children: [
-          // PREFIX ICON
-          Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: AppDesignSystem.space12 * s,
-            ),
-            child: Icon(
-              Icons.search_rounded,
-              color: _searchController.text.isNotEmpty
-                  ? AppColors.primary
-                  : AppColors.textTertiary,
-              size: AppDesignSystem.iconMedium * s,
-            ),
+      child: Container(
+        height: 38 * s,
+        decoration: BoxDecoration(
+          color: AppColors.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium * s),
+          border: Border.all(
+            color: _searchController.text.isNotEmpty
+                ? AppColors.borderFocus
+                : Colors.transparent,
+            width: AppDesignSystem.borderThick * s,
           ),
-          
-          // TEXT FIELD
-          Expanded(
-            child: TextField(
-              controller: _searchController,
-              style: AppTypography.body(context, color: AppColors.textPrimary),
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                contentPadding: EdgeInsets.zero,
-                isDense: true,
-                hintText: 'Search surah, juz, or page...',
-                hintStyle: AppTypography.body(
-                  context,
-                  color: AppColors.textHint,
-                  weight: AppTypography.regular,
-                ),
-              ),
-            ),
-          ),
-          
-          // SUFFIX ICON
-          if (_searchController.text.isNotEmpty)
-            IconButton(
-              icon: Icon(
-                Icons.close_rounded,
-                color: AppColors.textTertiary,
-                size: AppDesignSystem.iconMedium * s,
-              ),
-              onPressed: () {
-                AppHaptics.light();
-                _searchController.clear();
-                setState(() {
-                  _isSearching = false;
-                  _searchResults = [];
-                });
-              },
+        ),
+        alignment: Alignment.center,
+        child: Row(
+          children: [
+            // PREFIX ICON
+            Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: AppDesignSystem.space12 * s,
               ),
-              constraints: BoxConstraints(),
-              splashRadius: 20 * s,
-            )
-          else
-            SizedBox(width: AppDesignSystem.space12 * s),
-        ],
+              child: Icon(
+                Icons.search_rounded,
+                color: _searchController.text.isNotEmpty
+                    ? AppColors.primary
+                    : AppColors.textTertiary,
+                size: AppDesignSystem.iconMedium * s,
+              ),
+            ),
+
+            // TEXT FIELD
+            Expanded(
+              child: TextField(
+                controller: _searchController,
+                style: AppTypography.body(
+                  context,
+                  color: AppColors.textPrimary,
+                ),
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  contentPadding: EdgeInsets.zero,
+                  isDense: true,
+                  hintText: _translations.isNotEmpty
+                      ? LanguageHelper.tr(
+                          _translations,
+                          'surah_list.search_text',
+                        )
+                      : 'Search surah, juz, or page...',
+                  hintStyle: AppTypography.body(
+                    context,
+                    color: AppColors.textHint,
+                    weight: AppTypography.regular,
+                  ),
+                ),
+              ),
+            ),
+
+            // SUFFIX ICON
+            if (_searchController.text.isNotEmpty)
+              IconButton(
+                icon: Icon(
+                  Icons.close_rounded,
+                  color: AppColors.textTertiary,
+                  size: AppDesignSystem.iconMedium * s,
+                ),
+                onPressed: () {
+                  AppHaptics.light();
+                  _searchController.clear();
+                  setState(() {
+                    _isSearching = false;
+                    _searchResults = [];
+                  });
+                },
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppDesignSystem.space12 * s,
+                ),
+                constraints: BoxConstraints(),
+                splashRadius: 20 * s,
+              )
+            else
+              SizedBox(width: AppDesignSystem.space12 * s),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   // ==================== SEGMENTED BUTTON TAB BAR ====================
 
@@ -353,7 +474,12 @@ Widget _buildSearchBar() {
               children: [
                 _buildSegmentButton(
                   context: context,
-                  label: 'Surah',
+                  label: _translations.isNotEmpty
+                      ? LanguageHelper.tr(
+                          _translations,
+                          'surah_list.surah_text',
+                        )
+                      : 'Surah',
                   isSelected: _currentTab == TabType.surah,
                   onTap: () {
                     AppHaptics.light();
@@ -367,7 +493,9 @@ Widget _buildSearchBar() {
                 SizedBox(width: AppDesignSystem.space4 * s),
                 _buildSegmentButton(
                   context: context,
-                  label: 'Juz',
+                  label: _translations.isNotEmpty
+                      ? LanguageHelper.tr(_translations, 'surah_list.juz_text')
+                      : 'Juz',
                   isSelected: _currentTab == TabType.juz,
                   onTap: () {
                     AppHaptics.light();
@@ -381,7 +509,9 @@ Widget _buildSearchBar() {
                 SizedBox(width: AppDesignSystem.space4 * s),
                 _buildSegmentButton(
                   context: context,
-                  label: 'Page',
+                  label: _translations.isNotEmpty
+                      ? LanguageHelper.tr(_translations, 'surah_list.page_text')
+                      : 'Page',
                   isSelected: _currentTab == TabType.page,
                   onTap: () {
                     AppHaptics.light();
@@ -452,36 +582,37 @@ Widget _buildSearchBar() {
   // ==================== BODY CONTENT ====================
 
   Widget _buildBodyContent() {
-    if (_isSearching) {
-      return _buildSearchResults();
-    }
-
-    // ✅ WRAP dengan AnimatedSwitcher
-    final slideDirection = _getSlideDirection(_previousTab, _currentTab);
-
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 300),
-      switchInCurve: Curves.easeOutCubic,
-      switchOutCurve: Curves.easeInCubic,
-      transitionBuilder: (Widget child, Animation<double> animation) {
-        final offsetAnimation =
-            Tween<Offset>(
-              begin: slideDirection == SlideDirection.leftToRight
-                  ? const Offset(-1.0, 0.0)
-                  : const Offset(1.0, 0.0),
-              end: Offset.zero,
-            ).animate(
-              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
-            );
-
-        return SlideTransition(
-          position: offsetAnimation,
-          child: FadeTransition(opacity: animation, child: child),
-        );
-      },
-      child: _buildTabContent(),
-    );
+  if (_isSearching) {
+    return _buildSearchResults();
   }
+
+  return AnimatedSwitcher(
+    duration: const Duration(milliseconds: 200),
+    switchInCurve: Curves.easeIn,
+    switchOutCurve: Curves.easeOut,
+    transitionBuilder: (Widget child, Animation<double> animation) {
+      return FadeTransition(
+        opacity: animation,
+        child: child,
+      );
+    },
+    child: KeyedSubtree(
+      key: ValueKey<TabType>(_currentTab),
+      child: Builder(
+        builder: (context) {
+          switch (_currentTab) {
+            case TabType.surah:
+              return _buildSurahList();
+            case TabType.juz:
+              return _buildJuzList();
+            case TabType.page:
+              return _buildPageList();
+          }
+        },
+      ),
+    ),
+  );
+}
 
   Widget _buildTabContent() {
     // Key unik agar AnimatedSwitcher detect perubahan
@@ -506,6 +637,8 @@ Widget _buildSearchBar() {
 
   Widget _buildSurahList() {
     final s = AppDesignSystem.getScaleFactor(context);
+    // ✅ Check if current language is Arabic
+    final isArabic = context.currentLanguage == 'ar';
 
     return _OptimizedList(
       itemCount: _surahs.length,
@@ -514,21 +647,40 @@ Widget _buildSearchBar() {
       itemBuilder: (context, index) {
         final surah = _surahs[index];
         final int id = surah['id'] as int;
-        final String name = surah['name_simple'] ?? 'Surah $id';
+        // ✅ Use name_arabic if language is Arabic, otherwise use name_simple
+        final String name = isArabic 
+            ? (surah['name_arabic'] ?? surah['name_simple'] ?? 'Surah $id')
+            : (surah['name_simple'] ?? 'Surah $id');
         final int ayat = surah['verses_count'] ?? 0;
         final String place = (surah['revelation_place'] ?? '')
             .toString()
             .toLowerCase();
         final String type = place == 'makkah' || place == 'mecca'
-            ? 'Makkiyah'
+            ? _translations.isNotEmpty
+                  ? LanguageHelper.tr(_translations, 'surah_list.makkah_text')
+                  : 'Makkiyah'
             : place == 'madinah' || place == 'medina'
-            ? 'Madaniyah'
-            : (id < 90 ? 'Makkiyah' : 'Madaniyah');
+            ? _translations.isNotEmpty
+                  ? LanguageHelper.tr(_translations, 'surah_list.madinah_text')
+                  : 'Madaniyah'
+            : (id < 90
+                  ? _translations.isNotEmpty
+                        ? LanguageHelper.tr(
+                            _translations,
+                            'surah_list.makkah_text',
+                          )
+                        : 'Makkiyah'
+                  : _translations.isNotEmpty
+                  ? LanguageHelper.tr(_translations, 'surah_list.madinah_text')
+                  : 'Madinah');
+        final ayahText = _translations.isNotEmpty
+            ? LanguageHelper.tr(_translations, 'surah_list.ayah_text')
+            : 'Ayat';
 
         return AppListTile(
-          leading: AppNumberBadge(number: id),
+          leading: AppNumberBadge(number: context.formatNumber(id)),
           title: name,
-          subtitle: '$type · $ayat Ayat',
+          subtitle: '$type · ${context.formatNumber(ayat)} $ayahText',
           trailing: Text(
             'surah${id.toString().padLeft(3, '0')}',
             style: AppTypography.surahName(context),
@@ -558,12 +710,20 @@ Widget _buildSearchBar() {
         final String firstVerse = juz['first_verse_key'] as String;
         final String lastVerse = juz['last_verse_key'] as String;
         final int verseCount = juz['verses_count'] as int;
+        final juzText = _translations.isNotEmpty
+            ? LanguageHelper.tr(_translations, "surah_list.juz_text")
+            : "Juz";
+                final ayatText = _translations.isNotEmpty
+            ? LanguageHelper.tr(_translations, "surah_list.ayah_text")
+            : "Ayah";
 
         return AppListTile(
-          leading: AppNumberBadge(number: juzNum),
-          title: 'Juz $juzNum',
-          subtitle: '$firstVerse - $lastVerse',
-          trailing: AppChip(label: '$verseCount Ayat'),
+          leading: AppNumberBadge(number: context.formatNumber(juzNum)),
+
+          title: '$juzText ${context.formatNumber(juzNum)}',
+
+          subtitle: '${context.formatNumber(firstVerse)} - ${context.formatNumber(lastVerse)}',
+          trailing: AppChip(label: '${context.formatNumber(verseCount)} $ayatText'),
         );
       },
     );
@@ -590,8 +750,12 @@ Widget _buildSearchBar() {
     if (_searchResults.isEmpty) {
       return AppEmptyState(
         icon: Icons.search_off_rounded,
-        title: 'No Results Found',
-        subtitle: 'Try searching with different keywords',
+        title: _translations.isNotEmpty
+            ? LanguageHelper.tr(_translations, 'surah_list.null_result_text')
+            : 'No Results Found',
+        subtitle: _translations.isNotEmpty
+            ? LanguageHelper.tr(_translations, 'surah_list.null_result_desc')
+            : 'Try searching with different keywords',
       );
     }
 
@@ -612,30 +776,56 @@ Widget _buildSearchBar() {
         bottom: AppDesignSystem.space32 * s,
       ),
       children: [
-        if (juzResults.isNotEmpty) ...[
-          AppCategoryHeader(title: 'JUZ', count: juzResults.length),
-          ...juzResults.map((r) => _buildJuzSearchTile(r)),
-          SizedBox(height: AppDesignSystem.space12 * s),
-        ],
-        if (pageResults.isNotEmpty) ...[
-          AppCategoryHeader(title: 'PAGE', count: pageResults.length),
-          ...pageResults.map((r) => _buildPageSearchTile(r)),
-          SizedBox(height: AppDesignSystem.space12 * s),
-        ],
-        if (surahResults.isNotEmpty) ...[
-          AppCategoryHeader(title: 'SURAH', count: surahResults.length),
-          ...surahResults.map((r) => _buildSurahSearchTile(r)),
-          SizedBox(height: AppDesignSystem.space12 * s),
-        ],
-        if (verseResults.isNotEmpty) ...[
-          AppCategoryHeader(title: 'VERSES', count: verseResults.length),
-          ...verseResults.map((r) => _buildVerseSearchTile(r)),
-        ],
-      ],
+  if (juzResults.isNotEmpty) ...[
+    AppCategoryHeader(
+      title: _translations.isNotEmpty
+        ? LanguageHelper.tr(_translations, 'surah_list.juz_text').toUpperCase()
+        : 'JUZ', 
+      count: context.formatNumber(juzResults.length)  // ✅ Tanpa ${}
+    ),
+    ...juzResults.map((r) => _buildJuzSearchTile(r)),
+    SizedBox(height: AppDesignSystem.space12 * s),
+  ],
+  if (pageResults.isNotEmpty) ...[
+    AppCategoryHeader(
+      title: _translations.isNotEmpty
+        ? LanguageHelper.tr(_translations, 'surah_list.page_text').toUpperCase()
+        : 'PAGE', 
+      count: context.formatNumber(pageResults.length)  // ✅ Tanpa ${}
+    ),
+    ...pageResults.map((r) => _buildPageSearchTile(r)),
+    SizedBox(height: AppDesignSystem.space12 * s),
+  ],
+  if (surahResults.isNotEmpty) ...[
+    AppCategoryHeader(
+      title: _translations.isNotEmpty
+        ? LanguageHelper.tr(_translations, 'surah_list.surah_text').toUpperCase()
+        : 'SURAH', 
+      count: context.formatNumber(surahResults.length)  // ✅ Tanpa ${}
+    ),
+    ...surahResults.map((r) => _buildSurahSearchTile(r)),
+    SizedBox(height: AppDesignSystem.space12 * s),
+  ],
+  if (verseResults.isNotEmpty) ...[
+    AppCategoryHeader(
+      title: _translations.isNotEmpty
+        ? LanguageHelper.tr(_translations, 'surah_list.ayah_text').toUpperCase()
+        : 'VERSES', 
+      count: context.formatNumber(verseResults.length)  // ✅ Tanpa ${}
+    ),
+    ...verseResults.map((r) => _buildVerseSearchTile(r)),
+  ],
+],
     );
   }
 
   Widget _buildJuzSearchTile(Map<String, dynamic> r) {
+    final juzText = _translations.isNotEmpty
+        ? LanguageHelper.tr(_translations, "surah_list.juz_text")
+        : "Juz";
+    final ayahText = _translations.isNotEmpty
+        ? LanguageHelper.tr(_translations, 'surah_list.ayah_text')
+        : 'Ayat';
     return AppListTile(
       onTap: () => _openJuz(
         context,
@@ -643,9 +833,9 @@ Widget _buildSearchBar() {
         r['first_verse_key'] as String,
       ),
       leading: AppIconContainer(icon: Icons.auto_stories_rounded),
-      title: 'Juz ${r['juz_number']}',
-      subtitle:
-          '${r['first_verse_key']} - ${r['last_verse_key']} · ${r['verses_count']} Ayat',
+title: '$juzText ${context.formatNumber(r['juz_number'])}',
+subtitle: '${context.formatNumber(r['first_verse_key'])} - ${context.formatNumber(r['last_verse_key'])} · ${context.formatNumber(r['verses_count'])} $ayahText',
+
       trailing: Icon(
         Icons.chevron_right_rounded,
         color: AppColors.borderDark,
@@ -656,12 +846,31 @@ Widget _buildSearchBar() {
 
   Widget _buildPageSearchTile(Map<String, dynamic> r) {
     final pageNum = r['page_number'] as int;
-    final surahName = _cache.getPrimarySurahForPage(pageNum);
+    // ✅ Check if current language is Arabic
+    final isArabic = context.currentLanguage == 'ar';
+    
+    // ✅ Get surah IDs for this page
+    final surahIds = _cache.getSurahIdsForPage(pageNum);
+    String surahName = 'Unknown Surah';
+    
+    if (surahIds.isNotEmpty) {
+      final surahData = _cache.getSurah(surahIds.first);
+      if (surahData != null) {
+        // ✅ Use name_arabic if language is Arabic, otherwise use name_simple
+        surahName = isArabic 
+            ? (surahData['name_arabic'] ?? surahData['name_simple'] ?? 'Unknown Surah')
+            : (surahData['name_simple'] ?? 'Unknown Surah');
+      }
+    }
+    
+    final pageText = _translations.isNotEmpty
+        ? LanguageHelper.tr(_translations, "surah_list.page_text")
+        : "Page";
 
     return AppListTile(
       onTap: () => _openPage(context, pageNum),
       leading: AppIconContainer(icon: Icons.description_rounded),
-      title: 'Page $pageNum',
+      title: '$pageText ${context.formatNumber(pageNum)}',
       subtitle: surahName,
       trailing: Icon(
         Icons.chevron_right_rounded,
@@ -671,22 +880,32 @@ Widget _buildSearchBar() {
     );
   }
 
-Widget _buildSurahSearchTile(Map<String, dynamic> r) {
-  final surahId = r['id'] as int;
-  final surahName = r['name_simple'] as String;
-  
-  return AppListTile(
-    onTap: () => _openSurah(context, surahId),
-    leading: AppIconContainer(icon: Icons.menu_book_rounded),
-    title: '$surahName ($surahId)',
-    subtitle: r['verses_count'] != null ? '${r['verses_count']} Ayat' : null,
-    trailing: Icon(
-      Icons.chevron_right_rounded,
-      color: AppColors.borderDark,
-      size: AppDesignSystem.iconMedium,
-    ),
-  );
-}
+  Widget _buildSurahSearchTile(Map<String, dynamic> r) {
+    final surahId = r['id'] as int;
+    // ✅ Check if current language is Arabic
+    final isArabic = context.currentLanguage == 'ar';
+    // ✅ Use name_arabic if language is Arabic, otherwise use name_simple
+    final surahName = isArabic 
+        ? (r['name_arabic'] ?? r['name_simple'] ?? 'Surah $surahId')
+        : (r['name_simple'] as String? ?? 'Surah $surahId');
+    final ayahText = _translations.isNotEmpty
+        ? LanguageHelper.tr(_translations, 'surah_list.ayah_text')
+        : 'Ayat';
+
+    return AppListTile(
+      onTap: () => _openSurah(context, surahId),
+      leading: AppIconContainer(icon: Icons.menu_book_rounded),
+      title: '$surahName (${context.formatNumber(surahId)})',
+      subtitle: r['verses_count'] != null
+          ? '${context.formatNumber(r['verses_count'])} ${ayahText}'
+          : null,
+      trailing: Icon(
+        Icons.chevron_right_rounded,
+        color: AppColors.borderDark,
+        size: AppDesignSystem.iconMedium,
+      ),
+    );
+  }
 
   Widget _buildVerseSearchTile(Map<String, dynamic> r) {
     final s = AppDesignSystem.getScaleFactor(context);
@@ -836,6 +1055,16 @@ class _OptimizedPageList extends StatefulWidget {
 }
 
 class _OptimizedPageListState extends State<_OptimizedPageList> {
+  Map<String, dynamic> _translations = {};
+
+  Future<void> _loadTranslations() async {
+    // Ganti path sesuai file JSON yang dibutuhkan
+    final trans = await context.loadTranslations('home/surah_list');
+    setState(() {
+      _translations = trans;
+    });
+  }
+
   final ScrollController _scrollController = ScrollController();
   final int totalPages = 604;
 
@@ -846,6 +1075,7 @@ class _OptimizedPageListState extends State<_OptimizedPageList> {
   @override
   void initState() {
     super.initState();
+    _loadTranslations();
     _scrollController.addListener(_onScroll);
   }
 
@@ -897,6 +1127,8 @@ class _OptimizedPageListState extends State<_OptimizedPageList> {
   @override
   Widget build(BuildContext context) {
     final s = AppDesignSystem.getScaleFactor(context);
+    // ✅ Check if current language is Arabic
+    final isArabic = context.currentLanguage == 'ar';
 
     return Stack(
       children: [
@@ -917,13 +1149,28 @@ class _OptimizedPageListState extends State<_OptimizedPageList> {
               return SizedBox(height: 70 * s);
             }
 
-            // ✅ Get surah name dari cache
-            final surahName = widget.cache.getPrimarySurahForPage(pageNum);
+            // ✅ Get surah IDs for this page
+            final surahIds = widget.cache.getSurahIdsForPage(pageNum);
+            String surahName = 'Unknown Surah';
+            
+            if (surahIds.isNotEmpty) {
+              final surahData = widget.cache.getSurah(surahIds.first);
+              if (surahData != null) {
+                // ✅ Use name_arabic if language is Arabic, otherwise use name_simple
+                surahName = isArabic 
+                    ? (surahData['name_arabic'] ?? surahData['name_simple'] ?? 'Unknown Surah')
+                    : (surahData['name_simple'] ?? 'Unknown Surah');
+              }
+            }
+            
+            final pageText = _translations.isNotEmpty
+                ? LanguageHelper.tr(_translations, "surah_list.page_text")
+                : "Page";
 
             return AppListTile(
               onTap: () => widget.onPageTap(pageNum),
-              leading: AppNumberBadge(number: pageNum),
-              title: 'Page $pageNum',
+              leading: AppNumberBadge(number: context.formatNumber(pageNum)),
+              title: '$pageText ${context.formatNumber(pageNum)}',
               subtitle: surahName,
               trailing: Icon(
                 Icons.chevron_right_rounded,

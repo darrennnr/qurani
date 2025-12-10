@@ -3,7 +3,6 @@
     "title": "Premium",
     "upgrade_title": "UPGRADE TO PREMIUM ⭐\nMEMORIZE MORE",
     "compare_premium_features_text": "Compare Premium\nFeatures",
-
     "plans": {
       "free_text": "FREE",
       "premium_text": "PREMIUM",
@@ -12,7 +11,6 @@
       "dialog_message": "Premium subscription feature is currently under development. Stay tuned for amazing features!",
       "dialog_close": "Got it"
     },
-
     "sections": {
       "memorization": "Memorization",
       "recitation": "Recitation",
@@ -24,7 +22,6 @@
       "devices": "Devices",
       "advertisement": "Advertisement"
     },
-
     "features": {
       "hide_verses": "Hide Verses",
       "mistake_detection": "Mistake Detection",
@@ -34,42 +31,33 @@
       "mistake_history": "Mistake History",
       "mistake_frequency": "Mistake Frequency",
       "mistake_playback": "Mistake Playback",
-
       "follow_along": "Follow Along",
       "session_audio": "Session Audio",
       "share_audio": "Share Audio",
       "session_pausing": "Session Pausing",
-
       "streaks": "Streaks",
       "session_history": "Session History",
       "analytics": "Analytics",
       "memorization_progress": "Memorization Progress",
       "add_external_sessions": "Add External Sessions",
-
       "goals": "Goals",
       "badges": "Badges",
       "notifications": "Notifications",
-
       "audio_follow_along": "Audio Follow Along",
       "various_recitations": "Various Recitations",
       "repeat_functionality": "Repeat Functionality",
       "custom_range": "Custom Range",
-
       "voice_search": "Voice",
       "text_search": "Text",
       "recent_search_history": "Recent Search History",
-
       "mushaf_types": "Indopak / Madani",
       "translations_transliteration": "Translations / Transliteration",
       "tafsir": "Tafsir",
       "bookmarks": "Bookmarks",
-
       "devices": "Devices",
       "cross_device_sync": "Cross Device Syncing",
       "language_support": "Language Support",
-
       "advertisement": "Advertisement",
-
       "values": {
         "unlimited": "Unlimited",
         "last_session": "Last Session",

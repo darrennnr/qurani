@@ -1,5 +1,7 @@
 // lib\screens\main\stt\widgets\quran_widgets.dart
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
+import 'package:cuda_qurani/core/utils/language_helper.dart';
+import 'package:cuda_qurani/main.dart';
 import 'package:cuda_qurani/models/playback_settings_model.dart';
 import 'package:cuda_qurani/screens/main/home/screens/settings/settings_page.dart';
 import 'package:cuda_qurani/screens/main/home/screens/surah_list_page.dart';
@@ -8,13 +10,42 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../controllers/stt_controller.dart';
 import '../utils/constants.dart';
+import 'package:cuda_qurani/core/providers/language_provider.dart';
+import 'package:cuda_qurani/services/metadata_cache_service.dart';
 
-class QuranAppBar extends StatelessWidget implements PreferredSizeWidget {
+class QuranAppBar extends StatefulWidget implements PreferredSizeWidget {
   const QuranAppBar({Key? key}) : super(key: key);
+
+  @override
+  State<QuranAppBar> createState() => _QuranAppBarState();
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight * 0.86);
+}
+
+class _QuranAppBarState extends State<QuranAppBar> {
+  Map<String, dynamic> _translations = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTranslations();
+  }
+
+  Future<void> _loadTranslations() async {
+    // Ganti path sesuai file JSON yang dibutuhkan
+    final trans = await context.loadTranslations('stt');
+    setState(() {
+      _translations = trans;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<SttController>();
+    final languageProvider = context.watch<LanguageProvider>();
+    final isArabic = languageProvider.currentLanguageCode == 'ar';
+
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
@@ -24,10 +55,32 @@ class QuranAppBar extends StatelessWidget implements PreferredSizeWidget {
     final subtitleSize = screenWidth * 0.028;
     final badgeSize = screenWidth * 0.028;
 
-    // Determine display name
+    // ✅ NEW: Determine display name with Arabic support
     String displaySurahName;
     if (controller.suratNameSimple.isNotEmpty) {
-      displaySurahName = controller.suratNameSimple;
+      if (isArabic) {
+        // ✅ Use Arabic name if language is Arabic
+        final metadataCache = MetadataCacheService();
+
+        // Try to get Arabic name from cache or current page
+        if (controller.currentPageAyats.isNotEmpty) {
+          final surahId = controller.currentPageAyats.first.surah_id;
+          displaySurahName = metadataCache.getPrimarySurahForPage(
+            controller.currentPage,
+            useArabic: true,
+          );
+
+          // Fallback if cache doesn't have it
+          if (displaySurahName.isEmpty || displaySurahName == 'Unknown Surah') {
+            displaySurahName = controller.suratNameSimple;
+          }
+        } else {
+          displaySurahName = controller.suratNameSimple;
+        }
+      } else {
+        // Use simple name for non-Arabic languages
+        displaySurahName = controller.suratNameSimple;
+      }
     } else if (controller.ayatList.isNotEmpty) {
       displaySurahName = 'Surah ${controller.ayatList.first.surah_id}';
     } else {
@@ -95,7 +148,7 @@ class QuranAppBar extends StatelessWidget implements PreferredSizeWidget {
                   SizedBox(width: screenWidth * 0.015),
                   // Juz Badge
                   Text(
-                    'Juz $currentJuz',
+                    '${LanguageHelper.tr(_translations, "app_bar.juz_text")} ${context.formatNumber(currentJuz)}',
                     style: TextStyle(
                       fontSize: badgeSize,
                       fontWeight: FontWeight.w400,
@@ -103,6 +156,7 @@ class QuranAppBar extends StatelessWidget implements PreferredSizeWidget {
                       height: 1.1,
                     ),
                   ),
+
                   SizedBox(width: screenWidth * 0.015),
                   // Separator
                   Container(
@@ -113,7 +167,7 @@ class QuranAppBar extends StatelessWidget implements PreferredSizeWidget {
                   SizedBox(width: screenWidth * 0.015),
                   // Page Number
                   Text(
-                    'Hal ${controller.currentPage}',
+                    '${LanguageHelper.tr(_translations, "app_bar.page_text")} ${context.formatNumber(controller.currentPage)}',
                     style: TextStyle(
                       fontSize: subtitleSize,
                       fontWeight: FontWeight.w400,
@@ -137,10 +191,10 @@ class QuranAppBar extends StatelessWidget implements PreferredSizeWidget {
                 size: iconSize * 0.9,
               ),
               onPressed: () async {
-                // âœ… FIX: Await toggle completion
+                // ✅ FIX: Await toggle completion
                 await controller.toggleQuranMode();
 
-                // âœ… FORCE: Trigger rebuild immediately
+                // ✅ FORCE: Trigger rebuild immediately
                 if (context.mounted) {
                   // Scroll to correct position after mode change
                   WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -227,9 +281,20 @@ class _QuranBottomBarState extends State<QuranBottomBar>
   String? _activeMode; // 'listen', 'recite', or null
   bool _isDragging = false;
 
+  Map<String, dynamic> _translations = {};
+
+  Future<void> _loadTranslations() async {
+    // Ganti path sesuai file JSON yang dibutuhkan
+    final trans = await context.loadTranslations('stt');
+    setState(() {
+      _translations = trans;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
+    _loadTranslations();
     _slideController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),
@@ -446,7 +511,12 @@ class _QuranBottomBarState extends State<QuranBottomBar>
                                 ),
                                 SizedBox(width: 6),
                                 Text(
-                                  'Listen',
+                                  _translations.isNotEmpty
+                                      ? LanguageHelper.tr(
+                                          _translations,
+                                          'bottom_bar.listen_text',
+                                        )
+                                      : 'Listen',
                                   style: TextStyle(
                                     fontSize: labelSize,
                                     fontWeight: FontWeight.w600,
@@ -469,7 +539,12 @@ class _QuranBottomBarState extends State<QuranBottomBar>
                             child: Row(
                               children: [
                                 Text(
-                                  'Recite',
+                                  _translations.isNotEmpty
+                                      ? LanguageHelper.tr(
+                                          _translations,
+                                          'bottom_bar.recite_text',
+                                        )
+                                      : 'Recite',
                                   style: TextStyle(
                                     fontSize: labelSize,
                                     fontWeight: FontWeight.w600,
@@ -701,8 +776,8 @@ class QuranLoadingWidget extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
-    final containerSize = screenWidth * 0.15; // âœ… ~60px pada 400px width
-    final titleSize = screenWidth * 0.04; // âœ… ~16px pada 400px width
+    final containerSize = screenWidth * 0.15; // ✅ ~60px pada 400px width
+    final titleSize = screenWidth * 0.04; // ✅ ~16px pada 400px width
     final messageSize = screenWidth * 0.03;
 
     return Center(

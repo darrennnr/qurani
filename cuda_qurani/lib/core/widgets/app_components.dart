@@ -45,10 +45,7 @@ class AppListTile extends StatelessWidget {
           decoration: showDivider ? AppComponentStyles.divider() : null,
           child: Row(
             children: [
-              if (leading != null) ...[
-                leading!,
-                AppMargin.gapH(context),
-              ],
+              if (leading != null) ...[leading!, AppMargin.gapH(context)],
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -116,7 +113,7 @@ class AppIconContainer extends StatelessWidget {
     final s = AppDesignSystem.getScaleFactor(context);
     final containerSize = (size ?? 40) * s;
     final iconSize = (size ?? 40) * 0.5 * s;
-    
+
     final container = Container(
       width: containerSize,
       height: containerSize,
@@ -126,17 +123,15 @@ class AppIconContainer extends StatelessWidget {
         borderRadius: borderRadius,
         gradient: gradient,
       ),
-      child: Icon(
-        icon,
-        color: iconColor ?? AppColors.primary,
-        size: iconSize,
-      ),
+      child: Icon(icon, color: iconColor ?? AppColors.primary, size: iconSize),
     );
 
     if (onTap != null) {
       return InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(borderRadius ?? AppDesignSystem.radiusSmall * s),
+        borderRadius: BorderRadius.circular(
+          borderRadius ?? AppDesignSystem.radiusSmall * s,
+        ),
         child: container,
       );
     }
@@ -149,7 +144,7 @@ class AppIconContainer extends StatelessWidget {
 /// Circular badge with number (for Surah/Juz numbering)
 
 class AppNumberBadge extends StatelessWidget {
-  final int number;
+  final String number;
   final double? size;
   final Color? backgroundColor;
   final Color? textColor;
@@ -170,7 +165,7 @@ class AppNumberBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppDesignSystem.getScaleFactor(context);
     final containerSize = (size ?? 42) * s;
-    
+
     final container = Container(
       width: containerSize,
       height: containerSize,
@@ -185,7 +180,9 @@ class AppNumberBadge extends StatelessWidget {
                 end: Alignment.bottomRight,
               )
             : null,
-        color: gradient ? null : (backgroundColor ?? AppColors.surfaceContainerLowest),
+        color: gradient
+            ? null
+            : (backgroundColor ?? AppColors.surfaceContainerLowest),
         borderRadius: BorderRadius.circular(AppDesignSystem.radiusSmall * s),
       ),
       alignment: Alignment.center,
@@ -216,7 +213,7 @@ class AppNumberBadge extends StatelessWidget {
 
 class AppCategoryHeader extends StatelessWidget {
   final String title;
-  final int? count;
+  final String? count;
   final EdgeInsets? padding;
   final Widget? trailing;
 
@@ -231,24 +228,23 @@ class AppCategoryHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppDesignSystem.getScaleFactor(context);
-    
+
     return Padding(
-      padding: padding ?? EdgeInsets.fromLTRB(
-        AppDesignSystem.space20 * s,
-        AppDesignSystem.space12 * s,
-        AppDesignSystem.space20 * s,
-        AppDesignSystem.space8 * s,
-      ),
+      padding:
+          padding ??
+          EdgeInsets.fromLTRB(
+            AppDesignSystem.space20 * s,
+            AppDesignSystem.space12 * s,
+            AppDesignSystem.space20 * s,
+            AppDesignSystem.space8 * s,
+          ),
       child: Row(
         children: [
           Text(
             count != null ? '$title ($count)' : title,
             style: AppTypography.overline(context),
           ),
-          if (trailing != null) ...[
-            const Spacer(),
-            trailing!,
-          ],
+          if (trailing != null) ...[const Spacer(), trailing!],
         ],
       ),
     );
@@ -277,7 +273,7 @@ class AppEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppDesignSystem.getScaleFactor(context);
-    
+
     return Center(
       child: Padding(
         padding: AppPadding.all(context, AppDesignSystem.space32),
@@ -289,7 +285,9 @@ class AppEmptyState extends StatelessWidget {
               height: (iconSize ?? 80) * s,
               decoration: BoxDecoration(
                 color: AppColors.surfaceContainerLowest,
-                borderRadius: BorderRadius.circular(AppDesignSystem.radiusRound * s),
+                borderRadius: BorderRadius.circular(
+                  AppDesignSystem.radiusRound * s,
+                ),
               ),
               child: Icon(
                 icon,
@@ -311,10 +309,7 @@ class AppEmptyState extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
             ],
-            if (action != null) ...[
-              AppMargin.gapXLarge(context),
-              action!,
-            ],
+            if (action != null) ...[AppMargin.gapXLarge(context), action!],
           ],
         ),
       ),
@@ -342,7 +337,7 @@ class AppErrorState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppDesignSystem.getScaleFactor(context);
-    
+
     return Center(
       child: Padding(
         padding: AppPadding.all(context, AppDesignSystem.space32),
@@ -354,7 +349,9 @@ class AppErrorState extends StatelessWidget {
               height: 80 * s,
               decoration: BoxDecoration(
                 color: AppColors.error.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(AppDesignSystem.radiusRound * s),
+                borderRadius: BorderRadius.circular(
+                  AppDesignSystem.radiusRound * s,
+                ),
               ),
               child: Icon(
                 icon ?? Icons.error_outline_rounded,
@@ -400,12 +397,8 @@ class AppLoadingIndicator extends StatelessWidget {
   final Color? color;
   final String? message;
 
-  const AppLoadingIndicator({
-    Key? key,
-    this.size,
-    this.color,
-    this.message,
-  }) : super(key: key);
+  const AppLoadingIndicator({Key? key, this.size, this.color, this.message})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -461,12 +454,14 @@ class AppChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppDesignSystem.getScaleFactor(context);
-    
+
     final chipContent = Container(
-      padding: padding ?? EdgeInsets.symmetric(
-        horizontal: AppDesignSystem.space12 * s,
-        vertical: AppDesignSystem.space6 * s,
-      ),
+      padding:
+          padding ??
+          EdgeInsets.symmetric(
+            horizontal: AppDesignSystem.space12 * s,
+            vertical: AppDesignSystem.space6 * s,
+          ),
       decoration: BoxDecoration(
         color: backgroundColor ?? AppColors.primaryWithOpacity(0.1),
         borderRadius: BorderRadius.circular(AppDesignSystem.radiusSmall * s),
@@ -622,7 +617,8 @@ class AppButton extends StatelessWidget {
       width: fullWidth ? double.infinity : null,
       child: ElevatedButton(
         onPressed: loading ? null : onPressed,
-        style: style ??
+        style:
+            style ??
             AppComponentStyles.primaryButton(context).copyWith(
               backgroundColor: backgroundColor != null
                   ? MaterialStateProperty.all(backgroundColor)
@@ -773,10 +769,7 @@ class AppIconButton extends StatelessWidget {
     );
 
     if (tooltip != null) {
-      return Tooltip(
-        message: tooltip!,
-        child: button,
-      );
+      return Tooltip(message: tooltip!, child: button);
     }
 
     return button;
@@ -997,10 +990,7 @@ class AppAvatar extends StatelessWidget {
     }
 
     if (onTap != null) {
-      return GestureDetector(
-        onTap: onTap,
-        child: avatarChild,
-      );
+      return GestureDetector(onTap: onTap, child: avatarChild);
     }
 
     return avatarChild;

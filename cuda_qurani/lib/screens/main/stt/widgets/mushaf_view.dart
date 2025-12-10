@@ -1,5 +1,7 @@
 // lib\screens\main\stt\widgets\mushaf_view.dart
 
+import 'package:cuda_qurani/core/utils/language_helper.dart';
+import 'package:cuda_qurani/main.dart';
 import 'package:cuda_qurani/models/quran_models.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -111,34 +113,36 @@ class MushafRenderer {
 
     // Build justified row with proper centering and tight spacing
     return SizedBox(
-    width: maxWidth, // Use full width for proper positioning
-    height: lineH,
-    child: Row(
-      textDirection: TextDirection.rtl,
-      mainAxisAlignment: MainAxisAlignment.spaceBetween, // ✅ UBAH: dari center jadi spaceBetween
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        for (int i = 0; i < wordSpans.length; i++) ...[
-          RichText(
-            textDirection: TextDirection.rtl,
-            overflow: TextOverflow.visible,
-            maxLines: 1,
-            text: wordSpans[i] as TextSpan,
-          ),
-          if (i < wordSpans.length - 1) 
-            SizedBox(
-              width: () {
-                final nextSpan = wordSpans[i + 1] as TextSpan;
-                final isNextArabicNumber = nextSpan.text!.contains(RegExp(r'[٠-٩]'));
-                return 0.0; // No spacing for any words to prevent overflow
-              }(),
+      width: maxWidth, // Use full width for proper positioning
+      height: lineH,
+      child: Row(
+        textDirection: TextDirection.rtl,
+        mainAxisAlignment: MainAxisAlignment
+            .spaceBetween, // ✅ UBAH: dari center jadi spaceBetween
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          for (int i = 0; i < wordSpans.length; i++) ...[
+            RichText(
+              textDirection: TextDirection.rtl,
+              overflow: TextOverflow.visible,
+              maxLines: 1,
+              text: wordSpans[i] as TextSpan,
             ),
+            if (i < wordSpans.length - 1)
+              SizedBox(
+                width: () {
+                  final nextSpan = wordSpans[i + 1] as TextSpan;
+                  final isNextArabicNumber = nextSpan.text!.contains(
+                    RegExp(r'[٠-٩]'),
+                  );
+                  return 0.0; // No spacing for any words to prevent overflow
+                }(),
+              ),
+          ],
         ],
-      ],
-    ),
-  );
-}
-
+      ),
+    );
+  }
 }
 
 class MushafDisplay extends StatefulWidget {
@@ -217,9 +221,7 @@ class _MushafDisplayState extends State<MushafDisplay> {
 
     // ⚠️ FALLBACK: This should RARELY happen due to aggressive preloading
     // If it does, show minimal loading and trigger emergency load
-    print(
-      '⚠️ CACHE MISS: Page $pageNumber not cached, emergency loading...',
-    );
+    print('⚠️ CACHE MISS: Page $pageNumber not cached, emergency loading...');
 
     // Trigger emergency load in controller
     Future.microtask(() async {
@@ -260,25 +262,25 @@ class MushafPageContent extends StatelessWidget {
   }) : super(key: key);
 
   @override
-Widget build(BuildContext context) {
-  final appBarHeight = kToolbarHeight * 0.95;
-  final screenWidth = MediaQuery.of(context).size.width;
-  
-  return Padding(
-    padding: EdgeInsets.only(
-      top: appBarHeight,
-     left: screenWidth * 0,   // 1.5% (dari 0.010)
-   right: screenWidth * 0,  // 1.5% (dari 0.010)
-    ),
-    child: Column(
-      children: [
-        const MushafPageHeader(),
-        const SizedBox(height: 0),
-        ..._buildPageLines(),
-      ],
-    ),
-  );
-}
+  Widget build(BuildContext context) {
+    final appBarHeight = kToolbarHeight * 0.95;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        top: appBarHeight,
+        left: screenWidth * 0, // 1.5% (dari 0.010)
+        right: screenWidth * 0, // 1.5% (dari 0.010)
+      ),
+      child: Column(
+        children: [
+          const MushafPageHeader(),
+          const SizedBox(height: 0),
+          ..._buildPageLines(),
+        ],
+      ),
+    );
+  }
 
   List<Widget> _buildPageLines() {
     return pageLines.map((line) => _buildMushafLine(line)).toList();
@@ -375,132 +377,130 @@ class _JustifiedAyahLine extends StatelessWidget {
   });
 
   @override
-Widget build(BuildContext context) {
-  final screenWidth = MediaQuery.of(context).size.width;
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
 
-  final fontSizeMultiplier = (pageNumber == 1 || pageNumber == 2)
-     ? 0.080
-     : 0.0620;
-      
-  final baseFontSize = screenWidth * fontSizeMultiplier;
-  final lastWordFontMultiplier = 0.9;
+    final fontSizeMultiplier = (pageNumber == 1 || pageNumber == 2)
+        ? 0.080
+        : 0.0620;
 
-  if (line.ayahSegments == null || line.ayahSegments!.isEmpty) {
-    return SizedBox(height: MushafRenderer.lineHeight(context));
-  }
-  
-  final controller = context.watch<SttController>();
-  List<InlineSpan> spans = [];
+    final baseFontSize = screenWidth * fontSizeMultiplier;
+    final lastWordFontMultiplier = 0.9;
 
-  final fontFamily = 'p$pageNumber';
+    if (line.ayahSegments == null || line.ayahSegments!.isEmpty) {
+      return SizedBox(height: MushafRenderer.lineHeight(context));
+    }
 
-  for (final segment in line.ayahSegments!) {
-    final ayatIndex = controller.ayatList.indexWhere(
-      (a) => a.surah_id == segment.surahId && a.ayah == segment.ayahNumber,
-    );
-    final isCurrentAyat =
-        ayatIndex >= 0 && ayatIndex == controller.currentAyatIndex;
+    final controller = context.watch<SttController>();
+    List<InlineSpan> spans = [];
 
-    for (int i = 0; i < segment.words.length; i++) {
-      final word = segment.words[i];
-      final wordIndex = word.wordNumber - 1;
+    final fontFamily = 'p$pageNumber';
 
-      // ✅ CRITICAL FIX: Use ACTUAL surah:ayah from segment, not hardcoded
-      final wordStatusKey = '${segment.surahId}:${segment.ayahNumber}';
-      final wordStatus = controller.wordStatusMap[wordStatusKey]?[wordIndex];
+    for (final segment in line.ayahSegments!) {
+      final ayatIndex = controller.ayatList.indexWhere(
+        (a) => a.surah_id == segment.surahId && a.ayah == segment.ayahNumber,
+      );
+      final isCurrentAyat =
+          ayatIndex >= 0 && ayatIndex == controller.currentAyatIndex;
 
-      // 🎥 DEBUG: Only log if listening mode is active
-      if (controller.isListeningMode && isCurrentAyat) {
-        print(
-          '🎨 UI RENDER: Ayah ${segment.surahId}:${segment.ayahNumber}, Word[$wordIndex] (loop $i) = $wordStatus',
-        );
-        print(
-          '   Full wordStatusMap[$wordStatusKey] = ${controller.wordStatusMap[wordStatusKey]}',
-        );
-      }
+      for (int i = 0; i < segment.words.length; i++) {
+        final word = segment.words[i];
+        final wordIndex = word.wordNumber - 1;
 
-      final wordSegments = controller.segmentText(word.text);
-      final hasArabicNumber = wordSegments.any((s) => s.isArabicNumber);
+        // ✅ CRITICAL FIX: Use ACTUAL surah:ayah from segment, not hardcoded
+        final wordStatusKey = '${segment.surahId}:${segment.ayahNumber}';
+        final wordStatus = controller.wordStatusMap[wordStatusKey]?[wordIndex];
 
-      Color wordBg = Colors.transparent;
-      double wordOpacity = 1.0;
+        // 🎥 DEBUG: Only log if listening mode is active
+        if (controller.isListeningMode && isCurrentAyat) {
+          print(
+            '🎨 UI RENDER: Ayah ${segment.surahId}:${segment.ayahNumber}, Word[$wordIndex] (loop $i) = $wordStatus',
+          );
+          print(
+            '   Full wordStatusMap[$wordStatusKey] = ${controller.wordStatusMap[wordStatusKey]}',
+          );
+        }
 
-      final isLastWordInAyah =
-          segment.isEndOfAyah && i == (segment.words.length - 1);
+        final wordSegments = controller.segmentText(word.text);
+        final hasArabicNumber = wordSegments.any((s) => s.isArabicNumber);
 
-      // ========== PRIORITAS 1: Background color dari wordStatus ==========
-      // SKIP highlighting for Arabic numbers (ayah end markers)
-      if (wordStatus != null && !hasArabicNumber) {
-        switch (wordStatus) {
-          case WordStatus.matched:
-            wordBg = correctColor.withOpacity(0.4);
-            break;
-          case WordStatus.mismatched:
-          case WordStatus.skipped:
-            wordBg = errorColor.withOpacity(0.4);
-            break;
-          case WordStatus.processing:
-            // ✅ FIX: Show blue when RECORDING or LISTENING mode
-            if (controller.isRecording || controller.isListeningMode) {
-              wordBg = Colors.blue.withOpacity(0.4);  // 🔵 BIRU untuk processing
-            } else {
+        Color wordBg = Colors.transparent;
+        double wordOpacity = 1.0;
+
+        final isLastWordInAyah =
+            segment.isEndOfAyah && i == (segment.words.length - 1);
+
+        // ========== PRIORITAS 1: Background color dari wordStatus ==========
+        // SKIP highlighting for Arabic numbers (ayah end markers)
+        if (wordStatus != null && !hasArabicNumber) {
+          switch (wordStatus) {
+            case WordStatus.matched:
+              wordBg = correctColor.withValues(alpha: 0.4);
+              break;
+            case WordStatus.mismatched:
+            case WordStatus.skipped:
+              wordBg = errorColor.withValues(alpha: 0.4);
+              break;
+            case WordStatus.processing:
+              if (controller.isRecording || controller.isListeningMode) {
+                wordBg = Colors.blue.withValues(alpha: 0.4);
+              } else {
+                wordBg = Colors.transparent;
+              }
+              break;
+            case WordStatus.pending:
               wordBg = Colors.transparent;
-            }
-            break;
-          case WordStatus.pending:
-          default:
-            wordBg = Colors.transparent;
-            break;
+              break;
+          }
         }
-      }
 
-      // ========== PRIORITAS 2: Logika Opacity (hideUnread) ==========
-      if (controller.hideUnreadAyat) {
-        if (wordStatus != null && wordStatus != WordStatus.pending) {
-          wordOpacity = 1.0;
-        } else if (isCurrentAyat) {
-          wordOpacity = (hasArabicNumber || isLastWordInAyah) ? 1.0 : 0.0;
-        } else {
-          wordOpacity = (hasArabicNumber || isLastWordInAyah) ? 1.0 : 0.0;
+        // ========== PRIORITAS 2: Logika Opacity (hideUnread) ==========
+        if (controller.hideUnreadAyat) {
+          if (wordStatus != null && wordStatus != WordStatus.pending) {
+            wordOpacity = 1.0;
+          } else if (isCurrentAyat) {
+            wordOpacity = (hasArabicNumber || isLastWordInAyah) ? 1.0 : 0.0;
+          } else {
+            wordOpacity = (hasArabicNumber || isLastWordInAyah) ? 1.0 : 0.0;
+          }
         }
-      }
 
-      final segments = controller.segmentText(word.text);
-      final isLastWord = isLastWordInAyah;
-      final effectiveFontSize = isLastWord
-          ? baseFontSize * lastWordFontMultiplier
-          : baseFontSize;
+        final segments = controller.segmentText(word.text);
+        final isLastWord = isLastWordInAyah;
+        final effectiveFontSize = isLastWord
+            ? baseFontSize * lastWordFontMultiplier
+            : baseFontSize;
 
-      for (final textSegment in segments) {
-        spans.add(
-          TextSpan(
-            text: textSegment.text,
-            style: TextStyle(
-              fontSize: effectiveFontSize,
-              fontFamily: fontFamily,
-              color: _getWordColor(isCurrentAyat).withOpacity(wordOpacity),
-              backgroundColor: wordBg,
-              fontWeight: FontWeight.w400,
-              decoration: (controller.hideUnreadAyat && !isLastWord)
-                  ? TextDecoration.underline
-                  : null,
-              decorationColor: Colors.black.withOpacity(0.15),
-              decorationThickness: 0.3,
+        for (final textSegment in segments) {
+          spans.add(
+            TextSpan(
+              text: textSegment.text,
+              style: TextStyle(
+                fontSize: effectiveFontSize,
+                fontFamily: fontFamily,
+                color: _getWordColor(isCurrentAyat).withValues(alpha: wordOpacity),
+                backgroundColor: wordBg,
+                fontWeight: FontWeight.w400,
+                decoration: (controller.hideUnreadAyat && !isLastWord)
+                    ? TextDecoration.underline
+                    : null,
+                decorationColor: Colors.black.withValues(alpha: 0.15),
+                decorationThickness: 0.3,
+              ),
             ),
-          ),
-        );
+          );
+        }
       }
     }
-  }
 
-  return MushafRenderer.renderJustifiedLine(
-    wordSpans: spans,
-    isCentered: line.isCentered,
-    availableWidth: MediaQuery.of(context).size.width,
-    context: context,
-    allowOverflow: false,
-  );
-}
+    return MushafRenderer.renderJustifiedLine(
+      wordSpans: spans,
+      isCentered: line.isCentered,
+      availableWidth: MediaQuery.of(context).size.width,
+      context: context,
+      allowOverflow: false,
+    );
+  }
 
   // Methods tetap sama
   Color _getWordColor(bool isCurrentWord) {
@@ -508,8 +508,29 @@ Widget build(BuildContext context) {
   }
 }
 
-class MushafPageHeader extends StatelessWidget {
-  const MushafPageHeader({Key? key}) : super(key: key);
+class MushafPageHeader extends StatefulWidget {
+  const MushafPageHeader({super.key});
+
+  @override
+  State<MushafPageHeader> createState() => _MushafPageHeaderState();
+}
+
+class _MushafPageHeaderState extends State<MushafPageHeader> {
+  Map<String, dynamic> _translations = {};
+
+  Future<void> _loadTranslations() async {
+    // Ganti path sesuai file JSON yang dibutuhkan
+    final trans = await context.loadTranslations('stt');
+    setState(() {
+      _translations = trans;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTranslations();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -517,6 +538,9 @@ class MushafPageHeader extends StatelessWidget {
     final screenHeight = MediaQuery.of(context).size.height;
     final headerFontSize = screenWidth * 0.035;
     final headerHeight = screenHeight * 0.035;
+    final juzText = _translations.isNotEmpty
+        ? LanguageHelper.tr(_translations, 'mushaf_view.juz_text')
+        : 'Juz';
 
     final controller = context.watch<SttController>();
     final juzNumber = controller.currentPageAyats.isNotEmpty
@@ -529,13 +553,14 @@ class MushafPageHeader extends StatelessWidget {
     return Container(
       height: headerHeight,
       color: Colors.white, // ✅ ADD: Background to blend when hidden
-      padding: EdgeInsets.zero, // ✅ CHANGE: Minimal horizontal padding (was screenWidth * 0.005)
+      padding: EdgeInsets
+          .zero, // ✅ CHANGE: Minimal horizontal padding (was screenWidth * 0.005)
       alignment: Alignment.center,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            'Juz $juzNumber',
+            '$juzText ${context.formatNumber(juzNumber)}',
             style: TextStyle(
               fontSize: headerFontSize,
               color: Colors.grey.shade700,
@@ -593,7 +618,7 @@ class MushafPageHeader extends StatelessWidget {
           // ),
           // const SizedBox(width: 3),
           Text(
-            '${controller.currentPage}',
+            '${context.formatNumber(controller.currentPage)}',
             style: TextStyle(
               fontSize: headerFontSize,
               color: Colors.grey.shade700,

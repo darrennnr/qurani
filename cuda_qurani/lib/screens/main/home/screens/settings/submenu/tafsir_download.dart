@@ -1,4 +1,5 @@
 // lib/screens/main/home/screens/settings/submenu/tafsir_download.dart
+import 'package:cuda_qurani/core/utils/language_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
 import 'package:cuda_qurani/screens/main/home/screens/settings/widgets/appbar.dart';
@@ -14,168 +15,100 @@ class TafsirDownloadPage extends StatefulWidget {
 }
 
 class _TafsirDownloadPageState extends State<TafsirDownloadPage> {
+  Map<String, dynamic> _translations = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTranslations();
+  }
+
+  Future<void> _loadTranslations() async {
+    // Ganti path sesuai file JSON yang dibutuhkan
+    final trans = await context.loadTranslations('settings/downloads');
+    setState(() {
+      _translations = trans;
+    });
+  }
+
   // Track which language sections are expanded
   final Map<String, bool> _expandedLanguages = {};
 
   // Available tafsirs grouped by language
   final Map<String, List<Map<String, String>>> _availableTafsirs = {
     'العربية': [
-      {
-        'name': 'Tafsir Al-Jalalayn',
-        'language': 'العربية',
-      },
-      {
-        'name': 'Tafsir Ibn Kathir',
-        'language': 'العربية',
-      },
-      {
-        'name': 'Tafsir Al-Tabari',
-        'language': 'العربية',
-      },
-      {
-        'name': 'Tafsir Al-Qurtubi',
-        'language': 'العربية',
-      },
-      {
-        'name': 'Tafsir Al-Sa\'di',
-        'language': 'العربية',
-      },
+      {'name': 'Tafsir Al-Jalalayn', 'language': 'العربية'},
+      {'name': 'Tafsir Ibn Kathir', 'language': 'العربية'},
+      {'name': 'Tafsir Al-Tabari', 'language': 'العربية'},
+      {'name': 'Tafsir Al-Qurtubi', 'language': 'العربية'},
+      {'name': 'Tafsir Al-Sa\'di', 'language': 'العربية'},
     ],
     'English': [
       {
         'name': 'A Brief Explanation of the Glorious Quran',
         'language': 'English',
       },
-      {
-        'name': 'Tafsir Ibn Kathir',
-        'language': 'English',
-      },
-      {
-        'name': 'Tazkirul Quran',
-        'language': 'English',
-      },
-      {
-        'name': 'Ma\'ariful Qur\'an',
-        'language': 'English',
-      },
+      {'name': 'Tafsir Ibn Kathir', 'language': 'English'},
+      {'name': 'Tazkirul Quran', 'language': 'English'},
+      {'name': 'Ma\'ariful Qur\'an', 'language': 'English'},
     ],
     'Bahasa Indonesia': [
-      {
-        'name': 'Tafsir Al-Saadi',
-        'language': 'Bahasa Indonesia',
-      },
+      {'name': 'Tafsir Al-Saadi', 'language': 'Bahasa Indonesia'},
       {
         'name': 'Al-Mukhtasar in Interpreting the Noble Quran',
         'language': 'Bahasa Indonesia',
       },
     ],
     'বাংলা': [
-      {
-        'name': 'Tafsir Ahsanul Bayaan',
-        'language': 'বাংলা',
-      },
-      {
-        'name': 'Tafsir Abu Bakr Zakaria',
-        'language': 'বাংলা',
-      },
+      {'name': 'Tafsir Ahsanul Bayaan', 'language': 'বাংলা'},
+      {'name': 'Tafsir Abu Bakr Zakaria', 'language': 'বাংলা'},
     ],
     'اردو': [
-      {
-        'name': 'Tafheem-ul-Quran',
-        'language': 'اردو',
-      },
-      {
-        'name': 'Tafsir Ahsanul Bayan',
-        'language': 'اردو',
-      },
+      {'name': 'Tafheem-ul-Quran', 'language': 'اردو'},
+      {'name': 'Tafsir Ahsanul Bayan', 'language': 'اردو'},
     ],
     'Türkçe': [
-      {
-        'name': 'Elmalılı Hamdi Yazır Tefsiri',
-        'language': 'Türkçe',
-      },
+      {'name': 'Elmalılı Hamdi Yazır Tefsiri', 'language': 'Türkçe'},
     ],
     'فارسی': [
-      {
-        'name': 'Tafsir Noor',
-        'language': 'فارسی',
-      },
-      {
-        'name': 'Tafsir Nemooneh',
-        'language': 'فارسی',
-      },
+      {'name': 'Tafsir Noor', 'language': 'فارسی'},
+      {'name': 'Tafsir Nemooneh', 'language': 'فارسی'},
     ],
     'Français': [
-      {
-        'name': 'Tafsir Al-Sa\'di',
-        'language': 'Français',
-      },
+      {'name': 'Tafsir Al-Sa\'di', 'language': 'Français'},
     ],
     'Русский': [
-      {
-        'name': 'Tafsir Al-Muntakhab',
-        'language': 'Русский',
-      },
+      {'name': 'Tafsir Al-Muntakhab', 'language': 'Русский'},
     ],
     'Español': [
-      {
-        'name': 'Tafsir Al-Muyassar',
-        'language': 'Español',
-      },
+      {'name': 'Tafsir Al-Muyassar', 'language': 'Español'},
     ],
     'Italiano': [
-      {
-        'name': 'Tafsir Al-Jalalayn',
-        'language': 'Italiano',
-      },
+      {'name': 'Tafsir Al-Jalalayn', 'language': 'Italiano'},
     ],
     'অসমীয়া': [
-      {
-        'name': 'Tafsir Ahsanul Bayaan',
-        'language': 'অসমীয়া',
-      },
+      {'name': 'Tafsir Ahsanul Bayaan', 'language': 'অসমীয়া'},
     ],
     'Bosanski': [
-      {
-        'name': 'Tefsir Ibn Kesir',
-        'language': 'Bosanski',
-      },
+      {'name': 'Tefsir Ibn Kesir', 'language': 'Bosanski'},
     ],
     '日本語': [
-      {
-        'name': 'Tafsir Al-Muyassar',
-        'language': '日本語',
-      },
+      {'name': 'Tafsir Al-Muyassar', 'language': '日本語'},
     ],
     'Khmer': [
-      {
-        'name': 'Tafsir Al-Muyassar',
-        'language': 'Khmer',
-      },
+      {'name': 'Tafsir Al-Muyassar', 'language': 'Khmer'},
     ],
     'Kurdî': [
-      {
-        'name': 'Tefsîra Quranê',
-        'language': 'Kurdî',
-      },
+      {'name': 'Tefsîra Quranê', 'language': 'Kurdî'},
     ],
     'മലയാളം': [
-      {
-        'name': 'Tafsir Cheriyamudam Abdul Hammed',
-        'language': 'മലയാളം',
-      },
+      {'name': 'Tafsir Cheriyamudam Abdul Hammed', 'language': 'മലയാളം'},
     ],
     'Tagalog': [
-      {
-        'name': 'Tafsir Al-Muyassar',
-        'language': 'Tagalog',
-      },
+      {'name': 'Tafsir Al-Muyassar', 'language': 'Tagalog'},
     ],
     'Tiếng Việt': [
-      {
-        'name': 'Tafsir Al-Muyassar',
-        'language': 'Tiếng Việt',
-      },
+      {'name': 'Tafsir Al-Muyassar', 'language': 'Tiếng Việt'},
     ],
   };
 
@@ -204,7 +137,12 @@ class _TafsirDownloadPageState extends State<TafsirDownloadPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Available Downloads',
+          _translations.isNotEmpty
+              ? LanguageHelper.tr(
+                  _translations,
+                  'tafsir.available_downloads_text',
+                )
+              : 'Available Downloads',
           style: TextStyle(
             fontSize: 14 * s * 0.9,
             fontWeight: AppTypography.medium,
@@ -236,12 +174,10 @@ class _TafsirDownloadPageState extends State<TafsirDownloadPage> {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius:
-            BorderRadius.circular(AppDesignSystem.radiusMedium * s * 0.9),
-        border: Border.all(
-          color: AppColors.borderLight,
-          width: 1.0 * s * 0.9,
+        borderRadius: BorderRadius.circular(
+          AppDesignSystem.radiusMedium * s * 0.9,
         ),
+        border: Border.all(color: AppColors.borderLight, width: 1.0 * s * 0.9),
       ),
       child: Column(
         children: [
@@ -291,10 +227,7 @@ class _TafsirDownloadPageState extends State<TafsirDownloadPage> {
 
               return Column(
                 children: [
-                  _buildTafsirItem(
-                    tafsir['name']!,
-                    tafsir['language']!,
-                  ),
+                  _buildTafsirItem(tafsir['name']!, tafsir['language']!),
                   if (!isLast)
                     Divider(
                       height: 1,
@@ -372,15 +305,15 @@ class _TafsirDownloadPageState extends State<TafsirDownloadPage> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const SettingsAppBar(
-        title: 'Tafsir',
+      appBar: SettingsAppBar(
+        title: _translations.isNotEmpty
+            ? LanguageHelper.tr(_translations, 'tafsir.tafsir_text')
+            : 'Tafsir',
       ),
       body: SafeArea(
         child: ListView(
           padding: EdgeInsets.all(AppDesignSystem.space20 * s * 0.9),
-          children: [
-            _buildAvailableDownloadsSection(),
-          ],
+          children: [_buildAvailableDownloadsSection()],
         ),
       ),
     );

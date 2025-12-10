@@ -2,7 +2,7 @@
     "appbar_widget" : {
         "home_text" : "Home",
         "quran_text" : "Quran",
-        "completion_text" : "Completiom",
+        "completion_text" : "Completion",
         "activity_text" : "Activity",
         "history_text" : "History",
         "premium_text" : "Premium"

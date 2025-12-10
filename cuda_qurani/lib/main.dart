@@ -3,6 +3,8 @@ import 'package:cuda_qurani/services/local_database_service.dart';
 import 'package:cuda_qurani/services/reciter_database_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'providers/recitation_provider.dart';
 import 'screens/main/home/services/juz_service.dart';
@@ -12,11 +14,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:cuda_qurani/config/app_config.dart';
 import 'package:cuda_qurani/screens/splash_screen.dart';
 import 'package:cuda_qurani/services/metadata_cache_service.dart';
-
-// ✅ NEW: Import Language Provider
 import 'package:cuda_qurani/core/providers/language_provider.dart';
-
-// ✅ NEW: Import Premium Provider
 import 'package:cuda_qurani/providers/premium_provider.dart';
 
 // Global flag to track DB initialization
@@ -29,34 +27,24 @@ void main() async {
     url: AppConfig.supabaseUrl,
     anonKey: AppConfig.supabaseAnonKey,
   );
-  print('✅ Supabase initialized');
-  
-  // ✅ Pre-initialize ALL databases BEFORE app starts
   await _initializeDatabases();
   await JuzService.initialize();
   await _initializeListeningServices();
-  
-  // ✅ NEW: Initialize Language Service
   await _initializeLanguageService();
 
-    await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,      // portrait normal
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp, // portrait normal
     // DeviceOrientation.portraitDown, // kalau mau ijinkan portrait terbalik
   ]);
-  
+
   runApp(const MainApp());
 }
 
-/// ✅ NEW: Initialize Language Service
 Future<void> _initializeLanguageService() async {
   try {
-    print('🔄 [MAIN] Initializing language service...');
     final languageProvider = LanguageProvider();
     await languageProvider.initialize();
-    print('✅ [MAIN] Language service initialized: ${languageProvider.currentLanguageCode}');
   } catch (e, stackTrace) {
-    print('⚠️ [MAIN] Language service initialization failed: $e');
-    print('🔍 Stack trace: $stackTrace');
     // Don't throw - app should still work with default language
   }
 }
@@ -64,36 +52,23 @@ Future<void> _initializeLanguageService() async {
 Future<void> _initializeListeningServices() async {
   try {
     await ReciterDatabaseService.initialize();
-    print('✅ Reciter database initialized');
-  } catch (e) {
-    print('⚠️ Failed to initialize reciter database: $e');
-  }
+  } catch (e) {}
 }
 
 Future<void> _initializeDatabases() async {
   if (_isDatabaseInitialized) {
-    print('⚠️ Databases already initialized, skipping...');
     return;
   }
 
   try {
-    print('🔄 [MAIN] Starting database pre-initialization...');
-
-    // ✅ STEP 1: Initialize databases
     await Future.wait([
       DBHelper.preInitializeAll(),
       LocalDatabaseService.preInitialize(),
     ]);
-
-    // ✅ STEP 2: Pre-cache metadata (CRITICAL for performance)
     await MetadataCacheService().initialize();
 
     _isDatabaseInitialized = true;
-    print('✅ [MAIN] All databases + metadata pre-initialized successfully');
-  } catch (e, stackTrace) {
-    print('❌ [MAIN] Database initialization FAILED: $e');
-    print('🔍 Stack trace: $stackTrace');
-  }
+  } catch (e, stackTrace) {}
 }
 
 class MainApp extends StatelessWidget {
@@ -103,46 +78,71 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // ✅ Auth Provider
-        ChangeNotifierProvider(
-          create: (_) => AuthProvider(),
-          lazy: false,
-        ),
-        
-        // ✅ NEW: Language Provider (lazy: false agar langsung available)
+        ChangeNotifierProvider(create: (_) => AuthProvider(), lazy: false),
         ChangeNotifierProvider(
           create: (_) => LanguageProvider()..initialize(),
           lazy: false,
         ),
-        
-        // ✅ NEW: Premium Provider (lazy: false untuk load plan saat start)
         ChangeNotifierProvider(
           create: (_) => PremiumProvider()..initialize(),
           lazy: false,
         ),
-        
-        // ✅ Recitation Provider (lazy to prevent WebSocket issues)
-        ChangeNotifierProvider(
-          create: (_) => RecitationProvider(),
-          lazy: true,
-        ),
+        ChangeNotifierProvider(create: (_) => RecitationProvider(), lazy: true),
       ],
-      child: MaterialApp(
-        title: 'Qurani Hafidz',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          primarySwatch: Colors.green,
-          primaryColor: const Color(0xFF247C64),
-          scaffoldBackgroundColor: const Color(0xFFFFFFFF),
-        ),
-        home: const InitialSplashScreen(),
+      child: Consumer<LanguageProvider>(
+        builder: (context, languageProvider, child) {
+          final isRTL = languageProvider.currentLanguageCode == 'ar';
+
+          return MaterialApp(
+            title: 'Qurani Hafidz',
+            debugShowCheckedModeBanner: false,
+            
+            locale: Locale(languageProvider.currentLanguageCode),
+            
+            supportedLocales: const [
+              Locale('en'), // English
+              Locale('id'), // Indonesian
+              Locale('ar'), // Arabic - RTL
+            ],
+            
+            // ✅ Tambahkan localization delegates
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            
+            localeResolutionCallback: (locale, supportedLocales) {
+              if (locale != null) {
+                for (var supportedLocale in supportedLocales) {
+                  if (supportedLocale.languageCode == locale.languageCode) {
+                    return supportedLocale;
+                  }
+                }
+              }
+              return supportedLocales.first;
+            },
+            
+            builder: (context, child) {
+              return Directionality(
+                textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
+                child: child!,
+              );
+            },
+            
+            theme: ThemeData(
+              primarySwatch: Colors.green,
+              primaryColor: const Color(0xFF247C64),
+              scaffoldBackgroundColor: const Color(0xFFFFFFFF),
+            ),
+            home: const InitialSplashScreen(),
+          );
+        },
       ),
     );
   }
 }
 
-/// ✅ Initial splash screen that shows ONCE on app start
-/// Separate from auth loading state
 class InitialSplashScreen extends StatefulWidget {
   const InitialSplashScreen({super.key});
 
@@ -177,5 +177,48 @@ class _InitialSplashScreenState extends State<InitialSplashScreen> {
   @override
   Widget build(BuildContext context) {
     return const SplashScreen(); // Reuse existing SplashScreen widget
+  }
+}
+
+// ============================================================================
+// ✅ ARABIC NUMERALS HELPER - Tambahkan di bawah semua class
+// ============================================================================
+
+/// Utility class untuk convert angka Western (0-9) ke Eastern Arabic Numerals (٠-٩)
+class AppLocalizations {
+  /// Format number berdasarkan bahasa saat ini
+  /// Jika bahasa Arab, convert ke Eastern Arabic Numerals
+  static String formatNumber(BuildContext context, dynamic number) {
+    try {
+      final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+      
+      if (languageProvider.currentLanguageCode == 'ar') {
+        return _toArabicNumerals(number.toString());
+      }
+      return number.toString();
+    } catch (e) {
+      // Fallback jika error
+      return number.toString();
+    }
+  }
+  
+  /// Convert Western digits (0-9) to Eastern Arabic Numerals (٠-٩)
+  static String _toArabicNumerals(String input) {
+    const english = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+    const arabic = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+    
+    String result = input;
+    for (int i = 0; i < english.length; i++) {
+      result = result.replaceAll(english[i], arabic[i]);
+    }
+    return result;
+  }
+}
+
+/// Extension untuk akses lebih mudah dari BuildContext
+extension NumberFormattingExtension on BuildContext {
+  /// Format number ke bahasa saat ini (Arab = ٠-٩, lainnya = 0-9)
+  String formatNumber(dynamic number) {
+    return AppLocalizations.formatNumber(this, number);
   }
 }

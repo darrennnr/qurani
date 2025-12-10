@@ -1,4 +1,5 @@
 // lib/screens/main/home/screens/settings/submenu/dropped_connection.dart
+import 'package:cuda_qurani/core/utils/language_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
 import 'package:cuda_qurani/screens/main/home/screens/settings/widgets/appbar.dart';
@@ -14,6 +15,21 @@ class DroppedConnectionPage extends StatefulWidget {
 }
 
 class _DroppedConnectionPageState extends State<DroppedConnectionPage> {
+      Map<String, dynamic> _translations = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTranslations();
+  }
+
+  Future<void> _loadTranslations() async {
+    // Ganti path sesuai file JSON yang dibutuhkan
+    final trans = await context.loadTranslations('settings/sound&haptics');
+    setState(() {
+      _translations = trans;
+    });
+  }
   // Default states untuk semua toggle (dummy state)
   bool _playSound = true;
   bool _vibrateDevice = true;
@@ -42,7 +58,9 @@ class _DroppedConnectionPageState extends State<DroppedConnectionPage> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const SettingsAppBar(title: 'Dropped Connection'),
+      appBar: SettingsAppBar(title: _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'sound_and_haptics.dropped_connection.dropped_connection_text')
+                      : 'Dropped Connection'),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -52,7 +70,9 @@ class _DroppedConnectionPageState extends State<DroppedConnectionPage> {
               children: [
                 // Sound Section
                 Text(
-                  'Sound',
+                  _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'sound_and_haptics.sound_text')
+                      : 'Sound',
                   style: TextStyle(
                     fontSize: 14 * s * 0.9,
                     fontWeight: AppTypography.medium,
@@ -88,7 +108,9 @@ class _DroppedConnectionPageState extends State<DroppedConnectionPage> {
                       SizedBox(width: AppDesignSystem.space12 * s * 0.9),
                       Expanded(
                         child: Text(
-                          'Play a sound',
+                          _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'sound_and_haptics.play_a_sound_text')
+                      : 'Play a Sound',
                           style: TextStyle(
                             fontSize: 16 * s * 0.9,
                             fontWeight: AppTypography.regular,
@@ -115,7 +137,9 @@ class _DroppedConnectionPageState extends State<DroppedConnectionPage> {
                     horizontal: AppDesignSystem.space4 * s * 0.9,
                   ),
                   child: Text(
-                    'Adjust the sound played when the network connection is lost during recitation.',
+                    _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'sound_and_haptics.dropped_connection.dropped_connection_sound_desc')
+                      : 'Adjust the sound played when the network connection is lost during recitation.',
                     style: TextStyle(
                       fontSize: 14 * s * 0.9,
                       fontWeight: AppTypography.regular,
@@ -129,7 +153,9 @@ class _DroppedConnectionPageState extends State<DroppedConnectionPage> {
 
                 // Haptic Section
                 Text(
-                  'Haptic',
+                  _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'sound_and_haptics.haptic_text')
+                      : 'Haptic',
                   style: TextStyle(
                     fontSize: 14 * s * 0.9,
                     fontWeight: AppTypography.medium,
@@ -165,7 +191,9 @@ class _DroppedConnectionPageState extends State<DroppedConnectionPage> {
                       SizedBox(width: AppDesignSystem.space12 * s * 0.9),
                       Expanded(
                         child: Text(
-                          'Vibrate my device',
+                          _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'sound_and_haptics.vibrate_my_device_text')
+                      : 'Vibrate my Device',
                           style: TextStyle(
                             fontSize: 16 * s * 0.9,
                             fontWeight: AppTypography.regular,
@@ -192,7 +220,9 @@ class _DroppedConnectionPageState extends State<DroppedConnectionPage> {
                     horizontal: AppDesignSystem.space4 * s * 0.9,
                   ),
                   child: Text(
-                    'Adjust the haptic feedback when the network connection is lost during recitation.',
+                    _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'sound_and_haptics.dropped_connection.dropped_connection_stop_haptic_desc')
+                      : 'Adjust the haptic feedback when the network connection is lost during recitation.',
                     style: TextStyle(
                       fontSize: 14 * s * 0.9,
                       fontWeight: AppTypography.regular,

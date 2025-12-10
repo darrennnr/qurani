@@ -1,5 +1,6 @@
 // lib/screens/auth/login_page.dart
 
+import 'package:cuda_qurani/core/utils/language_helper.dart';
 import 'package:cuda_qurani/screens/main/auth/register/register_page.dart';
 import 'package:cuda_qurani/screens/main/home/screens/home_page.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +17,16 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  Map<String, dynamic> _translations = {};
+
+  Future<void> _loadTranslations() async {
+    // Ganti path sesuai file JSON yang dibutuhkan
+    final trans = await context.loadTranslations('auth');
+    setState(() {
+      _translations = trans;
+    });
+  }
+
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -30,6 +41,7 @@ class _LoginPageState extends State<LoginPage> {
     super.initState();
     // Warm up Google Sign In early to reduce chooser delay
     AuthService().warmUpGoogleSignIn();
+    _loadTranslations();
   }
 
   @override
@@ -63,23 +75,21 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     if (success && mounted) {
-      print('✅ LoginPage: Login SUCCESS! Navigating to HomePage...');
+      // print('✅ LoginPage: Login SUCCESS! Navigating to HomePage...');
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        AppComponentStyles.successSnackBar(
-          message: 'Login berhasil!',
-          duration: const Duration(seconds: 1),
-        ),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   AppComponentStyles.successSnackBar(
+      //     message: 'Login berhasil!',
+      //     duration: const Duration(seconds: 1),
+      //   ),
+      // );
 
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: (context) => const HomePage(),
-        ),
+        MaterialPageRoute(builder: (context) => const HomePage()),
         (route) => false,
       );
     } else if (!success && mounted) {
-      print('❌ LoginPage: Login FAILED - ${authProvider.errorMessage}');
+      // print('❌ LoginPage: Login FAILED - ${authProvider.errorMessage}');
       ScaffoldMessenger.of(context).showSnackBar(
         AppComponentStyles.errorSnackBar(
           message: authProvider.errorMessage ?? 'Login gagal',
@@ -92,12 +102,14 @@ class _LoginPageState extends State<LoginPage> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
     print('🔐 LoginPage: ===== STARTING Google Sign In =====');
-    
+
     setState(() {
       _isGoogleLoginLoading = true; // ✅ Only Google login loading
     });
 
-    print('🔐 LoginPage: Button clicked, calling authProvider.signInWithGoogle()...');
+    print(
+      '🔐 LoginPage: Button clicked, calling authProvider.signInWithGoogle()...',
+    );
 
     try {
       print('🔐 LoginPage: Waiting for Google Sign In to complete...');
@@ -105,7 +117,9 @@ class _LoginPageState extends State<LoginPage> {
       print('🔐 LoginPage: Google Sign In completed! Result: $success');
 
       if (!mounted) {
-        print('⚠️ LoginPage: Widget not mounted after sign in, skipping navigation');
+        print(
+          '⚠️ LoginPage: Widget not mounted after sign in, skipping navigation',
+        );
         return;
       }
 
@@ -126,7 +140,7 @@ class _LoginPageState extends State<LoginPage> {
         // Double check authentication status
         bool isAuth = authProvider.isAuthenticated;
         print('   - Initial isAuthenticated check: $isAuth');
-        
+
         if (!isAuth) {
           print('⚠️ isAuthenticated is false, waiting for state update...');
           // Wait a bit longer for auth state to update
@@ -153,9 +167,7 @@ class _LoginPageState extends State<LoginPage> {
 
         print('✅ LoginPage: Navigating to HomePage...');
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (context) => const HomePage(),
-          ),
+          MaterialPageRoute(builder: (context) => const HomePage()),
           (route) => false,
         );
 
@@ -165,10 +177,12 @@ class _LoginPageState extends State<LoginPage> {
         print('   - Success: $success');
         print('   - Is authenticated: ${authProvider.isAuthenticated}');
         print('   - Error: ${authProvider.errorMessage ?? "No error message"}');
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           AppComponentStyles.errorSnackBar(
-            message: authProvider.errorMessage ?? 'Google Sign In gagal. Silakan coba lagi.',
+            message:
+                authProvider.errorMessage ??
+                'Google Sign In gagal. Silakan coba lagi.',
           ),
         );
       }
@@ -177,35 +191,36 @@ class _LoginPageState extends State<LoginPage> {
       print('   - Error: $e');
       print('   - Type: ${e.runtimeType}');
       print('   - Stack trace: $stackTrace');
-      
+
       if (!mounted) {
         print('⚠️ LoginPage: Widget not mounted in catch block');
         return;
       }
-      
+
       setState(() {
         _isGoogleLoginLoading = false; // ✅ Stop Google login loading
       });
-      
+
       String errorMessage = 'Terjadi kesalahan saat login dengan Google';
-      
+
       // Handle specific errors
       final errorString = e.toString().toLowerCase();
-      if (errorString.contains('dibatalkan') || errorString.contains('cancelled')) {
+      if (errorString.contains('dibatalkan') ||
+          errorString.contains('cancelled')) {
         errorMessage = 'Login dibatalkan';
-      } else if (errorString.contains('network') || errorString.contains('connection')) {
+      } else if (errorString.contains('network') ||
+          errorString.contains('connection')) {
         errorMessage = 'Periksa koneksi internet Anda';
       } else if (errorString.contains('id token')) {
-        errorMessage = 'Gagal mendapatkan token. Pastikan konfigurasi Google Sign In sudah benar.';
+        errorMessage =
+            'Gagal mendapatkan token. Pastikan konfigurasi Google Sign In sudah benar.';
       } else if (errorString.contains('supabase')) {
         errorMessage = 'Gagal menghubungkan ke server. Silakan coba lagi.';
       }
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        AppComponentStyles.errorSnackBar(
-          message: errorMessage,
-        ),
-      );
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(AppComponentStyles.errorSnackBar(message: errorMessage));
     }
   }
 
@@ -270,7 +285,9 @@ class _LoginPageState extends State<LoginPage> {
             width: 140 * s,
             height: 140 * s,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppDesignSystem.radiusLarge * s),
+              borderRadius: BorderRadius.circular(
+                AppDesignSystem.radiusLarge * s,
+              ),
             ),
             child: Center(
               child: Text(
@@ -292,15 +309,22 @@ class _LoginPageState extends State<LoginPage> {
             errorBuilder: (context, error, stackTrace) {
               return Text(
                 'Qurani',
-                style: AppTypography.h2(context, color: AppColors.primary, weight: AppTypography.bold),
+                style: AppTypography.h2(
+                  context,
+                  color: AppColors.primary,
+                  weight: AppTypography.bold,
+                ),
               );
             },
           ),
           SizedBox(height: 4 * s),
           Text(
             'Hafidz',
-            style: AppTypography.label(context, color: AppColors.primary, weight: AppTypography.semiBold)
-                .copyWith(letterSpacing: 2 * s),
+            style: AppTypography.label(
+              context,
+              color: AppColors.primary,
+              weight: AppTypography.semiBold,
+            ).copyWith(letterSpacing: 2 * s),
           ),
         ],
       ),
@@ -313,7 +337,9 @@ class _LoginPageState extends State<LoginPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Login',
+          _translations.isNotEmpty
+              ? LanguageHelper.tr(_translations, 'login.login_text')
+              : 'Login',
           style: AppTypography.displaySmall(
             context,
             color: AppColors.textPrimary,
@@ -342,7 +368,9 @@ class _LoginPageState extends State<LoginPage> {
             ),
             decoration: AppComponentStyles.inputDecoration(
               context: context,
-              labelText: 'Email',
+              labelText: _translations.isNotEmpty
+                  ? LanguageHelper.tr(_translations, 'login.email_text')
+                  : 'Email',
               prefixIcon: Padding(
                 padding: EdgeInsets.only(
                   left: AppDesignSystem.space16 * s,
@@ -357,10 +385,19 @@ class _LoginPageState extends State<LoginPage> {
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Email tidak boleh kosong';
+                return _translations.isNotEmpty
+                    ? LanguageHelper.tr(_translations, 'login.null_email_text')
+                    : 'Email cannot be empty';
               }
-              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                return 'Format email tidak valid';
+              if (!RegExp(
+                r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+              ).hasMatch(value)) {
+                return _translations.isNotEmpty
+                    ? LanguageHelper.tr(
+                        _translations,
+                        'login.error_email_format_text',
+                      )
+                    : 'Invalid email format';
               }
               return null;
             },
@@ -379,7 +416,9 @@ class _LoginPageState extends State<LoginPage> {
             ),
             decoration: AppComponentStyles.inputDecoration(
               context: context,
-              labelText: 'Password',
+              labelText: _translations.isNotEmpty
+                  ? LanguageHelper.tr(_translations, 'login.password_text')
+                  : 'Password',
               prefixIcon: Padding(
                 padding: EdgeInsets.only(
                   left: AppDesignSystem.space16 * s,
@@ -408,10 +447,20 @@ class _LoginPageState extends State<LoginPage> {
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Password tidak boleh kosong';
+                return _translations.isNotEmpty
+                    ? LanguageHelper.tr(
+                        _translations,
+                        'login.null_password_text',
+                      )
+                    : 'Password cannot be empty';
               }
               if (value.length < 6) {
-                return 'Password minimal 6 karakter';
+                return _translations.isNotEmpty
+                    ? LanguageHelper.tr(
+                        _translations,
+                        'login.error_password_length_text',
+                      )
+                    : 'Password must be at least 6 characters';
               }
               return null;
             },
@@ -450,7 +499,9 @@ class _LoginPageState extends State<LoginPage> {
                 },
                 activeColor: AppColors.primary,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppDesignSystem.radiusXSmall * s),
+                  borderRadius: BorderRadius.circular(
+                    AppDesignSystem.radiusXSmall * s,
+                  ),
                 ),
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 visualDensity: VisualDensity.compact,
@@ -458,7 +509,9 @@ class _LoginPageState extends State<LoginPage> {
             ),
             SizedBox(width: AppDesignSystem.space8 * s),
             Text(
-              'Ingat saya',
+              _translations.isNotEmpty
+                  ? LanguageHelper.tr(_translations, 'login.remember_me_text')
+                  : 'Remember me',
               style: AppTypography.body(
                 context,
                 color: AppColors.textSecondary,
@@ -467,7 +520,9 @@ class _LoginPageState extends State<LoginPage> {
           ],
         ),
         AppTextButton(
-          text: 'Lupa Password?',
+          text: _translations.isNotEmpty
+              ? LanguageHelper.tr(_translations, 'login.forgot_password_text')
+              : 'Forgot Password?',
           onPressed: () {
             // Handle forgot password
           },
@@ -481,25 +536,29 @@ class _LoginPageState extends State<LoginPage> {
   Widget _buildLoginButton(BuildContext context) {
     // ✅ Disable only when email login is loading
     final isDisabled = _isEmailLoginLoading;
-    
+
     return Container(
       height: AppDesignSystem.scale(context, AppDesignSystem.buttonHeightLarge),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(
-          AppDesignSystem.radiusMedium * AppDesignSystem.getScaleFactor(context),
+          AppDesignSystem.radiusMedium *
+              AppDesignSystem.getScaleFactor(context),
         ),
-        boxShadow: isDisabled ? [] : [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.25),
-            blurRadius: AppDesignSystem.scale(context, 12),
-            offset: Offset(0, AppDesignSystem.scale(context, 4)),
-          ),
-        ],
+        boxShadow: isDisabled
+            ? []
+            : [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.25),
+                  blurRadius: AppDesignSystem.scale(context, 12),
+                  offset: Offset(0, AppDesignSystem.scale(context, 4)),
+                ),
+              ],
       ),
       child: ElevatedButton(
         onPressed: isDisabled ? null : _handleLogin,
         style: AppComponentStyles.primaryButton(context),
-        child: _isEmailLoginLoading // ✅ Only show loading for email login
+        child:
+            _isEmailLoginLoading // ✅ Only show loading for email login
             ? SizedBox(
                 height: AppDesignSystem.scale(context, 20),
                 width: AppDesignSystem.scale(context, 20),
@@ -509,7 +568,9 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               )
             : Text(
-                'Masuk',
+                _translations.isNotEmpty
+                    ? LanguageHelper.tr(_translations, 'login.login_text')
+                    : 'Login',
                 style: AppTypography.label(
                   context,
                   color: Colors.white,
@@ -525,17 +586,16 @@ class _LoginPageState extends State<LoginPage> {
     return Row(
       children: [
         Expanded(
-          child: AppDivider(
-            color: AppColors.divider,
-            thickness: 1 * s,
-          ),
+          child: AppDivider(color: AppColors.divider, thickness: 1 * s),
         ),
         Padding(
           padding: EdgeInsets.symmetric(
             horizontal: AppDesignSystem.space16 * s,
           ),
           child: Text(
-            'atau',
+            _translations.isNotEmpty
+                ? LanguageHelper.tr(_translations, 'login.or_text')
+                : 'Or',
             style: AppTypography.caption(
               context,
               color: AppColors.textTertiary,
@@ -543,10 +603,7 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
         Expanded(
-          child: AppDivider(
-            color: AppColors.divider,
-            thickness: 1 * s,
-          ),
+          child: AppDivider(color: AppColors.divider, thickness: 1 * s),
         ),
       ],
     );
@@ -569,7 +626,8 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ),
-        child: _isGoogleLoginLoading // ✅ Only show loading for Google login
+        child:
+            _isGoogleLoginLoading // ✅ Only show loading for Google login
             ? SizedBox(
                 height: AppDesignSystem.scale(context, 20),
                 width: AppDesignSystem.scale(context, 20),
@@ -595,7 +653,12 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   SizedBox(width: 12 * s),
                   Text(
-                    'Masuk dengan Google',
+                    _translations.isNotEmpty
+                        ? LanguageHelper.tr(
+                            _translations,
+                            'login.google_sign_in_text',
+                          )
+                        : 'Login with Google',
                     style: AppTypography.label(
                       context,
                       color: AppColors.textPrimary,
@@ -616,16 +679,18 @@ class _LoginPageState extends State<LoginPage> {
       textBaseline: TextBaseline.alphabetic,
       children: [
         Text(
-          'Belum punya akun? ',
+          _translations.isNotEmpty
+              ? LanguageHelper.tr(_translations, 'login.null_account_text')
+              : 'Don\'t have an account?',
           style: AppTypography.body(context, color: AppColors.textSecondary),
         ),
         AppTextButton(
-          text: 'Daftar Sekarang',
+          text: _translations.isNotEmpty
+              ? LanguageHelper.tr(_translations, 'login.sign_up_now_text')
+              : 'Sign up now',
           onPressed: () {
             Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const RegisterPage(),
-              ),
+              MaterialPageRoute(builder: (context) => const RegisterPage()),
             );
           },
           color: AppColors.primary,

@@ -1,13 +1,13 @@
 {
-    "surah_list": {
-        "search_text": "Search surah, juz, or page...",
-        "surah_text": "Surah",
-        "juz_text": "Juz",
-        "page_text": "Page",
-        "ayah_text": "Ayah",
-        "makkah_text": "Makkah",
-        "madinah_text": "Madinah",
-        "null_result_text": "No Results Found",
-        "null_result_desc": "Try searching with different keywords"
-    }
+  "surah_list": {
+    "search_text": "ابحث عن سورة أو جزء أو صفحة...",
+    "surah_text": "سورة",
+    "juz_text": "جزء",
+    "page_text": "صفحة",
+    "ayah_text": "آية",
+    "makkah_text": "مكة",
+    "madinah_text": "المدينة",
+    "null_result_text": "لا توجد نتائج",
+    "null_result_desc": "حاول البحث باستخدام كلمات مفتاحية مختلفة"
+  }
 }

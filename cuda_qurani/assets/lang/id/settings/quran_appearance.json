@@ -24,9 +24,10 @@
     "show_tajweed_colors_text": "Tampilkan Warna Tajwid",
     "show_tajweed_colors_desc": "Warnai huruf dengan warna berbeda sesuai aturan tajwid untuk memudahkan mengetahui aturan yang harus diterapkan saat membaca.",
     "mistakes_text": "Kesalahan",
-    "Highlight_mistake_history_text": "Sorot Riwayat Kesalahan",
-    "Highlight_mistake_history_desc": "Sorot kesalahan yang sering Anda lakukan berdasarkan seberapa sering kesalahan tersebut terjadi.",
+    "highlight_mistake_history_text": "Sorot Riwayat Kesalahan",
+    "highlight_mistake_history_desc": "Sorot kesalahan yang sering Anda lakukan berdasarkan seberapa sering kesalahan tersebut terjadi.",
     "similar_phrases_text": "Frasa Serupa",
+    "color_similar_phrases_text":"Warnai frasa serupa",
     "similar_phrases_desc": "Warnai frasa serupa (Mutasyabihat) dengan warna berbeda untuk mengenali pola dan menghindari tertukar dengan ayat lain."
   }
 }

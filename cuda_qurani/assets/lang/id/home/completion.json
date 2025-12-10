@@ -1,18 +1,18 @@
 {
-    "completion": {
-        "completeion_banner": "Complete the Quran",
-        "khatm_text": "(khatm)",
-        "total_pages_text": "Total Pages",
-        "Remaining_pages_textq": "Remaining Pages",
-        "completions_text": "Completions",
-        "continue_reading_text": "Continue Reading",
-        "page_text": "Page",
-        "search_text": "Search by surah",
-        "complete_text": "Complete",
-        "incomplete_text": "Incomplete",
-        "started_text": "Started",
-        "completion_by_chapter_text": "Completion by Chapter",
-        "remaining_text": "Remaining",
-        "none_remaining_text": "None Remaining"
-    }
+  "completion": {
+    "completeion_banner": "Selesaikan Al-Qur’an",
+    "khatm_text": "(khatam)",
+    "total_pages_text": "Total Halaman",
+    "Remaining_pages_textq": "Sisa Halaman",
+    "completions_text": "Penyelesaian",
+    "continue_reading_text": "Lanjutkan Membaca",
+    "page_text": "Halaman",
+    "search_text": "Cari berdasarkan surah",
+    "complete_text": "Selesai",
+    "incomplete_text": "Belum Selesai",
+    "started_text": "Dimulai",
+    "completion_by_chapter_text": "Penyelesaian per Surah",
+    "remaining_text": "Sisa",
+    "none_remaining_text": "Tidak Ada Sisa"
+  }
 }

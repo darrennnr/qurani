@@ -1,4 +1,5 @@
 // lib/screens/main/home/screens/premium_offer_page.dart
+import 'package:cuda_qurani/core/utils/language_helper.dart';
 import 'package:cuda_qurani/screens/main/home/screens/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -16,6 +17,20 @@ class PremiumOfferPage extends StatefulWidget {
 
 class _PremiumOfferPageState extends State<PremiumOfferPage> {
   final ScrollController _scrollController = ScrollController();
+  Map<String, dynamic> _translations = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTranslations();
+  }
+
+  Future<void> _loadTranslations() async {
+    final trans = await context.loadTranslations('home/premium');
+    setState(() {
+      _translations = trans;
+    });
+  }
 
   @override
   void dispose() {
@@ -23,12 +38,18 @@ class _PremiumOfferPageState extends State<PremiumOfferPage> {
     super.dispose();
   }
 
+  String _t(String key) {
+    return _translations.isNotEmpty
+        ? LanguageHelper.tr(_translations, key)
+        : key.split('.').last;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: ProfileAppBar(
-        title: 'Premium',
+        title: _t('premium_offer.title'),
         showBackButton: true,
       ),
       body: Column(
@@ -41,7 +62,11 @@ class _PremiumOfferPageState extends State<PremiumOfferPage> {
                 children: [
                   _buildGradientHeader(context),
                   _buildComparisonTable(context),
-                  SizedBox(height: AppDesignSystem.space80 * AppDesignSystem.getScaleFactor(context)),
+                  SizedBox(
+                    height:
+                        AppDesignSystem.space80 *
+                        AppDesignSystem.getScaleFactor(context),
+                  ),
                 ],
               ),
             ),
@@ -55,7 +80,7 @@ class _PremiumOfferPageState extends State<PremiumOfferPage> {
   // ==================== GRADIENT HEADER ====================
   Widget _buildGradientHeader(BuildContext context) {
     final s = AppDesignSystem.getScaleFactor(context);
-    
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -85,15 +110,15 @@ class _PremiumOfferPageState extends State<PremiumOfferPage> {
             color: Colors.white,
             fit: BoxFit.contain,
           ),
-          
+
           SizedBox(height: AppDesignSystem.space12 * s),
-          
+
           // Title
           Row(
             children: [
               Expanded(
                 child: Text(
-                  'UPGRADE TO PREMIUM ⭐\nMEMORIZE MORE',
+                  _t('premium_offer.upgrade_title'),
                   style: TextStyle(
                     fontSize: 19 * s,
                     fontWeight: AppTypography.bold,
@@ -113,7 +138,7 @@ class _PremiumOfferPageState extends State<PremiumOfferPage> {
   // ==================== COMPARISON TABLE ====================
   Widget _buildComparisonTable(BuildContext context) {
     final s = AppDesignSystem.getScaleFactor(context);
-    
+
     return Container(
       margin: EdgeInsets.symmetric(
         horizontal: AppDesignSystem.space16 * s,
@@ -134,103 +159,245 @@ class _PremiumOfferPageState extends State<PremiumOfferPage> {
         children: [
           // Header Row
           _buildTableHeader(context),
-          
+
           // Sections
           _buildSection(
             context,
-            title: 'Memorization',
+            title: _t('premium_offer.sections.memorization'),
             features: [
-              _FeatureRow('Hide Verses', checkFree: true, checkPremium: true),
-              _FeatureRow('Mistake Detection', checkFree: false, checkPremium: true),
-              _FeatureRow('Tashkeel Mistakes', checkFree: false, checkPremium: true),
-              _FeatureRow('Tajweed Mistakes', checkFree: false, checkPremium: true),
-              _FeatureRow('Verse Peeking', checkFree: false, checkPremium: true),
-              _FeatureRow('Mistake History', checkFree: false, checkPremium: true),
-              _FeatureRow('Mistake Frequency', checkFree: false, checkPremium: true),
-              _FeatureRow('Mistake Playback', checkFree: false, checkPremium: true),
+              _FeatureRow(
+                _t('premium_offer.features.hide_verses'),
+                checkFree: true,
+                checkPremium: true,
+              ),
+              _FeatureRow(
+                _t('premium_offer.features.mistake_detection'),
+                checkFree: false,
+                checkPremium: true,
+              ),
+              _FeatureRow(
+                _t('premium_offer.features.tashkeel_mistakes'),
+                checkFree: false,
+                checkPremium: true,
+              ),
+              _FeatureRow(
+                _t('premium_offer.features.tajweed_mistakes'),
+                checkFree: false,
+                checkPremium: true,
+              ),
+              _FeatureRow(
+                _t('premium_offer.features.verse_peeking'),
+                checkFree: false,
+                checkPremium: true,
+              ),
+              _FeatureRow(
+                _t('premium_offer.features.mistake_history'),
+                checkFree: false,
+                checkPremium: true,
+              ),
+              _FeatureRow(
+                _t('premium_offer.features.mistake_frequency'),
+                checkFree: false,
+                checkPremium: true,
+              ),
+              _FeatureRow(
+                _t('premium_offer.features.mistake_playback'),
+                checkFree: false,
+                checkPremium: true,
+              ),
             ],
           ),
-          
+
           _buildSection(
             context,
-            title: 'Recitation',
+            title: _t('premium_offer.sections.recitation'),
             features: [
-              _FeatureRow('Follow Along', textFree: 'Unlimited', textPremium: 'Unlimited'),
-              _FeatureRow('Session Audio', textFree: 'Last Session', textPremium: 'Unlimited'),
-              _FeatureRow('Share Audio', textFree: 'Last Session', textPremium: 'Unlimited'),
-              _FeatureRow('Session Pausing', checkFree: false, checkPremium: true),
+              _FeatureRow(
+                _t('premium_offer.features.follow_along'),
+                textFree: _t('premium_offer.features.values.unlimited'),
+                textPremium: _t('premium_offer.features.values.unlimited'),
+              ),
+              _FeatureRow(
+                _t('premium_offer.features.session_audio'),
+                textFree: _t('premium_offer.features.values.last_session'),
+                textPremium: _t('premium_offer.features.values.unlimited'),
+              ),
+              _FeatureRow(
+                _t('premium_offer.features.share_audio'),
+                textFree: _t('premium_offer.features.values.last_session'),
+                textPremium: _t('premium_offer.features.values.unlimited'),
+              ),
+              _FeatureRow(
+                _t('premium_offer.features.session_pausing'),
+                checkFree: false,
+                checkPremium: true,
+              ),
             ],
           ),
-          
+
           _buildSection(
             context,
-            title: 'Progress',
+            title: _t('premium_offer.sections.progress'),
             features: [
-              _FeatureRow('Streaks', checkFree: true, checkPremium: true),
-              _FeatureRow('Session History', textFree: 'Last Session', textPremium: 'Unlimited'),
-              _FeatureRow('Analytics', textFree: 'Basic', textPremium: 'Advanced'),
-              _FeatureRow('Memorization Progress', textFree: 'Completion', textPremium: 'Mistakes\nOverview'),
-              _FeatureRow('Add External Sessions', checkFree: false, checkPremium: true),
+              _FeatureRow(
+                _t('premium_offer.features.streaks'),
+                checkFree: true,
+                checkPremium: true,
+              ),
+              _FeatureRow(
+                _t('premium_offer.features.session_history'),
+                textFree: _t('premium_offer.features.values.last_session'),
+                textPremium: _t('premium_offer.features.values.unlimited'),
+              ),
+              _FeatureRow(
+                _t('premium_offer.features.analytics'),
+                textFree: _t('premium_offer.features.values.basic'),
+                textPremium: _t('premium_offer.features.values.advanced'),
+              ),
+              _FeatureRow(
+                _t('premium_offer.features.memorization_progress'),
+                textFree: _t('premium_offer.features.values.completion'),
+                textPremium: _t(
+                  'premium_offer.features.values.mistakes_overview',
+                ),
+              ),
+              _FeatureRow(
+                _t('premium_offer.features.add_external_sessions'),
+                checkFree: false,
+                checkPremium: true,
+              ),
             ],
           ),
-          
+
           _buildSection(
             context,
-            title: 'Challenges',
+            title: _t('premium_offer.sections.challenges'),
             features: [
-              _FeatureRow('Goals', textFree: '1', textPremium: 'Unlimited'),
-              _FeatureRow('Badges', textFree: 'Earn', textPremium: 'Discover & Earn'),
-              _FeatureRow('Notifications', checkFree: false, checkPremium: true),
+              _FeatureRow(
+                _t('premium_offer.features.goals'),
+                textFree: _t('premium_offer.features.values.value_1'),
+                textPremium: _t('premium_offer.features.values.unlimited'),
+              ),
+              _FeatureRow(
+                _t('premium_offer.features.badges'),
+                textFree: _t('premium_offer.features.values.earn'),
+                textPremium: _t('premium_offer.features.values.discover_earn'),
+              ),
+              _FeatureRow(
+                _t('premium_offer.features.notifications'),
+                checkFree: false,
+                checkPremium: true,
+              ),
             ],
           ),
-          
+
           _buildSection(
             context,
-            title: 'Audio',
+            title: _t('premium_offer.sections.audio'),
             features: [
-              _FeatureRow('Audio Follow Along', textFree: 'Ayah by Ayah', textPremium: 'Word by Word'),
-              _FeatureRow('Various Recitations', checkFree: true, checkPremium: true),
-              _FeatureRow('Repeat Functionality', checkFree: true, checkPremium: true),
-              _FeatureRow('Custom Range', checkFree: true, checkPremium: true),
+              _FeatureRow(
+                _t('premium_offer.features.audio_follow_along'),
+                textFree: _t('premium_offer.features.values.ayah_ayah'),
+                textPremium: _t('premium_offer.features.values.word_word'),
+              ),
+              _FeatureRow(
+                _t('premium_offer.features.various_recitations'),
+                checkFree: true,
+                checkPremium: true,
+              ),
+              _FeatureRow(
+                _t('premium_offer.features.repeat_functionality'),
+                checkFree: true,
+                checkPremium: true,
+              ),
+              _FeatureRow(
+                _t('premium_offer.features.custom_range'),
+                checkFree: true,
+                checkPremium: true,
+              ),
             ],
           ),
-          
+
           _buildSection(
             context,
-            title: 'Search',
+            title: _t('premium_offer.sections.search'),
             features: [
-              _FeatureRow('Voice', checkFree: true, checkPremium: true),
-              _FeatureRow('Text', checkFree: true, checkPremium: true),
-              _FeatureRow('Recent Search History', textFree: '3', textPremium: '15'),
+              _FeatureRow(
+                _t('premium_offer.features.voice_search'),
+                checkFree: true,
+                checkPremium: true,
+              ),
+              _FeatureRow(
+                _t('premium_offer.features.text_search'),
+                checkFree: true,
+                checkPremium: true,
+              ),
+              _FeatureRow(
+                _t('premium_offer.features.recent_search_history'),
+                textFree: _t('premium_offer.features.values.value_3'),
+                textPremium: _t('premium_offer.features.values.value_15'),
+              ),
             ],
           ),
-          
+
           _buildSection(
             context,
-            title: 'Mushaf',
+            title: _t('premium_offer.sections.mushaf'),
             features: [
-              _FeatureRow('Indopak / Madani', checkFree: true, checkPremium: true),
-              _FeatureRow('Translations /\nTransliteration', checkFree: true, checkPremium: true),
-              _FeatureRow('Tafsir', checkFree: true, checkPremium: true),
-              _FeatureRow('Bookmarks', checkFree: true, checkPremium: true),
+              _FeatureRow(
+                _t('premium_offer.features.mushaf_types'),
+                checkFree: true,
+                checkPremium: true,
+              ),
+              _FeatureRow(
+                _t('premium_offer.features.translations_transliteration'),
+                checkFree: true,
+                checkPremium: true,
+              ),
+              _FeatureRow(
+                _t('premium_offer.features.tafsir'),
+                checkFree: true,
+                checkPremium: true,
+              ),
+              _FeatureRow(
+                _t('premium_offer.features.bookmarks'),
+                checkFree: true,
+                checkPremium: true,
+              ),
             ],
           ),
-          
+
           _buildSection(
             context,
-            title: 'Devices',
+            title: _t('premium_offer.sections.devices'),
             features: [
-              _FeatureRow('Devices', textFree: 'Unlimited', textPremium: 'Unlimited'),
-              _FeatureRow('Cross Device Syncing', checkFree: true, checkPremium: true),
-              _FeatureRow('Language Support', checkFree: true, checkPremium: true),
+              _FeatureRow(
+                _t('premium_offer.features.devices'),
+                textFree: _t('premium_offer.features.values.unlimited'),
+                textPremium: _t('premium_offer.features.values.unlimited'),
+              ),
+              _FeatureRow(
+                _t('premium_offer.features.cross_device_sync'),
+                checkFree: true,
+                checkPremium: true,
+              ),
+              _FeatureRow(
+                _t('premium_offer.features.language_support'),
+                checkFree: true,
+                checkPremium: true,
+              ),
             ],
           ),
-          
+
           _buildSection(
             context,
-            title: 'Advertisement',
+            title: _t('premium_offer.sections.advertisement'),
             features: [
-              _FeatureRow('Advertisement', textFree: 'No ads!', textPremium: 'No ads!'),
+              _FeatureRow(
+                _t('premium_offer.features.advertisement'),
+                textFree: _t('premium_offer.features.values.no_ads'),
+                textPremium: _t('premium_offer.features.values.no_ads'),
+              ),
             ],
             isLast: true,
           ),
@@ -242,7 +409,7 @@ class _PremiumOfferPageState extends State<PremiumOfferPage> {
   // ==================== TABLE HEADER ====================
   Widget _buildTableHeader(BuildContext context) {
     final s = AppDesignSystem.getScaleFactor(context);
-    
+
     return Container(
       padding: EdgeInsets.fromLTRB(
         AppDesignSystem.space16 * s,
@@ -263,7 +430,7 @@ class _PremiumOfferPageState extends State<PremiumOfferPage> {
           Expanded(
             flex: 5,
             child: Text(
-              'Compare Premium\nFeatures',
+              _t('premium_offer.compare_premium_features_text'),
               style: TextStyle(
                 fontSize: 14 * s,
                 fontWeight: AppTypography.medium,
@@ -276,7 +443,7 @@ class _PremiumOfferPageState extends State<PremiumOfferPage> {
             flex: 2,
             child: Center(
               child: Text(
-                'FREE',
+                _t('premium_offer.plans.free_text'),
                 style: TextStyle(
                   fontSize: 12 * s,
                   fontWeight: AppTypography.bold,
@@ -296,17 +463,16 @@ class _PremiumOfferPageState extends State<PremiumOfferPage> {
                 ),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [
-                      const Color(0xFFF39C12),
-                      const Color(0xFFF5B041),
-                    ],
+                    colors: [const Color(0xFFF39C12), const Color(0xFFF5B041)],
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                   ),
-                  borderRadius: BorderRadius.circular(AppDesignSystem.radiusRound * s),
+                  borderRadius: BorderRadius.circular(
+                    AppDesignSystem.radiusRound * s,
+                  ),
                 ),
                 child: Text(
-                  'PREMIUM',
+                  _t('premium_offer.plans.premium_text'),
                   style: TextStyle(
                     fontSize: 9 * s,
                     fontWeight: AppTypography.bold,
@@ -331,7 +497,7 @@ class _PremiumOfferPageState extends State<PremiumOfferPage> {
     bool isLast = false,
   }) {
     final s = AppDesignSystem.getScaleFactor(context);
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -362,13 +528,13 @@ class _PremiumOfferPageState extends State<PremiumOfferPage> {
             ),
           ),
         ),
-        
+
         // Features
         ...features.asMap().entries.map((entry) {
           final index = entry.key;
           final feature = entry.value;
           final isLastFeature = index == features.length - 1;
-          
+
           return _buildFeatureRow(
             context,
             feature: feature,
@@ -386,7 +552,7 @@ class _PremiumOfferPageState extends State<PremiumOfferPage> {
     required bool showDivider,
   }) {
     final s = AppDesignSystem.getScaleFactor(context);
-    
+
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: AppDesignSystem.space16 * s,
@@ -417,7 +583,7 @@ class _PremiumOfferPageState extends State<PremiumOfferPage> {
               ),
             ),
           ),
-          
+
           // Free Column
           Expanded(
             flex: 2,
@@ -429,7 +595,7 @@ class _PremiumOfferPageState extends State<PremiumOfferPage> {
               ),
             ),
           ),
-          
+
           // Premium Column
           Expanded(
             flex: 2,
@@ -453,7 +619,7 @@ class _PremiumOfferPageState extends State<PremiumOfferPage> {
     bool hasCheck = false,
   }) {
     final s = AppDesignSystem.getScaleFactor(context);
-    
+
     if (hasCheck) {
       return Container(
         width: 24 * s,
@@ -462,14 +628,10 @@ class _PremiumOfferPageState extends State<PremiumOfferPage> {
           color: const Color(0xFF27AE60).withOpacity(0.15),
           shape: BoxShape.circle,
         ),
-        child: Icon(
-          Icons.check,
-          color: const Color(0xFF27AE60),
-          size: 16 * s,
-        ),
+        child: Icon(Icons.check, color: const Color(0xFF27AE60), size: 16 * s),
       );
     }
-    
+
     if (text != null) {
       return Text(
         text,
@@ -482,7 +644,7 @@ class _PremiumOfferPageState extends State<PremiumOfferPage> {
         textAlign: TextAlign.center,
       );
     }
-    
+
     // Not available - show empty gray circle container only
     return Container(
       width: 24 * s,
@@ -497,7 +659,7 @@ class _PremiumOfferPageState extends State<PremiumOfferPage> {
   // ==================== SUBSCRIBE BUTTON ====================
   Widget _buildSubscribeButton(BuildContext context) {
     final s = AppDesignSystem.getScaleFactor(context);
-    
+
     return Container(
       padding: EdgeInsets.fromLTRB(
         AppDesignSystem.space16 * s,
@@ -527,14 +689,13 @@ class _PremiumOfferPageState extends State<PremiumOfferPage> {
           height: 52 * s,
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [
-                const Color(0xFF3FCCB8),
-                const Color(0xFF52E8D4),
-              ],
+              colors: [const Color(0xFF3FCCB8), const Color(0xFF52E8D4)],
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
             ),
-            borderRadius: BorderRadius.circular(AppDesignSystem.radiusXXLarge * s),
+            borderRadius: BorderRadius.circular(
+              AppDesignSystem.radiusXXLarge * s,
+            ),
             boxShadow: [
               BoxShadow(
                 color: const Color(0xFF3FCCB8).withOpacity(0.3),
@@ -550,12 +711,14 @@ class _PremiumOfferPageState extends State<PremiumOfferPage> {
                 AppHaptics.medium();
                 _showSubscriptionDialog(context);
               },
-              borderRadius: BorderRadius.circular(AppDesignSystem.radiusXXLarge * s),
+              borderRadius: BorderRadius.circular(
+                AppDesignSystem.radiusXXLarge * s,
+              ),
               splashColor: Colors.white.withOpacity(0.2),
               highlightColor: Colors.white.withOpacity(0.1),
               child: Center(
                 child: Text(
-                  'SUBSCRIBE',
+                  _t('premium_offer.plans.subscribe_button'),
                   style: TextStyle(
                     fontSize: 16 * s,
                     fontWeight: AppTypography.bold,
@@ -575,13 +738,13 @@ class _PremiumOfferPageState extends State<PremiumOfferPage> {
   void _showSubscriptionDialog(BuildContext context) {
     final s = AppDesignSystem.getScaleFactor(context);
     final premium = context.read<PremiumProvider>();
-    
+
     // If already premium, show success message
     if (premium.isPremium) {
       _showAlreadyPremiumDialog(context, s);
       return;
     }
-    
+
     // Show subscription info dialog
     showDialog(
       context: context,
@@ -617,55 +780,70 @@ class _PremiumOfferPageState extends State<PremiumOfferPage> {
                   size: 32 * s,
                 ),
               ),
-              
+
               AppMargin.gap(context),
-              
+
               // Title
               Text(
-                'Premium Subscription',
-                style: AppTypography.h3(
-                  context,
-                  weight: AppTypography.bold,
-                ),
+                _t('premium_offer.plans.dialog_title'),
+                style: AppTypography.h3(context, weight: AppTypography.bold),
                 textAlign: TextAlign.center,
               ),
-              
+
               AppMargin.gapSmall(context),
-              
+
               // Message
               Text(
-                'Payment integration is coming soon! In the meantime, contact support to upgrade your account.',
+                _t('premium_offer.plans.dialog_message'),
                 style: AppTypography.body(
                   context,
                   color: AppColors.textSecondary,
                 ),
                 textAlign: TextAlign.center,
               ),
-              
+
               AppMargin.gap(context),
-              
+
               // Benefits preview
               Container(
                 padding: EdgeInsets.all(12 * s),
                 decoration: BoxDecoration(
                   color: AppColors.surfaceContainerLowest,
-                  borderRadius: BorderRadius.circular(AppDesignSystem.radiusMedium * s),
+                  borderRadius: BorderRadius.circular(
+                    AppDesignSystem.radiusMedium * s,
+                  ),
                 ),
                 child: Column(
                   children: [
-                    _buildBenefitItem(context, s, 'Mistake Detection'),
-                    _buildBenefitItem(context, s, 'Tajweed Analysis'),
-                    _buildBenefitItem(context, s, 'Advanced Analytics'),
-                    _buildBenefitItem(context, s, 'Unlimited Goals'),
+                    _buildBenefitItem(
+                      context,
+                      s,
+                      _t('premium_offer.features.mistake_detection'),
+                    ),
+                    _buildBenefitItem(
+                      context,
+                      s,
+                      _t('premium_offer.features.tajweed_mistakes'),
+                    ),
+                    _buildBenefitItem(
+                      context,
+                      s,
+                      _t('premium_offer.features.analytics'),
+                    ),
+                    _buildBenefitItem(
+                      context,
+                      s,
+                      _t('premium_offer.features.goals'),
+                    ),
                   ],
                 ),
               ),
-              
+
               AppMargin.gapLarge(context),
-              
+
               // Button
               AppButton(
-                text: 'Got it',
+                text: _t('premium_offer.plans.dialog_close'),
                 onPressed: () => Navigator.pop(context),
                 fullWidth: true,
               ),
@@ -675,7 +853,7 @@ class _PremiumOfferPageState extends State<PremiumOfferPage> {
       ),
     );
   }
-  
+
   Widget _buildBenefitItem(BuildContext context, double s, String text) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 4 * s),
@@ -687,18 +865,17 @@ class _PremiumOfferPageState extends State<PremiumOfferPage> {
             size: 16 * s,
           ),
           SizedBox(width: 8 * s),
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: 13 * s,
-              color: AppColors.textPrimary,
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(fontSize: 13 * s, color: AppColors.textPrimary),
             ),
           ),
         ],
       ),
     );
   }
-  
+
   void _showAlreadyPremiumDialog(BuildContext context, double s) {
     showDialog(
       context: context,
@@ -734,7 +911,10 @@ class _PremiumOfferPageState extends State<PremiumOfferPage> {
               AppMargin.gapSmall(context),
               Text(
                 'You already have access to all premium features. Enjoy!',
-                style: AppTypography.body(context, color: AppColors.textSecondary),
+                style: AppTypography.body(
+                  context,
+                  color: AppColors.textSecondary,
+                ),
                 textAlign: TextAlign.center,
               ),
               AppMargin.gapLarge(context),
