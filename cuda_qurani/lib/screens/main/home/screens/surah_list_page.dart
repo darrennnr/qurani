@@ -308,7 +308,7 @@ class _SurahListPageState extends State<SurahListPage> {
                   hintText: _translations.isNotEmpty
                       ? LanguageHelper.tr(
                           _translations,
-                          'surah_list.search_hint',
+                          'surah_list.search_text',
                         )
                       : 'Search surah, juz, or page...',
                   hintStyle: AppTypography.body(
@@ -575,7 +575,7 @@ class _SurahListPageState extends State<SurahListPage> {
           title: name,
           subtitle: '$type · $ayat $ayahText',
           trailing: Text(
-            '${LanguageHelper.tr(_translations, "surah_list.surah_text")}${id.toString().padLeft(3, '0')}',
+            'surah${id.toString().padLeft(3, '0')}',
             style: AppTypography.surahName(context),
           ),
         );
