@@ -3,6 +3,7 @@ import 'package:cuda_qurani/services/local_database_service.dart';
 import 'package:cuda_qurani/services/reciter_database_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'providers/recitation_provider.dart';
 import 'screens/main/home/services/juz_service.dart';
@@ -37,6 +38,7 @@ void main() async {
 
   runApp(const MainApp());
 }
+
 Future<void> _initializeLanguageService() async {
   try {
     final languageProvider = LanguageProvider();
@@ -67,7 +69,6 @@ Future<void> _initializeDatabases() async {
     _isDatabaseInitialized = true;
   } catch (e, stackTrace) {}
 }
-
 class MainApp extends StatelessWidget {
   const MainApp({super.key});
 
@@ -86,15 +87,55 @@ class MainApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(create: (_) => RecitationProvider(), lazy: true),
       ],
-      child: MaterialApp(
-        title: 'Qurani Hafidz',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          primarySwatch: Colors.green,
-          primaryColor: const Color(0xFF247C64),
-          scaffoldBackgroundColor: const Color(0xFFFFFFFF),
-        ),
-        home: const InitialSplashScreen(),
+      child: Consumer<LanguageProvider>(
+        builder: (context, languageProvider, child) {
+          final isRTL = languageProvider.currentLanguageCode == 'ar';
+
+          return MaterialApp(
+            title: 'Qurani Hafidz',
+            debugShowCheckedModeBanner: false,
+            
+            locale: Locale(languageProvider.currentLanguageCode),
+            
+            supportedLocales: const [
+              Locale('en'), // English
+              Locale('id'), // Indonesian
+              Locale('ar'), // Arabic - RTL
+            ],
+            
+            // ✅ Tambahkan localization delegates
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            
+            localeResolutionCallback: (locale, supportedLocales) {
+              if (locale != null) {
+                for (var supportedLocale in supportedLocales) {
+                  if (supportedLocale.languageCode == locale.languageCode) {
+                    return supportedLocale;
+                  }
+                }
+              }
+              return supportedLocales.first;
+            },
+            
+            builder: (context, child) {
+              return Directionality(
+                textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
+                child: child!,
+              );
+            },
+            
+            theme: ThemeData(
+              primarySwatch: Colors.green,
+              primaryColor: const Color(0xFF247C64),
+              scaffoldBackgroundColor: const Color(0xFFFFFFFF),
+            ),
+            home: const InitialSplashScreen(),
+          );
+        },
       ),
     );
   }
