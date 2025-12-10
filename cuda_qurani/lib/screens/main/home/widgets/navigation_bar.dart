@@ -1,5 +1,6 @@
 // lib/screens/main/home/widgets/navigation_bar.dart
 
+import 'package:cuda_qurani/core/utils/language_helper.dart';
 import 'package:cuda_qurani/screens/main/home/screens/activity_page.dart';
 import 'package:cuda_qurani/screens/main/home/screens/completion_page.dart';
 import 'package:cuda_qurani/screens/main/home/screens/premium_offer_page.dart';
@@ -44,18 +45,39 @@ class _MenuAppBarState extends State<MenuAppBar>
   late Animation<double> _scaleAnimation;
 
   // Menu items with proper structure
-  final List<Map<String, dynamic>> _menuItems = [
-    {'label': 'Home', 'index': 0, 'icon': Icons.home_outlined},
-    {'label': 'Quran', 'index': 1, 'icon': Icons.menu_book_outlined},
-    {'label': 'Completion', 'index': 2, 'icon': Icons.flag_outlined},
-    {'label': 'Activity', 'index': 4, 'icon': Icons.analytics_outlined},
-    {'label': 'Premium', 'index': 6, 'icon': Icons.settings_outlined},
+  List<Map<String, dynamic>> get _menuItems => [
+    {'label': _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'appbar_widget.home_text')
+                      : 'Home', 'index': 0, 'icon': Icons.home_outlined},
+    {'label': _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'appbar_widget.quran_text')
+                      : 'Quran', 'index': 1, 'icon': Icons.menu_book_outlined},
+    {'label': _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'appbar_widget.completion_text')
+                      : 'Completion', 'index': 2, 'icon': Icons.flag_outlined},
+    {'label': _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'appbar_widget.activity_text')
+                      : 'Activity', 'index': 4, 'icon': Icons.analytics_outlined},
+    {'label': _translations.isNotEmpty 
+                      ? LanguageHelper.tr(_translations, 'appbar_widget.premium_text')
+                      : 'Premium', 'index': 6, 'icon': Icons.settings_outlined},
   ];
+
+  Map<String, dynamic> _translations = {};
+
+  Future<void> _loadTranslations() async {
+    // Ganti path sesuai file JSON yang dibutuhkan
+    final trans = await context.loadTranslations('appbar');
+    setState(() {
+      _translations = trans;
+    });
+  }
 
   @override
   void initState() {
     super.initState();
     _searchFocusNode = FocusNode();
+    _loadTranslations();
     _searchFocusNode.addListener(_handleSearchFocusChange);
 
     _animationController = AnimationController(
@@ -139,23 +161,26 @@ class _MenuAppBarState extends State<MenuAppBar>
                     const ProfilePage(),
                 transitionsBuilder:
                     (context, animation, secondaryAnimation, child) {
-                  return FadeTransition(
-                    opacity: CurvedAnimation(
-                      parent: animation,
-                      curve: Curves.easeInOut,
-                    ),
-                    child: SlideTransition(
-                      position: Tween<Offset>(
-                        begin: const Offset(0.02, 0.0),
-                        end: Offset.zero,
-                      ).animate(CurvedAnimation(
-                        parent: animation,
-                        curve: Curves.easeInOut,
-                      )),
-                      child: child,
-                    ),
-                  );
-                },
+                      return FadeTransition(
+                        opacity: CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeInOut,
+                        ),
+                        child: SlideTransition(
+                          position:
+                              Tween<Offset>(
+                                begin: const Offset(0.02, 0.0),
+                                end: Offset.zero,
+                              ).animate(
+                                CurvedAnimation(
+                                  parent: animation,
+                                  curve: Curves.easeInOut,
+                                ),
+                              ),
+                          child: child,
+                        ),
+                      );
+                    },
                 transitionDuration: const Duration(milliseconds: 250),
               ),
             ),
@@ -173,23 +198,26 @@ class _MenuAppBarState extends State<MenuAppBar>
                       const SettingsPage(),
                   transitionsBuilder:
                       (context, animation, secondaryAnimation, child) {
-                    return FadeTransition(
-                      opacity: CurvedAnimation(
-                        parent: animation,
-                        curve: Curves.easeInOut,
-                      ),
-                      child: SlideTransition(
-                        position: Tween<Offset>(
-                          begin: const Offset(0.02, 0.0),
-                          end: Offset.zero,
-                        ).animate(CurvedAnimation(
-                          parent: animation,
-                          curve: Curves.easeInOut,
-                        )),
-                        child: child,
-                      ),
-                    );
-                  },
+                        return FadeTransition(
+                          opacity: CurvedAnimation(
+                            parent: animation,
+                            curve: Curves.easeInOut,
+                          ),
+                          child: SlideTransition(
+                            position:
+                                Tween<Offset>(
+                                  begin: const Offset(0.02, 0.0),
+                                  end: Offset.zero,
+                                ).animate(
+                                  CurvedAnimation(
+                                    parent: animation,
+                                    curve: Curves.easeInOut,
+                                  ),
+                                ),
+                            child: child,
+                          ),
+                        );
+                      },
                   transitionDuration: const Duration(milliseconds: 250),
                 ),
               ),
@@ -257,7 +285,7 @@ class _MenuAppBarState extends State<MenuAppBar>
     final s = AppDesignSystem.getScaleFactor(context);
     final screenWidth = MediaQuery.of(context).size.width;
     final itemWidth = screenWidth / _menuItems.length;
-    
+
     return Container(
       height: 56 * s,
       child: SingleChildScrollView(
@@ -381,13 +409,16 @@ class _MenuAppBarState extends State<MenuAppBar>
                 curve: Curves.easeInOut,
               ),
               child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0.0, 0.02),
-                  end: Offset.zero,
-                ).animate(CurvedAnimation(
-                  parent: animation,
-                  curve: Curves.easeInOut,
-                )),
+                position:
+                    Tween<Offset>(
+                      begin: const Offset(0.0, 0.02),
+                      end: Offset.zero,
+                    ).animate(
+                      CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeInOut,
+                      ),
+                    ),
                 child: child,
               ),
             );

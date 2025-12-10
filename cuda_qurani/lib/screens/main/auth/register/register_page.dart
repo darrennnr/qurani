@@ -1,5 +1,6 @@
 // lib/screens/auth/register_page.dart
 
+import 'package:cuda_qurani/core/utils/language_helper.dart';
 import 'package:cuda_qurani/providers/auth_provider.dart';
 import 'package:cuda_qurani/screens/main/home/screens/home_page.dart';
 import 'package:flutter/material.dart';
@@ -9,12 +10,28 @@ import 'package:cuda_qurani/core/widgets/app_components.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
-  
+
   @override
   State<RegisterPage> createState() => _RegisterPageState();
 }
 
 class _RegisterPageState extends State<RegisterPage> {
+  Map<String, dynamic> _translations = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTranslations();
+  }
+
+  Future<void> _loadTranslations() async {
+    // Ganti path sesuai file JSON yang dibutuhkan
+    final trans = await context.loadTranslations('auth');
+    setState(() {
+      _translations = trans;
+    });
+  }
+
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -36,12 +53,12 @@ class _RegisterPageState extends State<RegisterPage> {
 
   Future<void> _handleRegister() async {
     if (!_agreeToTerms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        AppComponentStyles.errorSnackBar(
-          message: 'Anda harus menyetujui syarat dan ketentuan',
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   AppComponentStyles.errorSnackBar(
+      //     message: '',
+      //     duration: const Duration(seconds: 2),
+      //   ),
+      // );
       return;
     }
 
@@ -125,7 +142,9 @@ class _RegisterPageState extends State<RegisterPage> {
             width: 140 * s,
             height: 140 * s,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppDesignSystem.radiusLarge * s),
+              borderRadius: BorderRadius.circular(
+                AppDesignSystem.radiusLarge * s,
+              ),
             ),
             child: Center(
               child: Text(
@@ -147,15 +166,22 @@ class _RegisterPageState extends State<RegisterPage> {
             errorBuilder: (context, error, stackTrace) {
               return Text(
                 'Qurani',
-                style: AppTypography.h2(context, color: AppColors.primary, weight: AppTypography.bold),
+                style: AppTypography.h2(
+                  context,
+                  color: AppColors.primary,
+                  weight: AppTypography.bold,
+                ),
               );
             },
           ),
           SizedBox(height: 4 * s),
           Text(
             'Hafidz',
-            style: AppTypography.label(context, color: AppColors.primary, weight: AppTypography.semiBold)
-                .copyWith(letterSpacing: 2 * s),
+            style: AppTypography.label(
+              context,
+              color: AppColors.primary,
+              weight: AppTypography.semiBold,
+            ).copyWith(letterSpacing: 2 * s),
           ),
         ],
       ),
@@ -167,7 +193,9 @@ class _RegisterPageState extends State<RegisterPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Register',
+          _translations.isNotEmpty
+              ? LanguageHelper.tr(_translations, 'register.register_text')
+              : 'Register',
           style: AppTypography.displaySmall(
             context,
             color: AppColors.textPrimary,
@@ -185,11 +213,25 @@ class _RegisterPageState extends State<RegisterPage> {
         children: [
           _buildTextField(
             controller: _nameController,
-            label: 'Username',
+            label: _translations.isNotEmpty
+                ? LanguageHelper.tr(_translations, 'register.username_text')
+                : 'Username',
             icon: Icons.person_outline_rounded,
             validator: (value) {
-              if (value == null || value.isEmpty) return 'Username tidak boleh kosong';
-              if (value.length < 3) return 'Username minimal 3 karakter';
+              if (value == null || value.isEmpty)
+                return _translations.isNotEmpty
+                    ? LanguageHelper.tr(
+                        _translations,
+                        'register.null_username_text',
+                      )
+                    : 'Username tidak boleh kosong';
+              if (value.length < 3)
+                return _translations.isNotEmpty
+                    ? LanguageHelper.tr(
+                        _translations,
+                        'register.error_username_length_text',
+                      )
+                    : 'Username minimal 3 karakter';
               return null;
             },
             s: s,
@@ -197,26 +239,58 @@ class _RegisterPageState extends State<RegisterPage> {
           AppMargin.gap(context),
           _buildTextField(
             controller: _emailController,
-            label: 'Email',
+            label: _translations.isNotEmpty
+                ? LanguageHelper.tr(_translations, 'register.email_text')
+                : 'Email',
             icon: Icons.email_outlined,
             keyboardType: TextInputType.emailAddress,
             validator: (value) {
-              if (value == null || value.isEmpty) return 'Email tidak boleh kosong';
-              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                return 'Format email tidak valid';
+              if (value == null || value.isEmpty)
+                return _translations.isNotEmpty
+                    ? LanguageHelper.tr(_translations, 'login.null_email_text')
+                    : 'Email tidak boleh kosong';
+              if (!RegExp(
+                r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+              ).hasMatch(value)) {
+                return _translations.isNotEmpty
+                    ? LanguageHelper.tr(
+                        _translations,
+                        'login.error_email_format_text',
+                      )
+                    : 'Format email tidak valid';
               }
               return null;
             },
             s: s,
           ),
           AppMargin.gap(context),
-          _buildPasswordField(_passwordController, 'Password', _isPasswordVisible, (val) {
-            setState(() => _isPasswordVisible = val);
-          }, s),
+          _buildPasswordField(
+            _passwordController,
+            _translations.isNotEmpty
+                ? LanguageHelper.tr(_translations, 'register.password_text')
+                : 'Password',
+            _isPasswordVisible,
+            (val) {
+              setState(() => _isPasswordVisible = val);
+            },
+            s,
+          ),
           AppMargin.gap(context),
-          _buildPasswordField(_confirmPasswordController, 'Konfirmasi Password', _isConfirmPasswordVisible, (val) {
-            setState(() => _isConfirmPasswordVisible = val);
-          }, s, confirmPassword: true),
+          _buildPasswordField(
+            _confirmPasswordController,
+            _translations.isNotEmpty
+                ? LanguageHelper.tr(
+                    _translations,
+                    'register.confirm_password_text',
+                  )
+                : 'Confirm Password',
+            _isConfirmPasswordVisible,
+            (val) {
+              setState(() => _isConfirmPasswordVisible = val);
+            },
+            s,
+            confirmPassword: true,
+          ),
           AppMargin.gap(context),
           _buildTermsCheckbox(s),
         ],
@@ -235,7 +309,9 @@ class _RegisterPageState extends State<RegisterPage> {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
-      textCapitalization: label == 'Username' ? TextCapitalization.words : TextCapitalization.none,
+      textCapitalization: label == 'Username'
+          ? TextCapitalization.words
+          : TextCapitalization.none,
       style: AppTypography.body(
         context,
         color: AppColors.textPrimary,
@@ -249,7 +325,11 @@ class _RegisterPageState extends State<RegisterPage> {
             left: AppDesignSystem.space16 * s,
             right: AppDesignSystem.space12 * s,
           ),
-          child: Icon(icon, color: AppColors.textTertiary, size: AppDesignSystem.iconLarge * s),
+          child: Icon(
+            icon,
+            color: AppColors.textTertiary,
+            size: AppDesignSystem.iconLarge * s,
+          ),
         ),
       ),
       validator: validator,
@@ -280,11 +360,17 @@ class _RegisterPageState extends State<RegisterPage> {
             left: AppDesignSystem.space16 * s,
             right: AppDesignSystem.space12 * s,
           ),
-          child: Icon(Icons.lock_outline_rounded, color: AppColors.textTertiary, size: AppDesignSystem.iconLarge * s),
+          child: Icon(
+            Icons.lock_outline_rounded,
+            color: AppColors.textTertiary,
+            size: AppDesignSystem.iconLarge * s,
+          ),
         ),
         suffixIcon: IconButton(
           icon: Icon(
-            isVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+            isVisible
+                ? Icons.visibility_outlined
+                : Icons.visibility_off_outlined,
             color: AppColors.textTertiary,
             size: AppDesignSystem.iconLarge * s,
           ),
@@ -293,8 +379,20 @@ class _RegisterPageState extends State<RegisterPage> {
       ),
       validator: (value) {
         if (value == null || value.isEmpty) return '$label tidak boleh kosong';
-        if (value.length < 6) return 'Password minimal 6 karakter';
-        if (confirmPassword && value != _passwordController.text) return 'Password tidak sama';
+        if (value.length < 6)
+          return _translations.isNotEmpty
+              ? LanguageHelper.tr(
+                  _translations,
+                  'login.error_password_length_text',
+                )
+              : 'Password must be at least 6 characters';
+        if (confirmPassword && value != _passwordController.text)
+          return _translations.isNotEmpty
+              ? LanguageHelper.tr(
+                  _translations,
+                  'login.error_password_match_text',
+                )
+              : 'Passwords do not match';
         return null;
       },
     );
@@ -309,9 +407,12 @@ class _RegisterPageState extends State<RegisterPage> {
           width: 20 * s,
           child: Checkbox(
             value: _agreeToTerms,
-            onChanged: (value) => setState(() => _agreeToTerms = value ?? false),
+            onChanged: (value) =>
+                setState(() => _agreeToTerms = value ?? false),
             activeColor: AppColors.primary,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4 * s)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(4 * s),
+            ),
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             visualDensity: VisualDensity.compact,
           ),
@@ -320,31 +421,69 @@ class _RegisterPageState extends State<RegisterPage> {
         Expanded(
           child: RichText(
             text: TextSpan(
-              style: AppTypography.bodySmall(context, color: AppColors.textSecondary),
+              style: AppTypography.bodySmall(
+                context,
+                color: AppColors.textSecondary,
+              ),
               children: [
-                const TextSpan(text: 'Saya menyetujui '),
+                TextSpan(
+                  text: _translations.isNotEmpty
+                      ? LanguageHelper.tr(
+                          _translations,
+                          'register.agreement_text',
+                        )
+                      : 'I Agree to the',
+                ),
                 WidgetSpan(
                   alignment: PlaceholderAlignment.baseline,
                   baseline: TextBaseline.alphabetic,
                   child: GestureDetector(
                     onTap: () {},
                     child: Text(
-                      'Syarat dan Ketentuan',
-                      style: AppTypography.bodySmall(context, color: AppColors.primary, weight: AppTypography.semiBold)
-                          .copyWith(decoration: TextDecoration.underline, decorationColor: AppColors.primary),
+                      _translations.isNotEmpty
+                          ? LanguageHelper.tr(
+                              _translations,
+                              'register.terms_and_conditions_text',
+                            )
+                          : 'Terms and Conditions',
+                      style:
+                          AppTypography.bodySmall(
+                            context,
+                            color: AppColors.primary,
+                            weight: AppTypography.semiBold,
+                          ).copyWith(
+                            decoration: TextDecoration.underline,
+                            decorationColor: AppColors.primary,
+                          ),
                     ),
                   ),
                 ),
-                const TextSpan(text: ' serta '),
+                TextSpan(
+                  text: _translations.isNotEmpty
+                      ? LanguageHelper.tr(_translations, 'register.and_text')
+                      : 'and',
+                ),
                 WidgetSpan(
                   alignment: PlaceholderAlignment.baseline,
                   baseline: TextBaseline.alphabetic,
                   child: GestureDetector(
                     onTap: () {},
                     child: Text(
-                      'Kebijakan Privasi',
-                      style: AppTypography.bodySmall(context, color: AppColors.primary, weight: AppTypography.semiBold)
-                          .copyWith(decoration: TextDecoration.underline, decorationColor: AppColors.primary),
+                      _translations.isNotEmpty
+                          ? LanguageHelper.tr(
+                              _translations,
+                              'register.privacy_policy_text',
+                            )
+                          : 'Privacy Policy',
+                      style:
+                          AppTypography.bodySmall(
+                            context,
+                            color: AppColors.primary,
+                            weight: AppTypography.semiBold,
+                          ).copyWith(
+                            decoration: TextDecoration.underline,
+                            decorationColor: AppColors.primary,
+                          ),
                     ),
                   ),
                 ),
@@ -360,7 +499,9 @@ class _RegisterPageState extends State<RegisterPage> {
     return Consumer<AuthProvider>(
       builder: (context, auth, _) {
         return AppButton(
-          text: 'Daftar',
+          text: _translations.isNotEmpty
+              ? LanguageHelper.tr(_translations, 'register.register_text')
+              : 'Signup',
           onPressed: auth.isLoading ? null : _handleRegister,
           loading: auth.isLoading,
           fullWidth: true,
@@ -376,11 +517,18 @@ class _RegisterPageState extends State<RegisterPage> {
       textBaseline: TextBaseline.alphabetic,
       children: [
         Text(
-          'Sudah punya akun? ',
+          _translations.isNotEmpty
+              ? LanguageHelper.tr(
+                  _translations,
+                  'register.not_null_account_text',
+                )
+              : 'Already have an account?',
           style: AppTypography.body(context, color: AppColors.textSecondary),
         ),
         AppTextButton(
-          text: 'Masuk',
+          text: _translations.isNotEmpty
+              ? LanguageHelper.tr(_translations, 'login.login_text')
+              : 'Login',
           onPressed: () => Navigator.of(context).pop(),
           color: AppColors.primary,
         ),
