@@ -1,5 +1,7 @@
 // lib/screens/main/home/screens/activity_page.dart
 
+import 'package:cuda_qurani/core/utils/language_helper.dart';
+import 'package:cuda_qurani/main.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -16,16 +18,25 @@ class ActivityPage extends StatefulWidget {
 }
 
 class _ActivityPageState extends State<ActivityPage> {
+  Map<String, dynamic> _translations = {};
+
+  Future<void> _loadTranslations() async {
+    final trans = await context.loadTranslations('home/activity');
+    setState(() {
+      _translations = trans;
+    });
+  }
+
   final SupabaseService _supabaseService = SupabaseService();
-  
+
   // Loading & data state
   bool _isLoading = true;
   Map<String, dynamic>? _activityData;
-  
+
   // Cache for instant reload
   static Map<String, dynamic>? _cache;
   static DateTime? _cacheTime;
-  
+
   // Filter states
   String _globalFilter = 'day';
   String _pagesTimeframe = 'day';
@@ -35,7 +46,7 @@ class _ActivityPageState extends State<ActivityPage> {
   final List<String> _timeframeOptions = ['day', 'week', 'month'];
   final Map<String, String> _globalFilterOptions = {
     'day': 'Day',
-    'week': 'Week', 
+    'week': 'Week',
     'month': 'Month',
   };
 
@@ -46,6 +57,7 @@ class _ActivityPageState extends State<ActivityPage> {
   void initState() {
     super.initState();
     _loadActivityData();
+    _loadTranslations();
   }
 
   Future<void> _loadActivityData() async {
@@ -63,9 +75,9 @@ class _ActivityPageState extends State<ActivityPage> {
           _isLoading = false;
         });
       }
-      
+
       // If cache is fresh (< 30 seconds), don't refetch
-      if (_cacheTime != null && 
+      if (_cacheTime != null &&
           DateTime.now().difference(_cacheTime!).inSeconds < 30) {
         return;
       }
@@ -74,7 +86,7 @@ class _ActivityPageState extends State<ActivityPage> {
     // Fetch fresh data (single optimized call)
     try {
       final data = await _supabaseService.getActivityPageData(user.id);
-      
+
       if (data != null && mounted) {
         _cache = data;
         _cacheTime = DateTime.now();
@@ -93,21 +105,25 @@ class _ActivityPageState extends State<ActivityPage> {
   // Get chart data key based on timeframe
   String _getChartKey(String timeframe) {
     switch (timeframe) {
-      case 'day': return 'chart_day';
-      case 'week': return 'chart_week';
-      case 'month': return 'chart_month';
-      default: return 'chart_day';
+      case 'day':
+        return 'chart_day';
+      case 'week':
+        return 'chart_week';
+      case 'month':
+        return 'chart_month';
+      default:
+        return 'chart_day';
     }
   }
 
   // Get engagement chart data based on selected timeframe
   List<FlSpot> _getEngagementChartData() {
     if (_activityData == null) return [const FlSpot(0, 0)];
-    
+
     final chartKey = _getChartKey(_engagementTimeframe);
     final chartData = _activityData![chartKey] as List? ?? [];
     if (chartData.isEmpty) return [const FlSpot(0, 0)];
-    
+
     final spots = <FlSpot>[];
     for (int i = 0; i < chartData.length; i++) {
       final minutes = ((chartData[i]['duration_seconds'] ?? 0) as int) / 60;
@@ -118,11 +134,11 @@ class _ActivityPageState extends State<ActivityPage> {
 
   List<String> _getEngagementXLabels() {
     if (_activityData == null) return [''];
-    
+
     final chartKey = _getChartKey(_engagementTimeframe);
     final chartData = _activityData![chartKey] as List? ?? [];
     if (chartData.isEmpty) return [''];
-    
+
     return chartData.map((d) {
       return d['activity_date']?.toString() ?? '';
     }).toList();
@@ -140,21 +156,25 @@ class _ActivityPageState extends State<ActivityPage> {
   // Get accuracy chart key based on timeframe
   String _getAccuracyChartKey(String timeframe) {
     switch (timeframe) {
-      case 'day': return 'accuracy_day';
-      case 'week': return 'accuracy_week';
-      case 'month': return 'accuracy_month';
-      default: return 'accuracy_day';
+      case 'day':
+        return 'accuracy_day';
+      case 'week':
+        return 'accuracy_week';
+      case 'month':
+        return 'accuracy_month';
+      default:
+        return 'accuracy_day';
     }
   }
 
   // Get accuracy chart data based on selected timeframe
   List<FlSpot> _getAccuracyChartData() {
     if (_activityData == null) return [const FlSpot(0, 0)];
-    
+
     final chartKey = _getAccuracyChartKey(_engagementTimeframe);
     final chartData = _activityData![chartKey] as List? ?? [];
     if (chartData.isEmpty) return [const FlSpot(0, 0)];
-    
+
     final spots = <FlSpot>[];
     for (int i = 0; i < chartData.length; i++) {
       final accuracy = (chartData[i]['accuracy'] as num?)?.toDouble() ?? 0.0;
@@ -165,11 +185,11 @@ class _ActivityPageState extends State<ActivityPage> {
 
   List<String> _getAccuracyXLabels() {
     if (_activityData == null) return [''];
-    
+
     final chartKey = _getAccuracyChartKey(_engagementTimeframe);
     final chartData = _activityData![chartKey] as List? ?? [];
     if (chartData.isEmpty) return [''];
-    
+
     return chartData.map((d) {
       return d['activity_date']?.toString() ?? '';
     }).toList();
@@ -182,11 +202,11 @@ class _ActivityPageState extends State<ActivityPage> {
   // Get pages chart data (currently only day view available)
   List<FlSpot> _getPagesChartData() {
     if (_activityData == null) return [const FlSpot(0, 0)];
-    
+
     // For now, pages only has day view from database
     final pagesData = _activityData!['pages_day'] as List? ?? [];
     if (pagesData.isEmpty) return [const FlSpot(0, 0)];
-    
+
     final spots = <FlSpot>[];
     for (int i = 0; i < pagesData.length; i++) {
       final pages = (pagesData[i]['pages_count'] ?? 0) as int;
@@ -197,10 +217,10 @@ class _ActivityPageState extends State<ActivityPage> {
 
   List<String> _getPagesXLabels() {
     if (_activityData == null) return [''];
-    
+
     final pagesData = _activityData!['pages_day'] as List? ?? [];
     if (pagesData.isEmpty) return [''];
-    
+
     return pagesData.map((d) {
       return d['activity_date']?.toString() ?? '';
     }).toList();
@@ -220,21 +240,21 @@ class _ActivityPageState extends State<ActivityPage> {
     if (_activityData == null) {
       return _defaultStats();
     }
-    
+
     final stats = _activityData!['stats'] as Map<String, dynamic>? ?? {};
     final badges = _activityData!['badges'] as Map<String, dynamic>? ?? {};
-    
+
     final periodKey = period.toLowerCase();
     final periodStats = stats[periodKey] as Map<String, dynamic>? ?? {};
     final badgeCount = badges[periodKey] as int? ?? 0;
-    
+
     final durationSeconds = periodStats['duration_seconds'] as int? ?? 0;
     final reciteTimeSeconds = periodStats['recite_time_seconds'] as int? ?? 0;
     final verses = periodStats['verses'] as int? ?? 0;
     final accuracy = (periodStats['accuracy'] as num?)?.toDouble() ?? 0.0;
     final completion = (verses / _totalQuranAyahs * 100);
     final deeds = verses * 10;
-    
+
     return {
       'engagement': _formatDuration(durationSeconds),
       'completion': '${completion.toStringAsFixed(completion < 1 ? 2 : 1)}%',
@@ -268,49 +288,59 @@ class _ActivityPageState extends State<ActivityPage> {
     final minutes = (seconds % 3600) ~/ 60;
     final secs = seconds % 60;
     if (hours > 0) {
-      return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+      return '${context.formatNumber(hours.toString().padLeft(2, '0'))}:${context.formatNumber(minutes.toString().padLeft(2, '0'))}:${context.formatNumber(secs.toString().padLeft(2, '0'))}';
     }
-    return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+    return '${context.formatNumber(minutes.toString().padLeft(2, '0'))}:${context.formatNumber(secs.toString().padLeft(2, '0'))}';
   }
 
   String _formatNumber(int number) {
-    if (number >= 1000000) return '${(number / 1000000).toStringAsFixed(1)}M';
-    if (number >= 1000) return '${(number / 1000).toStringAsFixed(1)}K';
-    return number.toString();
+    if (number >= 1000000) return '${context.formatNumber((number / 1000000).toStringAsFixed(1))}M';
+    if (number >= 1000) return '${context.formatNumber((number / 1000).toStringAsFixed(1))}K';
+    return context.formatNumber(number);
   }
 
   String _formatEngagementWithSuffix(String timeStr) {
     final parts = timeStr.split(':');
     if (parts.length == 2) {
-      final minutes = int.tryParse(parts[0]) ?? 0;
-      if (minutes > 0) return '$timeStr (${minutes}m)';
+      final minutes = int.tryParse(parts[0].replaceAll(RegExp(r'[^\d]'), '')) ?? 0;
+      if (minutes > 0) return '$timeStr (${context.formatNumber(minutes)}m)';
       return timeStr;
     } else if (parts.length == 3) {
-      final hours = int.tryParse(parts[0]) ?? 0;
-      final minutes = int.tryParse(parts[1]) ?? 0;
-      if (hours > 0) return '$timeStr (${hours}h ${minutes}m)';
-      if (minutes > 0) return '$timeStr (${minutes}m)';
+      final hours = int.tryParse(parts[0].replaceAll(RegExp(r'[^\d]'), '')) ?? 0;
+      final minutes = int.tryParse(parts[1].replaceAll(RegExp(r'[^\d]'), '')) ?? 0;
+      if (hours > 0) return '$timeStr (${context.formatNumber(hours)}h ${context.formatNumber(minutes)}m)';
+      if (minutes > 0) return '$timeStr (${context.formatNumber(minutes)}m)';
     }
     return timeStr;
   }
 
   String _mapTabToKey(String tab) {
     switch (tab) {
-      case 'THIS DAY': return 'day';
-      case 'THIS WEEK': return 'week';
-      case 'THIS MONTH': return 'month';
-      case 'THIS YEAR': return 'year';
-      case 'ALL TIME': return 'lifetime';
-      default: return 'lifetime';
+      case 'THIS DAY':
+        return 'day';
+      case 'THIS WEEK':
+        return 'week';
+      case 'THIS MONTH':
+        return 'month';
+      case 'THIS YEAR':
+        return 'year';
+      case 'ALL TIME':
+        return 'lifetime';
+      default:
+        return 'lifetime';
     }
   }
 
   String _mapGlobalToStatTab(String global) {
     switch (global) {
-      case 'day': return 'THIS DAY';
-      case 'week': return 'THIS WEEK';
-      case 'month': return 'THIS MONTH';
-      default: return 'THIS DAY';
+      case 'day':
+        return 'THIS DAY';
+      case 'week':
+        return 'THIS WEEK';
+      case 'month':
+        return 'THIS MONTH';
+      default:
+        return 'THIS DAY';
     }
   }
 
@@ -327,9 +357,10 @@ class _ActivityPageState extends State<ActivityPage> {
 
   void _changeTimeframe(String currentTimeframe, bool isNext, bool isPages) {
     final currentIndex = _timeframeOptions.indexOf(currentTimeframe);
-    int newIndex = isNext 
+    int newIndex = isNext
         ? (currentIndex + 1) % _timeframeOptions.length
-        : (currentIndex - 1 + _timeframeOptions.length) % _timeframeOptions.length;
+        : (currentIndex - 1 + _timeframeOptions.length) %
+              _timeframeOptions.length;
 
     AppHaptics.light();
     setState(() {
@@ -357,7 +388,9 @@ class _ActivityPageState extends State<ActivityPage> {
             await _loadActivityData();
           },
           child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
             slivers: [
               SliverPadding(
                 padding: AppPadding.only(
@@ -396,9 +429,22 @@ class _ActivityPageState extends State<ActivityPage> {
       borderColor: AppColors.borderLight,
       child: Row(
         children: [
-          Icon(Icons.filter_list_rounded, color: AppColors.textSecondary, size: 15 * s),
+          Icon(
+            Icons.filter_list_rounded,
+            color: AppColors.textSecondary,
+            size: 15 * s,
+          ),
           SizedBox(width: 6 * s),
-          Text('Filter Period:', style: TextStyle(fontSize: 12 * s, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+          Text(
+            _translations.isNotEmpty
+                ? LanguageHelper.tr(_translations, 'activity.filter_period_text')
+                : 'Filter Period:',
+            style: TextStyle(
+              fontSize: 12 * s,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+            ),
+          ),
           const Spacer(),
           Container(
             padding: EdgeInsets.symmetric(horizontal: 10 * s, vertical: 2 * s),
@@ -409,14 +455,33 @@ class _ActivityPageState extends State<ActivityPage> {
             child: DropdownButton<String>(
               value: _globalFilter,
               underline: const SizedBox(),
-              icon: Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textPrimary, size: 16 * s),
-              style: TextStyle(fontSize: 11 * s, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+              icon: Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: AppColors.textPrimary,
+                size: 16 * s,
+              ),
+              style: TextStyle(
+                fontSize: 11 * s,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
               dropdownColor: AppColors.surface,
               borderRadius: BorderRadius.circular(6 * s),
-              items: _globalFilterOptions.entries.map((e) => DropdownMenuItem(
-                value: e.key,
-                child: Text(e.value.toUpperCase(), style: TextStyle(fontSize: 11 * s, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-              )).toList(),
+              items: _globalFilterOptions.entries
+                  .map(
+                    (e) => DropdownMenuItem(
+                      value: e.key,
+                      child: Text(
+                        _getTranslatedFilterOption(e.key).toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 11 * s,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
               onChanged: _onGlobalFilterChanged,
             ),
           ),
@@ -425,12 +490,26 @@ class _ActivityPageState extends State<ActivityPage> {
     );
   }
 
+  String _getTranslatedFilterOption(String key) {
+    if (_translations.isEmpty) return key;
+    switch (key) {
+      case 'day':
+        return LanguageHelper.tr(_translations, 'activity.day_text');
+      case 'week':
+        return LanguageHelper.tr(_translations, 'activity.week_text');
+      case 'month':
+        return LanguageHelper.tr(_translations, 'activity.month_text');
+      default:
+        return key;
+    }
+  }
+
   Widget _buildPagesChart(BuildContext context) {
     final s = AppDesignSystem.getScaleFactor(context);
     final spots = _getPagesChartData();
     final labels = _getPagesXLabels();
     final maxY = _getPagesMaxY();
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -439,7 +518,17 @@ class _ActivityPageState extends State<ActivityPage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Pages', style: TextStyle(fontSize: 16 * s, fontWeight: FontWeight.w700, color: AppColors.textPrimary, letterSpacing: -0.3)),
+              Text(
+                _translations.isNotEmpty
+                    ? LanguageHelper.tr(_translations, 'activity.pages_text')
+                    : 'Pages',
+                style: TextStyle(
+                  fontSize: 16 * s,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                  letterSpacing: -0.3,
+                ),
+              ),
               _buildTimeframeSelector(_pagesTimeframe, true, context),
             ],
           ),
@@ -453,8 +542,8 @@ class _ActivityPageState extends State<ActivityPage> {
             child: _isLoading
                 ? _buildChartSkeleton(context)
                 : (spots.length <= 1 && spots.first.y == 0)
-                    ? _buildEmptyChart(context, 'No pages data yet')
-                    : _buildLineChart(spots, maxY, labels, context),
+                ? _buildEmptyChart(context, 'No pages data yet')
+                : _buildLineChart(spots, maxY, labels, context),
           ),
         ),
       ],
@@ -466,7 +555,7 @@ class _ActivityPageState extends State<ActivityPage> {
     final spots = _getEngagementChartData();
     final labels = _getEngagementXLabels();
     final maxY = _getEngagementMaxY();
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -475,7 +564,17 @@ class _ActivityPageState extends State<ActivityPage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Engagement (minutes)', style: TextStyle(fontSize: 16 * s, fontWeight: FontWeight.w700, color: AppColors.textPrimary, letterSpacing: -0.3)),
+              Text(
+                _translations.isNotEmpty
+                    ? '${LanguageHelper.tr(_translations, 'activity.engangement_text')} (minutes)'
+                    : 'Engagement (minutes)',
+                style: TextStyle(
+                  fontSize: 16 * s,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                  letterSpacing: -0.3,
+                ),
+              ),
               _buildTimeframeSelector(_engagementTimeframe, false, context),
             ],
           ),
@@ -489,8 +588,8 @@ class _ActivityPageState extends State<ActivityPage> {
             child: _isLoading
                 ? _buildChartSkeleton(context)
                 : (spots.length <= 1 && spots.first.y == 0)
-                    ? _buildEmptyChart(context, 'No engagement data yet')
-                    : _buildLineChart(spots, maxY, labels, context),
+                ? _buildEmptyChart(context, 'No engagement data yet')
+                : _buildLineChart(spots, maxY, labels, context),
           ),
         ),
       ],
@@ -502,7 +601,7 @@ class _ActivityPageState extends State<ActivityPage> {
     final spots = _getAccuracyChartData();
     final labels = _getAccuracyXLabels();
     final maxY = _getAccuracyMaxY();
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -511,7 +610,15 @@ class _ActivityPageState extends State<ActivityPage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Accuracy (%)', style: TextStyle(fontSize: 16 * s, fontWeight: FontWeight.w700, color: AppColors.textPrimary, letterSpacing: -0.3)),
+              Text(
+                'Accuracy (%)',
+                style: TextStyle(
+                  fontSize: 16 * s,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                  letterSpacing: -0.3,
+                ),
+              ),
               _buildTimeframeSelector(_engagementTimeframe, false, context),
             ],
           ),
@@ -525,15 +632,20 @@ class _ActivityPageState extends State<ActivityPage> {
             child: _isLoading
                 ? _buildChartSkeleton(context)
                 : (spots.length <= 1 && spots.first.y == 0)
-                    ? _buildEmptyChart(context, 'No accuracy data yet')
-                    : _buildAccuracyLineChart(spots, maxY, labels, context),
+                ? _buildEmptyChart(context, 'No accuracy data yet')
+                : _buildAccuracyLineChart(spots, maxY, labels, context),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildAccuracyLineChart(List<FlSpot> spots, double maxY, List<String> xLabels, BuildContext context) {
+  Widget _buildAccuracyLineChart(
+    List<FlSpot> spots,
+    double maxY,
+    List<String> xLabels,
+    BuildContext context,
+  ) {
     final s = AppDesignSystem.getScaleFactor(context);
     return LineChart(
       LineChartData(
@@ -543,13 +655,21 @@ class _ActivityPageState extends State<ActivityPage> {
           LineChartBarData(
             spots: spots,
             isCurved: false,
-            color: AppColors.success, // Green for accuracy
+            color: AppColors.success,
             barWidth: 2 * s,
             dotData: FlDotData(
               show: true,
-              getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(radius: 3 * s, color: AppColors.success, strokeWidth: 0),
+              getDotPainter: (spot, percent, barData, index) =>
+                  FlDotCirclePainter(
+                    radius: 3 * s,
+                    color: AppColors.success,
+                    strokeWidth: 0,
+                  ),
             ),
-            belowBarData: BarAreaData(show: true, color: AppColors.success.withOpacity(0.08)),
+            belowBarData: BarAreaData(
+              show: true,
+              color: AppColors.success.withOpacity(0.08),
+            ),
           ),
         ],
         titlesData: FlTitlesData(
@@ -557,12 +677,23 @@ class _ActivityPageState extends State<ActivityPage> {
             sideTitles: SideTitles(
               showTitles: true,
               reservedSize: 28 * s,
-              interval: 25, // 0, 25, 50, 75, 100
-              getTitlesWidget: (value, meta) => Text('${value.toInt()}', style: TextStyle(fontSize: 9 * s, color: AppColors.textTertiary, fontWeight: FontWeight.w500)),
+              interval: 25,
+              getTitlesWidget: (value, meta) => Text(
+                context.formatNumber(value.toInt()),
+                style: TextStyle(
+                  fontSize: 9 * s,
+                  color: AppColors.textTertiary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ),
           ),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
@@ -573,7 +704,14 @@ class _ActivityPageState extends State<ActivityPage> {
                 if (index >= 0 && index < xLabels.length) {
                   return Padding(
                     padding: EdgeInsets.only(top: 6 * s),
-                    child: Text(xLabels[index], style: TextStyle(fontSize: 8.5 * s, color: AppColors.success.withOpacity(0.7), fontWeight: FontWeight.w600)),
+                    child: Text(
+                      xLabels[index],
+                      style: TextStyle(
+                        fontSize: 8.5 * s,
+                        color: AppColors.success.withOpacity(0.7),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   );
                 }
                 return const SizedBox();
@@ -585,7 +723,8 @@ class _ActivityPageState extends State<ActivityPage> {
           show: true,
           drawVerticalLine: false,
           horizontalInterval: 25,
-          getDrawingHorizontalLine: (value) => FlLine(color: AppColors.borderLight, strokeWidth: 1 * s),
+          getDrawingHorizontalLine: (value) =>
+              FlLine(color: AppColors.borderLight, strokeWidth: 1 * s),
         ),
         borderData: FlBorderData(show: false),
         lineTouchData: const LineTouchData(enabled: false),
@@ -602,10 +741,16 @@ class _ActivityPageState extends State<ActivityPage> {
           SizedBox(
             width: 24 * s,
             height: 24 * s,
-            child: CircularProgressIndicator(strokeWidth: 2 * s, color: AppColors.primary),
+            child: CircularProgressIndicator(
+              strokeWidth: 2 * s,
+              color: AppColors.primary,
+            ),
           ),
           SizedBox(height: 8 * s),
-          Text('Loading...', style: TextStyle(fontSize: 11 * s, color: AppColors.textTertiary)),
+          Text(
+            'Loading...',
+            style: TextStyle(fontSize: 11 * s, color: AppColors.textTertiary),
+          ),
         ],
       ),
     );
@@ -614,38 +759,75 @@ class _ActivityPageState extends State<ActivityPage> {
   Widget _buildEmptyChart(BuildContext context, String message) {
     final s = AppDesignSystem.getScaleFactor(context);
     return Center(
-      child: Text(message, style: TextStyle(fontSize: 12 * s, color: AppColors.textTertiary)),
+      child: Text(
+        message,
+        style: TextStyle(fontSize: 12 * s, color: AppColors.textTertiary),
+      ),
     );
   }
 
-  Widget _buildTimeframeSelector(String current, bool isPages, BuildContext context) {
+  Widget _buildTimeframeSelector(
+    String current,
+    bool isPages,
+    BuildContext context,
+  ) {
     final s = AppDesignSystem.getScaleFactor(context);
     return Row(
       children: [
-        _buildSelectorButton(Icons.chevron_left, () => _changeTimeframe(current, false, isPages), context),
+        _buildSelectorButton(
+          Icons.chevron_left,
+          () => _changeTimeframe(current, false, isPages),
+          context,
+        ),
         SizedBox(width: 10 * s),
-        Text(current.toUpperCase(), style: TextStyle(fontSize: 12 * s, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+        Text(
+          _getTranslatedFilterOption(current).toUpperCase(),
+          style: TextStyle(
+            fontSize: 12 * s,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
         SizedBox(width: 10 * s),
-        _buildSelectorButton(Icons.chevron_right, () => _changeTimeframe(current, true, isPages), context),
+        _buildSelectorButton(
+          Icons.chevron_right,
+          () => _changeTimeframe(current, true, isPages),
+          context,
+        ),
       ],
     );
   }
 
-  Widget _buildSelectorButton(IconData icon, VoidCallback onTap, BuildContext context) {
+  Widget _buildSelectorButton(
+    IconData icon,
+    VoidCallback onTap,
+    BuildContext context,
+  ) {
     final s = AppDesignSystem.getScaleFactor(context);
     return InkWell(
-      onTap: () { AppHaptics.light(); onTap(); },
+      onTap: () {
+        AppHaptics.light();
+        onTap();
+      },
       borderRadius: BorderRadius.circular(6 * s),
       child: Container(
         width: 28 * s,
         height: 28 * s,
-        decoration: BoxDecoration(color: AppColors.surfaceContainerLowest, borderRadius: BorderRadius.circular(6 * s)),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(6 * s),
+        ),
         child: Icon(icon, size: 16 * s, color: AppColors.textSecondary),
       ),
     );
   }
 
-  Widget _buildLineChart(List<FlSpot> spots, double maxY, List<String> xLabels, BuildContext context) {
+  Widget _buildLineChart(
+    List<FlSpot> spots,
+    double maxY,
+    List<String> xLabels,
+    BuildContext context,
+  ) {
     final s = AppDesignSystem.getScaleFactor(context);
     return LineChart(
       LineChartData(
@@ -659,9 +841,17 @@ class _ActivityPageState extends State<ActivityPage> {
             barWidth: 2 * s,
             dotData: FlDotData(
               show: true,
-              getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(radius: 3 * s, color: AppColors.primary, strokeWidth: 0),
+              getDotPainter: (spot, percent, barData, index) =>
+                  FlDotCirclePainter(
+                    radius: 3 * s,
+                    color: AppColors.primary,
+                    strokeWidth: 0,
+                  ),
             ),
-            belowBarData: BarAreaData(show: true, color: AppColors.primaryWithOpacity(0.08)),
+            belowBarData: BarAreaData(
+              show: true,
+              color: AppColors.primaryWithOpacity(0.08),
+            ),
           ),
         ],
         titlesData: FlTitlesData(
@@ -670,11 +860,22 @@ class _ActivityPageState extends State<ActivityPage> {
               showTitles: true,
               reservedSize: 28 * s,
               interval: maxY / 3,
-              getTitlesWidget: (value, meta) => Text(value.toInt().toString(), style: TextStyle(fontSize: 9 * s, color: AppColors.textTertiary, fontWeight: FontWeight.w500)),
+              getTitlesWidget: (value, meta) => Text(
+                context.formatNumber(value.toInt()),
+                style: TextStyle(
+                  fontSize: 9 * s,
+                  color: AppColors.textTertiary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ),
           ),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
@@ -685,7 +886,14 @@ class _ActivityPageState extends State<ActivityPage> {
                 if (index >= 0 && index < xLabels.length) {
                   return Padding(
                     padding: EdgeInsets.only(top: 6 * s),
-                    child: Text(xLabels[index], style: TextStyle(fontSize: 8.5 * s, color: AppColors.primary.withOpacity(0.7), fontWeight: FontWeight.w600)),
+                    child: Text(
+                      xLabels[index],
+                      style: TextStyle(
+                        fontSize: 8.5 * s,
+                        color: AppColors.primary.withOpacity(0.7),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   );
                 }
                 return const SizedBox();
@@ -697,7 +905,8 @@ class _ActivityPageState extends State<ActivityPage> {
           show: true,
           drawVerticalLine: false,
           horizontalInterval: maxY / 3,
-          getDrawingHorizontalLine: (value) => FlLine(color: AppColors.borderLight, strokeWidth: 1 * s),
+          getDrawingHorizontalLine: (value) =>
+              FlLine(color: AppColors.borderLight, strokeWidth: 1 * s),
         ),
         borderData: FlBorderData(show: false),
         lineTouchData: const LineTouchData(enabled: false),
@@ -712,7 +921,17 @@ class _ActivityPageState extends State<ActivityPage> {
       children: [
         Padding(
           padding: EdgeInsets.only(bottom: 12 * s),
-          child: Text('Statistics', style: TextStyle(fontSize: 16 * s, fontWeight: FontWeight.w700, color: AppColors.textPrimary, letterSpacing: -0.3)),
+          child: Text(
+            _translations.isNotEmpty
+                ? LanguageHelper.tr(_translations, 'activity.statistics_text')
+                : 'Statistics',
+            style: TextStyle(
+              fontSize: 16 * s,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+              letterSpacing: -0.3,
+            ),
+          ),
         ),
         AppCard(
           padding: EdgeInsets.all(16 * s),
@@ -730,9 +949,33 @@ class _ActivityPageState extends State<ActivityPage> {
     );
   }
 
+  String _getTranslatedStatTab(String tab) {
+    if (_translations.isEmpty) return tab;
+    switch (tab) {
+      case 'THIS DAY':
+        return LanguageHelper.tr(_translations, 'activity.this_day_text');
+      case 'THIS WEEK':
+        return LanguageHelper.tr(_translations, 'activity.this_week_text');
+      case 'THIS MONTH':
+        return LanguageHelper.tr(_translations, 'activity.this_month_text');
+      case 'THIS YEAR':
+        return LanguageHelper.tr(_translations, 'activity.this_year_text');
+      case 'ALL TIME':
+        return LanguageHelper.tr(_translations, 'activity.alltime_text');
+      default:
+        return tab;
+    }
+  }
+
   Widget _buildStatisticsTabs(BuildContext context) {
     final s = AppDesignSystem.getScaleFactor(context);
-    final tabs = ['THIS DAY', 'THIS WEEK', 'THIS MONTH', 'THIS YEAR', 'ALL TIME'];
+    final tabs = [
+      'THIS DAY',
+      'THIS WEEK',
+      'THIS MONTH',
+      'THIS YEAR',
+      'ALL TIME',
+    ];
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -743,16 +986,37 @@ class _ActivityPageState extends State<ActivityPage> {
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: () { AppHaptics.light(); setState(() => _statisticsTimeframe = tab); },
+                onTap: () {
+                  AppHaptics.light();
+                  setState(() => _statisticsTimeframe = tab);
+                },
                 borderRadius: BorderRadius.circular(6 * s),
                 child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12 * s, vertical: 6 * s),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 12 * s,
+                    vertical: 6 * s,
+                  ),
                   decoration: BoxDecoration(
                     color: isSelected ? AppColors.primary : Colors.transparent,
                     borderRadius: BorderRadius.circular(6 * s),
-                    border: Border.all(color: isSelected ? AppColors.primary : AppColors.borderMedium, width: 1 * s),
+                    border: Border.all(
+                      color: isSelected
+                          ? AppColors.primary
+                          : AppColors.borderMedium,
+                      width: 1 * s,
+                    ),
                   ),
-                  child: Text(tab, style: TextStyle(fontSize: 9.5 * s, fontWeight: FontWeight.w600, color: isSelected ? AppColors.textInverse : AppColors.textTertiary, letterSpacing: 0.3)),
+                  child: Text(
+                    _getTranslatedStatTab(tab),
+                    style: TextStyle(
+                      fontSize: 9.5 * s,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected
+                          ? AppColors.textInverse
+                          : AppColors.textTertiary,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -768,38 +1032,121 @@ class _ActivityPageState extends State<ActivityPage> {
     final data = _getStatsForPeriod(periodKey);
 
     final accuracy = (data['accuracy'] as num?)?.toDouble() ?? 0.0;
-    final accuracyStr = accuracy > 0 ? '${accuracy.toStringAsFixed(1)}%' : '0%';
-    
+    final accuracyStr = accuracy > 0 ? '${context.formatNumber(accuracy.toStringAsFixed(1))}%' : '${context.formatNumber(0)}%';
+
     return Column(
       children: [
-        Row(children: [
-          Expanded(child: _buildStatCard(_formatEngagementWithSuffix(data['engagement'].toString()), 'Engagement', Icons.access_time_rounded, AppColors.primary, context)),
-          SizedBox(width: 10 * s),
-          Expanded(child: _buildStatCard(data['completion'].toString(), 'Completion', Icons.check_circle_outline_rounded, AppColors.success, context)),
-        ]),
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                _formatEngagementWithSuffix(data['engagement'].toString()),
+                _translations.isNotEmpty
+                    ? LanguageHelper.tr(_translations, 'activity.engangement_text')
+                    : 'Engagement',
+                Icons.access_time_rounded,
+                AppColors.primary,
+                context,
+              ),
+            ),
+            SizedBox(width: 10 * s),
+            Expanded(
+              child: _buildStatCard(
+                data['completion'].toString(),
+                _translations.isNotEmpty
+                    ? LanguageHelper.tr(_translations, 'activity.completion_text')
+                    : 'Completion',
+                Icons.check_circle_outline_rounded,
+                AppColors.success,
+                context,
+              ),
+            ),
+          ],
+        ),
         SizedBox(height: 10 * s),
-        Row(children: [
-          Expanded(child: _buildStatCard(data['verses'].toString(), 'Verses Recited', Icons.menu_book_rounded, AppColors.info, context)),
-          SizedBox(width: 10 * s),
-          Expanded(child: _buildStatCard(data['recitation'].toString(), 'Recitation Time', Icons.timer_outlined, AppColors.accent, context)),
-        ]),
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                context.formatNumber(data['verses']),
+                _translations.isNotEmpty
+                    ? LanguageHelper.tr(_translations, 'activity.verses_recited')
+                    : 'Verses Recited',
+                Icons.menu_book_rounded,
+                AppColors.info,
+                context,
+              ),
+            ),
+            SizedBox(width: 10 * s),
+            Expanded(
+              child: _buildStatCard(
+                data['recitation'].toString(),
+                _translations.isNotEmpty
+                    ? LanguageHelper.tr(_translations, 'activity.recitatiom_time_text')
+                    : 'Recitation Time',
+                Icons.timer_outlined,
+                AppColors.accent,
+                context,
+              ),
+            ),
+          ],
+        ),
         SizedBox(height: 10 * s),
-        Row(children: [
-          Expanded(child: _buildStatCard(accuracyStr, 'Accuracy', Icons.analytics_outlined, AppColors.secondary, context)),
-          SizedBox(width: 10 * s),
-          Expanded(child: _buildStatCard(data['badges'].toString(), 'Earned Badges', Icons.emoji_events_outlined, AppColors.warning, context)),
-        ]),
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                accuracyStr,
+                'Accuracy',
+                Icons.analytics_outlined,
+                AppColors.secondary,
+                context,
+              ),
+            ),
+            SizedBox(width: 10 * s),
+            Expanded(
+              child: _buildStatCard(
+                context.formatNumber(data['badges']),
+                _translations.isNotEmpty
+                    ? LanguageHelper.tr(_translations, 'activity.earned_badges_text')
+                    : 'Earned Badges',
+                Icons.emoji_events_outlined,
+                AppColors.warning,
+                context,
+              ),
+            ),
+          ],
+        ),
         SizedBox(height: 10 * s),
-        Row(children: [
-          Expanded(child: _buildStatCard(data['deeds'].toString(), 'Deeds Estimated', Icons.favorite_border_rounded, AppColors.error, context)),
-          SizedBox(width: 10 * s),
-          const Expanded(child: SizedBox()), // Placeholder for future stat
-        ]),
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                data['deeds'].toString(),
+                _translations.isNotEmpty
+                    ? LanguageHelper.tr(_translations, 'activity.deeds_estimated_text')
+                    : 'Deeds Estimated',
+                Icons.favorite_border_rounded,
+                AppColors.error,
+                context,
+              ),
+            ),
+            SizedBox(width: 10 * s),
+            const Expanded(child: SizedBox()),
+          ],
+        ),
       ],
     );
   }
 
-  Widget _buildStatCard(String value, String label, IconData icon, Color color, BuildContext context, {String? subtitle}) {
+  Widget _buildStatCard(
+    String value,
+    String label,
+    IconData icon,
+    Color color,
+    BuildContext context, {
+    String? subtitle,
+  }) {
     final s = AppDesignSystem.getScaleFactor(context);
     return Container(
       padding: EdgeInsets.all(12 * s),
@@ -814,21 +1161,45 @@ class _ActivityPageState extends State<ActivityPage> {
           Container(
             width: 28 * s,
             height: 28 * s,
-            decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(6 * s)),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(6 * s),
+            ),
             child: Icon(icon, color: color, size: 16 * s),
           ),
           SizedBox(height: 10 * s),
           Text(
             _isLoading ? '...' : value,
-            style: TextStyle(fontSize: 18 * s, fontWeight: FontWeight.w700, color: AppColors.textPrimary, height: 1.1),
+            style: TextStyle(
+              fontSize: 18 * s,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+              height: 1.1,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           SizedBox(height: 3 * s),
-          Text(label, style: TextStyle(fontSize: 10 * s, color: AppColors.textTertiary, fontWeight: FontWeight.w500), maxLines: 1, overflow: TextOverflow.ellipsis),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10 * s,
+              color: AppColors.textTertiary,
+              fontWeight: FontWeight.w500,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
           if (subtitle != null) ...[
             SizedBox(height: 2 * s),
-            Text(subtitle, style: TextStyle(fontSize: 8 * s, color: AppColors.textTertiary.withOpacity(0.7), fontStyle: FontStyle.italic)),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 8 * s,
+                color: AppColors.textTertiary.withOpacity(0.7),
+                fontStyle: FontStyle.italic,
+              ),
+            ),
           ],
         ],
       ),
