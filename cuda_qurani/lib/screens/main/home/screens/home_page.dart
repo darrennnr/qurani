@@ -2,6 +2,7 @@
 
 import 'package:cuda_qurani/core/design_system/app_design_system.dart';
 import 'package:cuda_qurani/core/utils/language_helper.dart';
+import 'package:cuda_qurani/main.dart';
 import 'package:cuda_qurani/screens/main/home/screens/all_session_page.dart';
 import 'package:cuda_qurani/screens/main/home/screens/achievement_page.dart';
 import 'package:cuda_qurani/screens/main/home/widgets/navigation_bar.dart';
@@ -9,6 +10,7 @@ import 'package:cuda_qurani/providers/auth_provider.dart';
 import 'package:cuda_qurani/services/supabase_service.dart';
 import 'package:cuda_qurani/services/auth_service.dart';
 import 'package:cuda_qurani/screens/main/stt/stt_page.dart';
+import 'package:cuda_qurani/core/providers/language_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -223,7 +225,7 @@ class _HomePageState extends State<HomePage> {
     final authProvider = context.watch<AuthProvider>();
     final user = authProvider.currentUser;
 
-    String displayName = 'User';
+    String displayName = _t('home.user_text');
     if (user != null) {
       if (user.fullName != null && user.fullName!.isNotEmpty) {
         displayName = user.fullName!;
@@ -265,6 +267,9 @@ class _HomePageState extends State<HomePage> {
 
   // ==================== LATEST SESSION CARD ====================
   Widget _buildLatestSession(BuildContext context) {
+    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+    final isArabic = languageProvider.currentLanguageCode == 'ar';
+
     if (_isLoadingSession) {
       return Container(
         padding: AppPadding.card(context),
@@ -298,12 +303,12 @@ class _HomePageState extends State<HomePage> {
             ),
             AppMargin.gapSmall(context),
             Text(
-              'No recent session',
+              _t('home.no_recent_session_text'),
               style: AppTypography.body(context, color: AppColors.textTertiary),
             ),
             AppMargin.gapSmall(context),
             Text(
-              'Start your first recitation',
+              _t('home.start_first_recitation_text'),
               style: AppTypography.caption(context),
             ),
           ],
@@ -312,8 +317,10 @@ class _HomePageState extends State<HomePage> {
     }
 
     final surahId = _latestSession!['surah_id'] ?? 0;
-    final surahName =
-        _latestSession!['surah_name'] ?? '${_t('home.surah_text')} $surahId';
+    // ✅ Logic: If Arabic, use name_arabic, else use name_simple
+    final surahName = isArabic 
+        ? (_latestSession!['name_arabic'] ?? _latestSession!['surah_name'] ?? '${_t('home.surah_text')} ${context.formatNumber(surahId)}')
+        : (_latestSession!['surah_name'] ?? '${_t('home.surah_text')} ${context.formatNumber(surahId)}');
     final totalAyahs = _latestSession!['total_ayahs'] ?? 0;
     final ayah = _latestSession!['ayah'] ?? 0;
     final position = _latestSession!['position'] ?? 0;
@@ -321,22 +328,22 @@ class _HomePageState extends State<HomePage> {
     final updatedAt = _latestSession!['updated_at'] ?? '';
 
     // Calculate time ago with translations
-    String timeAgo = 'Just now';
+    String timeAgo = _t('home.just_now_text');
     try {
       final updated = DateTime.parse(updatedAt);
       final diff = DateTime.now().difference(updated);
       if (diff.inMinutes < 60) {
         final mins = diff.inMinutes;
         timeAgo =
-            '$mins ${mins > 1 ? _t('home.minutes_text') : _t('home.minute_text')} ${_t('home.ago_text')}';
+            '${context.formatNumber(mins)} ${mins > 1 ? _t('home.minutes_text') : _t('home.minute_text')} ${_t('home.ago_text')}';
       } else if (diff.inHours < 24) {
         final hrs = diff.inHours;
         timeAgo =
-            '$hrs ${hrs > 1 ? _t('home.hours_text') : _t('home.hour_text')} ${_t('home.ago_text')}';
+            '${context.formatNumber(hrs)} ${hrs > 1 ? _t('home.hours_text') : _t('home.hour_text')} ${_t('home.ago_text')}';
       } else {
         final dys = diff.inDays;
         timeAgo =
-            '$dys ${dys > 1 ? _t('home.days_text') : _t('home.day_text')} ${_t('home.ago_text')}';
+            '${context.formatNumber(dys)} ${dys > 1 ? _t('home.days_text') : _t('home.day_text')} ${_t('home.ago_text')}';
       }
     } catch (e) {
       // Keep default
@@ -383,7 +390,7 @@ class _HomePageState extends State<HomePage> {
                       AppMargin.gapHSmall(context),
                       Text(
                         status == 'paused'
-                            ? 'PAUSED SESSION'
+                            ? _t('home.paused_Session_text').toUpperCase()
                             : _t('home.latest_Session_text').toUpperCase(),
                         style: AppTypography.overline(context),
                       ),
@@ -442,7 +449,7 @@ class _HomePageState extends State<HomePage> {
               ),
               AppMargin.gapSmall(context),
               Text(
-                '${_t('home.ayah_text')} $ayah${totalAyahs > 0 ? '/$totalAyahs' : ''}, ${_t('home.word_text')} ${position + 1} · $timeAgo',
+                '${_t('home.ayah_text')} ${context.formatNumber(ayah)}${totalAyahs > 0 ? '/${context.formatNumber(totalAyahs)}' : ''}, ${_t('home.word_text')} ${context.formatNumber(position + 1)} · $timeAgo',
                 style: AppTypography.caption(context),
               ),
               AppMargin.gap(context),
@@ -529,7 +536,7 @@ class _HomePageState extends State<HomePage> {
       print('❌ Failed to resume session: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to resume: $e'),
+          content: Text('${_t('home.failed_to_resume_text')}: $e'),
           backgroundColor: Colors.red,
           duration: const Duration(seconds: 3),
         ),
@@ -552,8 +559,8 @@ class _HomePageState extends State<HomePage> {
             Expanded(
               child: _buildStreakCard(
                 context: context,
-                label: 'Current Streak 🔥',
-                value: _currentStreak,
+                label: _t('home.current_streak_text'),
+                value: context.formatNumber(_currentStreak),
                 unit: _currentStreak > 1
                     ? _t('home.days_text')
                     : _t('home.day_text'),
@@ -563,8 +570,8 @@ class _HomePageState extends State<HomePage> {
             Expanded(
               child: _buildStreakCard(
                 context: context,
-                label: _t('home.treak'),
-                value: _longestStreak,
+                label: _t('home.longest_streak_text'),
+                value: context.formatNumber(_longestStreak),
                 unit: _longestStreak > 1
                     ? _t('home.days_text')
                     : _t('home.day_text'),
@@ -579,7 +586,7 @@ class _HomePageState extends State<HomePage> {
   Widget _buildStreakCard({
     required BuildContext context,
     required String label,
-    required int value,
+    required String value,
     required String unit,
   }) {
     return Container(
@@ -601,7 +608,7 @@ class _HomePageState extends State<HomePage> {
             textBaseline: TextBaseline.alphabetic,
             children: [
               Text(
-                '$value',
+                value,
                 style: AppTypography.displaySmall(
                   context,
                   weight: AppTypography.bold,
@@ -618,6 +625,9 @@ class _HomePageState extends State<HomePage> {
 
   // ==================== PROGRESS SECTION ====================
   Widget _buildProgressSection(BuildContext context) {
+    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+    final isArabic = languageProvider.currentLanguageCode == 'ar';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -632,7 +642,7 @@ class _HomePageState extends State<HomePage> {
               child: _buildProgressCard(
                 context: context,
                 label: _t('home.completion_text'),
-                value: '$_completionPercentage%',
+                value: '${context.formatNumber(_completionPercentage)}%',
                 color: AppColors.primary,
               ),
             ),
@@ -641,7 +651,7 @@ class _HomePageState extends State<HomePage> {
               child: _buildProgressCard(
                 context: context,
                 label: _t('home.memorized_text'),
-                value: '$_memorizedPercentage%',
+                value: '${context.formatNumber(_memorizedPercentage)}%',
                 color: AppColors.accent,
               ),
             ),
@@ -654,7 +664,7 @@ class _HomePageState extends State<HomePage> {
               child: _buildProgressCard(
                 context: context,
                 label: _t('home.time_text'),
-                value: _engagementTime,
+                value: _formatEngagementTime(context, _engagementTime, isArabic),
                 color: AppColors.info,
               ),
             ),
@@ -665,7 +675,7 @@ class _HomePageState extends State<HomePage> {
                 label: _versesRecited > 1
                     ? _t('home.verses_text')
                     : _t('home.verse_text'),
-                value: '$_versesRecited',
+                value: context.formatNumber(_versesRecited),
                 color: AppColors.success,
               ),
             ),
@@ -673,6 +683,25 @@ class _HomePageState extends State<HomePage> {
         ),
       ],
     );
+  }
+
+  /// ✅ Format engagement time with RTL support for Arabic
+  String _formatEngagementTime(BuildContext context, String time, bool isArabic) {
+    if (!isArabic) {
+      // LTR: hours:minutes:seconds
+      return context.formatNumber(time);
+    }
+    
+    // RTL: seconds:minutes:hours for Arabic
+    final parts = time.split(':');
+    if (parts.length == 3) {
+      final hours = context.formatNumber(parts[0]);
+      final minutes = context.formatNumber(parts[1]);
+      final seconds = context.formatNumber(parts[2]);
+      return '$seconds:$minutes:$hours'; // Reversed for RTL
+    }
+    
+    return context.formatNumber(time);
   }
 
   Widget _buildProgressCard({
@@ -712,18 +741,20 @@ class _HomePageState extends State<HomePage> {
 
   // ==================== TODAY'S GOAL ====================
   Widget _buildTodayGoal(BuildContext context) {
-    String goalLabel = '${_t('home.verses_text')} Goal';
     String goalIcon = '📖';
+    final String goalText = _t('home.goal_text');
+    final String pageText = _t('home.page_text');
+    String goalLabel = '${_t('home.verses_text')} $goalText';
     if (_goalType == 'minutes') {
-      goalLabel = '${_t('home.time_text')} Goal';
+      goalLabel = '${_t('home.time_text')} $goalText';
       goalIcon = '⏱️';
     } else if (_goalType == 'pages') {
-      goalLabel = 'Pages Goal';
+      goalLabel = '$pageText $goalText';
       goalIcon = '📄';
     }
 
     String progressText =
-        '$_goalCurrent/$_goalTarget ${_goalType == 'minutes' ? _t('home.session.min_text') : _goalType}';
+        '${context.formatNumber(_goalCurrent)}/${context.formatNumber(_goalTarget)} ${_goalType == 'minutes' ? _t('home.session.min_text') : _goalType}';
     double progressPercent = _goalTarget > 0
         ? (_goalCurrent / _goalTarget).clamp(0.0, 1.0)
         : 0.0;
@@ -861,7 +892,7 @@ class _HomePageState extends State<HomePage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Set a Goal',
+                                _t('home.set_goal_text'),
                                 style: AppTypography.title(
                                   context,
                                   weight: AppTypography.semiBold,
@@ -869,7 +900,7 @@ class _HomePageState extends State<HomePage> {
                               ),
                               AppMargin.gapSmall(context),
                               Text(
-                                'Tap to create daily goal',
+                                _t('home.tap_to_create_goal_text'),
                                 style: AppTypography.caption(context),
                               ),
                             ],
@@ -920,7 +951,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                     child: Text(
-                      '$_earnedBadgesCount/$_totalBadgesCount',
+                      '${context.formatNumber(_earnedBadgesCount)}/${context.formatNumber(_totalBadgesCount)}',
                       style: AppTypography.captionSmall(
                         context,
                         color: AppColors.primary,
@@ -975,7 +1006,7 @@ class _HomePageState extends State<HomePage> {
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               child: Text(
-                'More',
+                _t('home.more_text'),
                 style: AppTypography.caption(
                   context,
                   color: AppColors.textPrimary,
@@ -998,7 +1029,7 @@ class _HomePageState extends State<HomePage> {
                     return _buildAchievementBadge(
                       context: context,
                       emoji: badge['emoji'] ?? '🏆',
-                      label: badge['title'] ?? 'Badge',
+                      label: badge['title'] ?? _t('home.badge_text'),
                       count: null,
                     );
                   },
@@ -1022,7 +1053,7 @@ class _HomePageState extends State<HomePage> {
             ),
             AppMargin.gapHSmall(context),
             Text(
-              'Complete sessions to earn badges',
+              _t('home.complete_sessions_to_earn_badges_text'),
               style: AppTypography.caption(
                 context,
                 color: AppColors.textTertiary,
@@ -1041,7 +1072,7 @@ class _HomePageState extends State<HomePage> {
     required int? count,
   }) {
     return Container(
-      width: AppDesignSystem.scale(context, 90),
+      width: AppDesignSystem.scale(context, 100),
       margin: EdgeInsets.only(
         right: AppDesignSystem.scale(context, AppDesignSystem.space12),
       ),
@@ -1079,7 +1110,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                     child: Center(
                       child: Text(
-                        '$count',
+                        context.formatNumber(count),
                         style: AppTypography.captionSmall(
                           context,
                           color: Colors.white,
