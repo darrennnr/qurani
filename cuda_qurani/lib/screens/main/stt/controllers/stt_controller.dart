@@ -328,6 +328,14 @@ class SttController with ChangeNotifier {
     print('🎧 Listening Mode: Passive learning (no detection)');
 
     try {
+      // ✅ CRITICAL FIX: Stop any existing listening session first
+      if (_isListeningMode && _listeningAudioService != null) {
+        print('🛑 Stopping existing listening session before starting new one...');
+        await stopListening();
+        // Wait a bit to ensure cleanup completes
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
+
       // 🧹 Clear previous state
       _tartibStatus.clear();
       _wordStatusMap.clear();
@@ -689,8 +697,12 @@ class SttController with ChangeNotifier {
   /// Pause listening (pause audio, but keep WebSocket alive)
   Future<void> pauseListening() async {
     if (_listeningAudioService != null && _isListeningMode) {
+      // ✅ CRITICAL: Notify listeners BEFORE await untuk UI update yang lebih cepat
+      // State sudah di-update di pausePlayback() sebelum await
+      notifyListeners();
       await _listeningAudioService!.pausePlayback();
       print('⏸️ Listening paused');
+      // ✅ Notify lagi setelah await untuk memastikan state ter-update
       notifyListeners();
     }
   }
@@ -698,8 +710,12 @@ class SttController with ChangeNotifier {
   /// Resume listening
   Future<void> resumeListening() async {
     if (_listeningAudioService != null && _isListeningMode) {
+      // ✅ CRITICAL: Notify listeners BEFORE await untuk UI update yang lebih cepat
+      // State sudah di-update di resumePlayback() sebelum await
+      notifyListeners();
       await _listeningAudioService!.resumePlayback();
       print('▶️ Listening resumed');
+      // ✅ Notify lagi setelah await untuk memastikan state ter-update
       notifyListeners();
     }
   }
@@ -1305,6 +1321,18 @@ class SttController with ChangeNotifier {
     }
 
     appLogger.log('NAV', 'ðŸ"„ Navigating from page $_currentPage to $newPage');
+
+    // ✅ CRITICAL FIX: Stop listening mode when user manually navigates
+    if (_isListeningMode && _listeningAudioService != null) {
+      print('🛑 User navigated during listening - stopping listening mode...');
+      // Stop immediately (fire-and-forget, but set flag to prevent new sessions)
+      _isListeningMode = false; // Set flag immediately to prevent race conditions
+      stopListening().catchError((e) {
+        print('⚠️ Error stopping listening during navigation: $e');
+        // Ensure flag is still false even if error occurs
+        _isListeningMode = false;
+      });
+    }
 
     _currentPage = newPage;
     // ✅ CRITICAL: Reset last loaded ayats page to force reload
