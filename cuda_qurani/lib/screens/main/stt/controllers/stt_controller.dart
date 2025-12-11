@@ -760,12 +760,22 @@ class SttController with ChangeNotifier {
     );
 
     try {
-      // Fetch all pages in parallel
+      // ✅ CRITICAL: Check both caches before loading
       final results = await Future.wait(
         pageNumbers.map((pageNum) async {
+          // Check SttController cache first
           if (pageCache.containsKey(pageNum)) {
-            appLogger.log('PARALLEL_LOAD', 'Page $pageNum already cached');
+            appLogger.log('PARALLEL_LOAD', 'Page $pageNum already cached (SttController)');
             return MapEntry(pageNum, pageCache[pageNum]!);
+          }
+          
+          // ✅ Check QuranService cache (shared singleton)
+          final serviceCache = _sqliteService.getCachedPage(pageNum);
+          if (serviceCache != null) {
+            // ✅ Sync to SttController cache
+            pageCache[pageNum] = serviceCache;
+            appLogger.log('PARALLEL_LOAD', 'Page $pageNum synced from QuranService cache');
+            return MapEntry(pageNum, serviceCache);
           }
 
           try {
@@ -783,13 +793,18 @@ class SttController with ChangeNotifier {
         eagerError: false,
       );
 
-      // Update cache with successful results
+      // ✅ CRITICAL: Update cache with successful results and notify immediately
       int successCount = 0;
       for (final entry in results) {
         if (entry != null) {
           pageCache[entry.key] = entry.value;
           successCount++;
         }
+      }
+
+      // ✅ CRITICAL: Notify listeners immediately after cache update
+      if (successCount > 0) {
+        notifyListeners();
       }
 
       appLogger.log(
@@ -1069,32 +1084,44 @@ class SttController with ChangeNotifier {
     }
   }
 
+  // ✅ CRITICAL: Track last loaded page to prevent duplicate calls
+  int? _lastLoadedAyatsPage;
+  
   Future<void> _loadCurrentPageAyats() async {
+    // ✅ OPTIMIZED: Prevent duplicate calls for same page
+    if (_lastLoadedAyatsPage == _currentPage) {
+      return; // Already loaded for this page
+    }
+    
     if (!_isQuranMode) {
       _currentPageAyats = _ayatList;
+      _lastLoadedAyatsPage = _currentPage;
       notifyListeners();
       return;
     }
     try {
-      if (pageCache.containsKey(_currentPage)) {
-        _currentPageAyats = await _sqliteService.getCurrentPageAyats(
-          _currentPage,
-        );
-        appLogger.log(
-          'DATA',
-          'Loaded ${_currentPageAyats.length} ayats from cache for page $_currentPage',
-        );
-      } else {
-        _currentPageAyats = await _sqliteService.getCurrentPageAyats(
-          _currentPage,
-        );
-        appLogger.log(
-          'DATA',
-          'Loaded ${_currentPageAyats.length} ayats for page $_currentPage',
-        );
-      }
+      // ✅ CRITICAL: Load current page ayats FIRST (priority)
+      // This ensures UI updates immediately with current page data
+      final currentPageAyatsFuture = _sqliteService.getCurrentPageAyats(
+        _currentPage,
+      );
+      
+      // ✅ Wait for current page ayats to load (priority)
+      _currentPageAyats = await currentPageAyatsFuture;
+      _lastLoadedAyatsPage = _currentPage;
+      
+      appLogger.log(
+        'DATA',
+        'Loaded ${_currentPageAyats.length} ayats for page $_currentPage',
+      );
+      
+      // ✅ CRITICAL: Notify listeners IMMEDIATELY after current page loaded
+      // This ensures UI shows current page data right away
       notifyListeners();
-      _preloadAdjacentPagesAggressively();
+      
+      // ✅ Background: Preload adjacent pages AFTER current page is shown
+      // This doesn't block UI update
+      Future.microtask(() => _preloadAdjacentPagesAggressively());
     } catch (e) {
       appLogger.log('DATA_PAGE_ERROR', 'Error loading page ayats - $e');
       _currentPageAyats = [];
@@ -1102,64 +1129,171 @@ class SttController with ChangeNotifier {
     }
   }
 
+  // ✅ CRITICAL: Track last preloaded page to prevent duplicate calls
+  int? _lastPreloadedPage;
+  DateTime? _lastPreloadTime;
+  
   Future<void> _preloadAdjacentPagesAggressively() async {
-    if (_isPreloadingPages) return;
+    // ✅ CRITICAL: Prevent duplicate preload calls for same page
+    if (_isPreloadingPages) {
+      return; // Already preloading
+    }
+    
+    // ✅ Debounce: Don't preload if same page was preloaded recently (< 500ms)
+    if (_lastPreloadedPage == _currentPage && 
+        _lastPreloadTime != null &&
+        DateTime.now().difference(_lastPreloadTime!).inMilliseconds < 500) {
+      return; // Too soon, skip
+    }
+    
     _isPreloadingPages = true;
+    _lastPreloadedPage = _currentPage;
+    _lastPreloadTime = DateTime.now();
 
     try {
       final pagesToPreload = <int>[];
 
+      // ✅ OPTIMIZED: Prioritize immediate adjacent pages first
+      // Load ±1, ±2 pages first for instant swipe
       if (_currentPage > 1) pagesToPreload.add(_currentPage - 1);
       if (_currentPage < 604) pagesToPreload.add(_currentPage + 1);
-
+      
+      // Then load expanding radius pages
       for (int i = 2; i <= cacheRadius; i++) {
         if (_currentPage - i >= 1) pagesToPreload.add(_currentPage - i);
         if (_currentPage + i <= 604) pagesToPreload.add(_currentPage + i);
       }
-
-      final pagesToLoad = pagesToPreload
-          .where((page) => !pageCache.containsKey(page))
-          .toList();
-
-      if (pagesToLoad.isEmpty) {
-        _isPreloadingPages = false;
-        return;
+      
+      // ✅ OPTIMIZED: Load immediate pages first, then others in background
+      final immediatePages = <int>[];
+      final backgroundPages = <int>[];
+      
+      for (final page in pagesToPreload) {
+        // ✅ CRITICAL: Check both caches before adding to preload list
+        if (pageCache.containsKey(page)) continue;
+        
+        // ✅ Check QuranService cache (shared singleton)
+        final serviceCache = _sqliteService.getCachedPage(page);
+        if (serviceCache != null) {
+          // ✅ Sync immediately if found in QuranService cache
+          pageCache[page] = serviceCache;
+          continue; // Already cached, skip
+        }
+        
+        final distance = (page - _currentPage).abs();
+        // ✅ OPTIMIZED: Increased from 15 to 20 for ultra-fast swipe support (Tarteel-style)
+        if (distance <= 20) {
+          immediatePages.add(page);
+        } else {
+          backgroundPages.add(page);
+        }
       }
-
-      await Future.wait(
-        pagesToLoad.map((page) async {
-          try {
-            final lines = await _sqliteService.getMushafPageLines(page);
-            pageCache[page] = lines;
-            appLogger.log(
-              'CACHE',
-              'Preloaded page $page (${lines.length} lines)',
+      
+      // Load immediate pages first (high priority)
+      if (immediatePages.isNotEmpty) {
+        await Future.wait(
+          immediatePages.map((page) async {
+            // ✅ CRITICAL: Check QuranService cache first (shared singleton)
+            final serviceCache = _sqliteService.getCachedPage(page);
+            if (serviceCache != null) {
+              pageCache[page] = serviceCache;
+              return; // Already cached, skip loading
+            }
+            
+            try {
+              final lines = await _sqliteService.getMushafPageLines(page);
+              pageCache[page] = lines;
+              appLogger.log(
+                'CACHE',
+                '⚡ Immediate preloaded page $page (${lines.length} lines)',
+              );
+            } catch (e) {
+              appLogger.log('CACHE_ERROR', 'Failed to preload page $page: $e');
+            }
+          }),
+          eagerError: false,
+        );
+      }
+      
+      // ✅ OPTIMIZED: Load background pages in larger batches for faster preloading
+      if (backgroundPages.isNotEmpty) {
+        // ✅ CRITICAL: Don't await - run in background without blocking
+        Future.microtask(() async {
+          // ✅ Load in batches of 100 for maximum performance (increased from 50)
+          const batchSize = 100;
+          int loadedCount = 0;
+          
+          for (int i = 0; i < backgroundPages.length; i += batchSize) {
+            final batch = backgroundPages.skip(i).take(batchSize).toList();
+            await Future.wait(
+              batch.map((page) async {
+                // ✅ CRITICAL: Check both caches before loading
+                if (pageCache.containsKey(page)) return;
+                
+                // ✅ Check QuranService cache (shared singleton)
+                final serviceCache = _sqliteService.getCachedPage(page);
+                if (serviceCache != null) {
+                  pageCache[page] = serviceCache;
+                  loadedCount++;
+                  return; // Already cached, skip loading
+                }
+                
+                try {
+                  final lines = await _sqliteService.getMushafPageLines(page);
+                  pageCache[page] = lines;
+                  loadedCount++;
+                  // ✅ Reduce log spam - only log summary every 30 pages
+                  if (loadedCount % 30 == 0) {
+                    appLogger.log(
+                      'CACHE',
+                      'Background preloaded $loadedCount/${backgroundPages.length} pages...',
+                    );
+                  }
+                } catch (e) {
+                  appLogger.log('CACHE_ERROR', 'Failed to preload page $page: $e');
+                }
+              }),
+              eagerError: false,
             );
-          } catch (e) {
-            appLogger.log('CACHE_ERROR', 'Failed to preload page $page: $e');
+            
+            // ✅ NO DELAY: Remove delay completely for maximum speed (was 1ms)
+            // Background preload runs asynchronously, no need to throttle
           }
-        }),
-        eagerError: false,
-      );
-
-      _cleanupDistantCache();
+          
+          appLogger.log(
+            'CACHE',
+            '✅ Background preload complete: $loadedCount pages cached',
+          );
+          _cleanupDistantCache();
+        });
+      } else {
+        // If no background pages, cleanup immediately
+        _cleanupDistantCache();
+      }
     } finally {
       _isPreloadingPages = false;
     }
   }
 
   void _cleanupDistantCache() {
-    if (pageCache.length > maxCacheSize) {
+    // ✅ OPTIMIZED: Only evict when cache is VERY large and pages are VERY far
+    // This prevents re-loading when user swipes back and forth
+    if (pageCache.length > cacheEvictionThreshold) {
       final sortedKeys = pageCache.keys.toList()
         ..sort(
           (a, b) =>
               (a - _currentPage).abs().compareTo((b - _currentPage).abs()),
         );
 
-      final keysToRemove = sortedKeys.skip(maxCacheSize).toList();
+      // ✅ Only remove pages that are VERY far (> 300 pages away) and cache is full
+      final keysToRemove = sortedKeys
+          .where((key) => (key - _currentPage).abs() > cacheEvictionDistance)
+          .take(pageCache.length - maxCacheSize) // Keep at least maxCacheSize pages
+          .toList();
+      
       for (final key in keysToRemove) {
         pageCache.remove(key);
-        appLogger.log('CACHE', 'Removed distant page $key from cache');
+        appLogger.log('CACHE', 'Removed very distant page $key (${(key - _currentPage).abs()} pages away)');
       }
     }
   }
@@ -1170,9 +1304,45 @@ class SttController with ChangeNotifier {
       return;
     }
 
-    appLogger.log('NAV', 'ðŸ“„ Navigating from page $_currentPage to $newPage');
+    appLogger.log('NAV', 'ðŸ"„ Navigating from page $_currentPage to $newPage');
 
     _currentPage = newPage;
+    // ✅ CRITICAL: Reset last loaded ayats page to force reload
+    _lastLoadedAyatsPage = null;
+
+    // ✅ CRITICAL: Check both SttController cache AND QuranService cache
+    // QuranService cache is shared singleton, so check it first
+    if (!pageCache.containsKey(newPage)) {
+      final serviceCache = _sqliteService.getCachedPage(newPage);
+      if (serviceCache != null) {
+        // ✅ Sync from QuranService cache to SttController cache
+        pageCache[newPage] = serviceCache;
+        appLogger.log('NAV', '✅ Synced page $newPage from QuranService cache');
+      } else if (_sqliteService.isPageLoading(newPage)) {
+        // ✅ OPTIMIZED: If page is already loading, wait for it instead of loading again
+        final loadingFuture = _sqliteService.getLoadingFuture(newPage);
+        if (loadingFuture != null) {
+          appLogger.log('NAV', '⏳ Page $newPage already loading, waiting...');
+          loadingFuture.then((lines) {
+            pageCache[newPage] = lines;
+            _updateSurahNameForPage(newPage);
+            _loadCurrentPageAyats();
+            notifyListeners();
+            Future.microtask(() => _preloadAdjacentPagesAggressively());
+          }).catchError((e) {
+            appLogger.log('NAV_ERROR', 'Failed to wait for page $newPage: $e');
+            // Fallback to normal load
+            _loadSinglePageData(newPage).then((_) {
+              _updateSurahNameForPage(newPage);
+              _loadCurrentPageAyats();
+              notifyListeners();
+              Future.microtask(() => _preloadAdjacentPagesAggressively());
+            });
+          });
+          return; // Exit early, will update when load completes
+        }
+      }
+    }
 
     // âœ… Check if target page is already cached
     if (pageCache.containsKey(newPage)) {
@@ -1438,7 +1608,9 @@ class SttController with ChangeNotifier {
   }
 
   void updatePageCache(int page, List<MushafPageLine> lines) {
+    // ✅ CRITICAL: Update cache and notify listeners immediately
     pageCache[page] = lines;
+    notifyListeners(); // ✅ Force UI update when cache is populated
   }
 
   // ===== UI TOGGLES & ACTIONS =====
