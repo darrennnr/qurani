@@ -700,21 +700,43 @@ class _CompleteAyahWidget extends StatelessWidget {
         ),
         child: Opacity(
           opacity: opacity,
-          child: Text(
+          child: _buildWordText(
             word.text,
-            style: TextStyle(
-              fontSize: screenWidth * 0.0625,
-              fontFamily: fontFamily,
-              color: state.isCurrentAyat ? listeningColor : Colors.black87,
-              fontWeight: FontWeight.w400,
-              height: 1.7,
-              letterSpacing: -5,
-            ),
-            textDirection: TextDirection.rtl,
+            fontFamily,
+            state.isCurrentAyat,
+            screenWidth,
           ),
         ),
       );
     }).toList();
+  }
+
+  // ✅ FIX: Helper method untuk render text dengan setting yang berbeda per layout
+  Widget _buildWordText(
+    String text,
+    String fontFamily,
+    bool isCurrentAyat,
+    double screenWidth,
+  ) {
+    // ✅ CRITICAL: Deteksi layout dari fontFamily
+    final isIndopak = fontFamily == 'IndoPak-Nastaleeq';
+
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: isIndopak
+            ? screenWidth * 0.070 // ← Sedikit lebih besar untuk Indopak
+            : screenWidth * 0.0625, // ← Original untuk QPC
+        fontFamily: fontFamily,
+        color: isCurrentAyat ? listeningColor : Colors.black87,
+        fontWeight: FontWeight.w400,
+        height: 1.7,
+        letterSpacing: isIndopak
+            ? 0 // ← PENTING: Tidak ada overlap untuk Indopak!
+            : -5, // ← Overlap untuk QPC glyph fonts
+      ),
+      textDirection: TextDirection.rtl,
+    );
   }
 }
 

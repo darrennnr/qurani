@@ -44,17 +44,7 @@ class _MushafLayoutFontPageState extends State<MushafLayoutFontPage> {
       'lines': '15 Lines',
       'pages': '604 pages',
       'previewPage': 440,
-    },
-    {
-      'id': 'madani_1426',
-      'title': 'Madani Mushaf (1426)',
-      'subtitle': '',
-      'description':
-          'This updated newer version includes minor layout changes, including updated ayah positions.',
-      'lines': '15 Lines',
-      'pages': '604 pages',
-      'previewPage': 440,
-    },
+    }
   ];
 
   @override
