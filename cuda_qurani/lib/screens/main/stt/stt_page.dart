@@ -1,5 +1,6 @@
 // lib\screens\main\stt\stt_page.dart
 
+import 'package:cuda_qurani/core/enums/mushaf_layout.dart';
 import 'package:cuda_qurani/screens/main/stt/widgets/slider_guide_popup.dart';
 
 import 'controllers/stt_controller.dart';
@@ -12,7 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cuda_qurani/core/widgets/achievement_popup.dart';
 import 'package:cuda_qurani/core/widgets/rate_limit_banner.dart';
-import 'package:cuda_qurani/screens/main/home/screens/premium_offer_page.dart'; // ✅ NEW: Rate Limit
+import 'package:cuda_qurani/screens/main/home/screens/premium_offer_page.dart';
 
 class SttPage extends StatefulWidget {
   final int? suratId;
@@ -186,10 +187,10 @@ class _SttPageState extends State<SttPage> {
             ),
             // ✅ TAMBAHKAN INI - Popup Guide
             const SliderGuidePopup(),
-            
+
             // ✅ NEW: Rate Limit Warning Banner (at top)
-            if (controller.rateLimit != null && 
-                controller.rateLimitRemaining <= 1 && 
+            if (controller.rateLimit != null &&
+                controller.rateLimitRemaining <= 1 &&
                 controller.rateLimitRemaining > 0 &&
                 !controller.isRateLimitExceeded)
               Positioned(
@@ -206,7 +207,7 @@ class _SttPageState extends State<SttPage> {
                   onUpgradePressed: () => _navigateToPremium(context),
                 ),
               ),
-            
+
             // ✅ NEW: Rate Limit Exceeded Overlay (full screen)
             if (controller.isRateLimitExceeded)
               Positioned.fill(
@@ -218,9 +219,9 @@ class _SttPageState extends State<SttPage> {
                   onClose: () => Navigator.of(context).pop(),
                 ),
               ),
-            
+
             // ⏳ NEW: Duration Warning Banner (3 menit tersisa)
-            if (controller.isDurationWarningActive && 
+            if (controller.isDurationWarningActive &&
                 !controller.isDurationLimitExceeded &&
                 !controller.isDurationUnlimited)
               Positioned(
@@ -234,7 +235,7 @@ class _SttPageState extends State<SttPage> {
                   },
                 ),
               ),
-            
+
             // // 🚨 NEW: Surah Mismatch Warning Banner
             // if (controller.isSurahMismatch && controller.surahMismatchWarning != null)
             //   Positioned(
@@ -249,7 +250,7 @@ class _SttPageState extends State<SttPage> {
             //       },
             //     ),
             //   ),
-            
+
             // ⏳ NEW: Duration Limit Exceeded Overlay
             if (controller.isDurationLimitExceeded)
               Positioned.fill(
@@ -264,17 +265,16 @@ class _SttPageState extends State<SttPage> {
       },
     );
   }
-  
+
   void _navigateToPremium(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const PremiumOfferPage()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const PremiumOfferPage()));
   }
 
   Widget _buildQuranText(BuildContext context, SttController controller) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final padding =
-        screenWidth * 0.03; // 1% padding to perfectly center the text
+    final padding = screenWidth * 0.03;
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: padding),
@@ -283,25 +283,32 @@ class _SttPageState extends State<SttPage> {
         borderRadius: BorderRadius.circular(8),
       ),
       child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 200), // ✅ ADD: Smooth transition
+        duration: const Duration(milliseconds: 200),
         switchInCurve: Curves.easeInOut,
         switchOutCurve: Curves.easeInOut,
         transitionBuilder: (child, animation) {
-          // ✅ ADD: Fade transition for smooth mode switch
           return FadeTransition(opacity: animation, child: child);
         },
         child: controller.isQuranMode
-            ? MushafDisplay(
-                key: ValueKey(
-                  'mushaf_${controller.currentPage}',
-                ), // ✅ ADD: Unique key
-              )
-            : QuranListView(
-                key: ValueKey(
-                  'list_${controller.listViewCurrentPage}',
-                ), // ✅ ADD: Unique key
-              ),
+            ? _buildMushafView(controller) // ✅ UBAH: Dynamic widget
+            : _buildListView(controller), // ✅ UBAH: Dynamic widget
       ),
     );
+  }
+
+  Widget _buildMushafView(SttController controller) {
+    // ✅ Key UNIK per layout untuk force rebuild saat switch
+    final uniqueKey =
+        '${controller.mushafLayout.toStringValue()}_${controller.currentPage}';
+
+    return MushafDisplay(key: ValueKey('mushaf_$uniqueKey'));
+  }
+
+  Widget _buildListView(SttController controller) {
+    // ✅ Key UNIK per layout untuk force rebuild saat switch
+    final uniqueKey =
+        '${controller.mushafLayout.toStringValue()}_${controller.listViewCurrentPage}';
+
+    return QuranListView(key: ValueKey('list_$uniqueKey'));
   }
 }

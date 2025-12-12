@@ -1,14 +1,19 @@
 ﻿// lib\screens\main\stt\controllers\stt_controller.dart
 
 import 'dart:async';
+import 'dart:io';
+import 'package:cuda_qurani/core/enums/mushaf_layout.dart';
 import 'package:cuda_qurani/models/playback_settings_model.dart';
 import 'package:cuda_qurani/models/quran_models.dart';
 import 'package:cuda_qurani/screens/main/home/services/juz_service.dart';
+import 'package:cuda_qurani/screens/main/stt/database/db_helper.dart';
 import 'package:cuda_qurani/services/global_ayat_services.dart';
 import 'package:cuda_qurani/services/listening_audio_services.dart';
 import 'package:cuda_qurani/services/local_database_service.dart';
 import 'package:cuda_qurani/services/reciter_database_service.dart';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart';
+import 'package:sqflite/sqflite.dart';
 import '../data/models.dart' hide TartibStatus;
 import '../services/quran_service.dart';
 import '../utils/constants.dart';
@@ -30,6 +35,12 @@ class SttController with ChangeNotifier {
   final String? resumeSessionId; // ✅ NEW: Continue existing session
 
   int? _determinedSurahId;
+
+  MushafLayout _mushafLayout = MushafLayout.qpc;
+  MushafLayout get mushafLayout => _mushafLayout;
+
+  // ✅ TAMBAHKAN getter untuk total pages (dynamic based on layout)
+  int get totalPages => _mushafLayout.totalPages;
 
   SttController({
     this.suratId,
@@ -60,6 +71,84 @@ class SttController with ChangeNotifier {
       print('âŒ SttController: _initializeWebSocket() FAILED: $e');
       print('Stack trace: $stack');
     }
+  }
+
+  Future<void> switchMushafLayout(MushafLayout newLayout) async {
+    if (_mushafLayout == newLayout) return;
+
+    appLogger.log(
+      'LAYOUT_SWITCH',
+      'Switching: ${_mushafLayout.displayName} → ${newLayout.displayName}',
+    );
+
+    // Update service first
+    await _sqliteService.setMushafLayout(newLayout);
+
+    // Update local state
+    _mushafLayout = newLayout;
+
+    // ✅ CRITICAL FIX: Clear ALL caches
+    pageCache.clear();
+    _sqliteService.clearPageCache();
+
+    // ✅ NEW: Close ALL databases BEFORE deleting files
+    print('[LAYOUT_SWITCH] Closing all databases...');
+    await DBHelper.closeAllDatabases();
+    print('[LAYOUT_SWITCH] ✅ All databases closed');
+    await LocalDatabaseService.closePageDatabase();
+    // ✅ TAMBAHKAN INI - Force delete old database file
+    print('[LAYOUT_SWITCH] Deleting old database files...');
+    try {
+      final databasesPath = await getDatabasesPath();
+
+      // Delete both databases to force re-copy
+      final qpcPath = join(databasesPath, 'qpc-v1-15-lines.db');
+      final indopakPath = join(
+        databasesPath,
+        'qudratullah-indopak-15-lines.db',
+      );
+
+      if (await File(qpcPath).exists()) {
+        await File(qpcPath).delete();
+        print('[LAYOUT_SWITCH] Deleted qpc-v1-15-lines.db');
+      }
+
+      if (await File(indopakPath).exists()) {
+        await File(indopakPath).delete();
+        print('[LAYOUT_SWITCH] Deleted qudratullah-indopak-15-lines.db');
+      }
+    } catch (e) {
+      print('[LAYOUT_SWITCH] Error deleting databases: $e');
+    }
+
+    // ✅ FIX: Rebuild metadata cache SEKALI SAJA dengan layout baru
+    appLogger.log(
+      'LAYOUT_SWITCH',
+      'Rebuilding metadata cache for ${newLayout.displayName}...',
+    );
+    await _metadataCache.rebuildForLayout(newLayout);
+    appLogger.log('LAYOUT_SWITCH', '✅ Metadata cache rebuilt successfully');
+
+    // ✅ CRITICAL: Adjust current page if exceeds new layout's max
+    if (_currentPage > newLayout.totalPages) {
+      _currentPage = newLayout.totalPages;
+    }
+    if (_listViewCurrentPage > newLayout.totalPages) {
+      _listViewCurrentPage = newLayout.totalPages;
+    }
+
+    // Reload current page data
+    _isDataLoaded = false;
+    await _loadSinglePageData(_currentPage);
+
+    // ✅ FIX: Notify listeners to update UI
+    notifyListeners();
+
+    appLogger.log(
+      'LAYOUT_SWITCH',
+      '✅ Layout switched to ${newLayout.displayName} (${newLayout.totalPages} pages)',
+    );
+    notifyListeners();
   }
 
   // ✅ NEW: Apply word status map from Supabase data
@@ -280,6 +369,12 @@ class SttController with ChangeNotifier {
     try {
       await _sqliteService.initialize();
 
+      _mushafLayout = _sqliteService.currentLayout;
+      appLogger.log(
+        'APP_INIT',
+        'Loaded layout: ${_mushafLayout.displayName} (${_mushafLayout.totalPages} pages)',
+      );
+
       // ðŸš€ STEP 1: Determine target page FIRST
       int targetPage = await _determineTargetPage();
       _currentPage = targetPage;
@@ -330,7 +425,9 @@ class SttController with ChangeNotifier {
     try {
       // ✅ CRITICAL FIX: Stop any existing listening session first
       if (_isListeningMode && _listeningAudioService != null) {
-        print('🛑 Stopping existing listening session before starting new one...');
+        print(
+          '🛑 Stopping existing listening session before starting new one...',
+        );
         await stopListening();
         // Wait a bit to ensure cleanup completes
         await Future.delayed(const Duration(milliseconds: 100));
@@ -781,16 +878,22 @@ class SttController with ChangeNotifier {
         pageNumbers.map((pageNum) async {
           // Check SttController cache first
           if (pageCache.containsKey(pageNum)) {
-            appLogger.log('PARALLEL_LOAD', 'Page $pageNum already cached (SttController)');
+            appLogger.log(
+              'PARALLEL_LOAD',
+              'Page $pageNum already cached (SttController)',
+            );
             return MapEntry(pageNum, pageCache[pageNum]!);
           }
-          
+
           // ✅ Check QuranService cache (shared singleton)
           final serviceCache = _sqliteService.getCachedPage(pageNum);
           if (serviceCache != null) {
             // ✅ Sync to SttController cache
             pageCache[pageNum] = serviceCache;
-            appLogger.log('PARALLEL_LOAD', 'Page $pageNum synced from QuranService cache');
+            appLogger.log(
+              'PARALLEL_LOAD',
+              'Page $pageNum synced from QuranService cache',
+            );
             return MapEntry(pageNum, serviceCache);
           }
 
@@ -1102,13 +1205,13 @@ class SttController with ChangeNotifier {
 
   // ✅ CRITICAL: Track last loaded page to prevent duplicate calls
   int? _lastLoadedAyatsPage;
-  
+
   Future<void> _loadCurrentPageAyats() async {
     // ✅ OPTIMIZED: Prevent duplicate calls for same page
     if (_lastLoadedAyatsPage == _currentPage) {
       return; // Already loaded for this page
     }
-    
+
     if (!_isQuranMode) {
       _currentPageAyats = _ayatList;
       _lastLoadedAyatsPage = _currentPage;
@@ -1121,20 +1224,20 @@ class SttController with ChangeNotifier {
       final currentPageAyatsFuture = _sqliteService.getCurrentPageAyats(
         _currentPage,
       );
-      
+
       // ✅ Wait for current page ayats to load (priority)
       _currentPageAyats = await currentPageAyatsFuture;
       _lastLoadedAyatsPage = _currentPage;
-      
+
       appLogger.log(
         'DATA',
         'Loaded ${_currentPageAyats.length} ayats for page $_currentPage',
       );
-      
+
       // ✅ CRITICAL: Notify listeners IMMEDIATELY after current page loaded
       // This ensures UI shows current page data right away
       notifyListeners();
-      
+
       // ✅ Background: Preload adjacent pages AFTER current page is shown
       // This doesn't block UI update
       Future.microtask(() => _preloadAdjacentPagesAggressively());
@@ -1148,20 +1251,20 @@ class SttController with ChangeNotifier {
   // ✅ CRITICAL: Track last preloaded page to prevent duplicate calls
   int? _lastPreloadedPage;
   DateTime? _lastPreloadTime;
-  
+
   Future<void> _preloadAdjacentPagesAggressively() async {
     // ✅ CRITICAL: Prevent duplicate preload calls for same page
     if (_isPreloadingPages) {
       return; // Already preloading
     }
-    
+
     // ✅ Debounce: Don't preload if same page was preloaded recently (< 500ms)
-    if (_lastPreloadedPage == _currentPage && 
+    if (_lastPreloadedPage == _currentPage &&
         _lastPreloadTime != null &&
         DateTime.now().difference(_lastPreloadTime!).inMilliseconds < 500) {
       return; // Too soon, skip
     }
-    
+
     _isPreloadingPages = true;
     _lastPreloadedPage = _currentPage;
     _lastPreloadTime = DateTime.now();
@@ -1173,21 +1276,21 @@ class SttController with ChangeNotifier {
       // Load ±1, ±2 pages first for instant swipe
       if (_currentPage > 1) pagesToPreload.add(_currentPage - 1);
       if (_currentPage < 604) pagesToPreload.add(_currentPage + 1);
-      
+
       // Then load expanding radius pages
       for (int i = 2; i <= cacheRadius; i++) {
         if (_currentPage - i >= 1) pagesToPreload.add(_currentPage - i);
         if (_currentPage + i <= 604) pagesToPreload.add(_currentPage + i);
       }
-      
+
       // ✅ OPTIMIZED: Load immediate pages first, then others in background
       final immediatePages = <int>[];
       final backgroundPages = <int>[];
-      
+
       for (final page in pagesToPreload) {
         // ✅ CRITICAL: Check both caches before adding to preload list
         if (pageCache.containsKey(page)) continue;
-        
+
         // ✅ Check QuranService cache (shared singleton)
         final serviceCache = _sqliteService.getCachedPage(page);
         if (serviceCache != null) {
@@ -1195,7 +1298,7 @@ class SttController with ChangeNotifier {
           pageCache[page] = serviceCache;
           continue; // Already cached, skip
         }
-        
+
         final distance = (page - _currentPage).abs();
         // ✅ OPTIMIZED: Increased from 15 to 20 for ultra-fast swipe support (Tarteel-style)
         if (distance <= 20) {
@@ -1204,7 +1307,7 @@ class SttController with ChangeNotifier {
           backgroundPages.add(page);
         }
       }
-      
+
       // Load immediate pages first (high priority)
       if (immediatePages.isNotEmpty) {
         await Future.wait(
@@ -1215,7 +1318,7 @@ class SttController with ChangeNotifier {
               pageCache[page] = serviceCache;
               return; // Already cached, skip loading
             }
-            
+
             try {
               final lines = await _sqliteService.getMushafPageLines(page);
               pageCache[page] = lines;
@@ -1230,7 +1333,7 @@ class SttController with ChangeNotifier {
           eagerError: false,
         );
       }
-      
+
       // ✅ OPTIMIZED: Load background pages in larger batches for faster preloading
       if (backgroundPages.isNotEmpty) {
         // ✅ CRITICAL: Don't await - run in background without blocking
@@ -1238,14 +1341,14 @@ class SttController with ChangeNotifier {
           // ✅ Load in batches of 100 for maximum performance (increased from 50)
           const batchSize = 100;
           int loadedCount = 0;
-          
+
           for (int i = 0; i < backgroundPages.length; i += batchSize) {
             final batch = backgroundPages.skip(i).take(batchSize).toList();
             await Future.wait(
               batch.map((page) async {
                 // ✅ CRITICAL: Check both caches before loading
                 if (pageCache.containsKey(page)) return;
-                
+
                 // ✅ Check QuranService cache (shared singleton)
                 final serviceCache = _sqliteService.getCachedPage(page);
                 if (serviceCache != null) {
@@ -1253,7 +1356,7 @@ class SttController with ChangeNotifier {
                   loadedCount++;
                   return; // Already cached, skip loading
                 }
-                
+
                 try {
                   final lines = await _sqliteService.getMushafPageLines(page);
                   pageCache[page] = lines;
@@ -1266,16 +1369,19 @@ class SttController with ChangeNotifier {
                     );
                   }
                 } catch (e) {
-                  appLogger.log('CACHE_ERROR', 'Failed to preload page $page: $e');
+                  appLogger.log(
+                    'CACHE_ERROR',
+                    'Failed to preload page $page: $e',
+                  );
                 }
               }),
               eagerError: false,
             );
-            
+
             // ✅ NO DELAY: Remove delay completely for maximum speed (was 1ms)
             // Background preload runs asynchronously, no need to throttle
           }
-          
+
           appLogger.log(
             'CACHE',
             '✅ Background preload complete: $loadedCount pages cached',
@@ -1293,7 +1399,6 @@ class SttController with ChangeNotifier {
 
   void _cleanupDistantCache() {
     // ✅ OPTIMIZED: Only evict when cache is VERY large and pages are VERY far
-    // This prevents re-loading when user swipes back and forth
     if (pageCache.length > cacheEvictionThreshold) {
       final sortedKeys = pageCache.keys.toList()
         ..sort(
@@ -1301,22 +1406,42 @@ class SttController with ChangeNotifier {
               (a - _currentPage).abs().compareTo((b - _currentPage).abs()),
         );
 
-      // ✅ Only remove pages that are VERY far (> 300 pages away) and cache is full
+      // ✅ Dynamic: Use totalPages for validation
       final keysToRemove = sortedKeys
-          .where((key) => (key - _currentPage).abs() > cacheEvictionDistance)
-          .take(pageCache.length - maxCacheSize) // Keep at least maxCacheSize pages
+          .where(
+            (key) =>
+                (key - _currentPage).abs() > cacheEvictionDistance ||
+                key > totalPages,
+          ) // ✅ ADD: Remove pages beyond current layout max
+          .take(pageCache.length - maxCacheSize)
           .toList();
-      
+
       for (final key in keysToRemove) {
         pageCache.remove(key);
-        appLogger.log('CACHE', 'Removed very distant page $key (${(key - _currentPage).abs()} pages away)');
+        if (keysToRemove.length % 10 == 0) {
+          // Only log occasionally
+          appLogger.log(
+            'CACHE',
+            'Removed page $key (distance: ${(key - _currentPage).abs()}, max: $totalPages)',
+          );
+        }
       }
     }
   }
 
   void navigateToPage(int newPage) {
-    if (newPage < 1 || newPage > 604 || newPage == _currentPage) {
-      appLogger.log('NAV', 'Invalid navigation to page $newPage');
+    if (newPage < 1 || newPage > totalPages || newPage == _currentPage) {
+      appLogger.log(
+        'NAV',
+        'Invalid navigation to page $newPage (max: $totalPages)',
+      );
+      return;
+    }
+    if (newPage < 1 || newPage > totalPages || newPage == _currentPage) {
+      appLogger.log(
+        'NAV',
+        'Invalid navigation to page $newPage (max: $totalPages)',
+      );
       return;
     }
 
@@ -1326,7 +1451,8 @@ class SttController with ChangeNotifier {
     if (_isListeningMode && _listeningAudioService != null) {
       print('🛑 User navigated during listening - stopping listening mode...');
       // Stop immediately (fire-and-forget, but set flag to prevent new sessions)
-      _isListeningMode = false; // Set flag immediately to prevent race conditions
+      _isListeningMode =
+          false; // Set flag immediately to prevent race conditions
       stopListening().catchError((e) {
         print('⚠️ Error stopping listening during navigation: $e');
         // Ensure flag is still false even if error occurs
@@ -1351,22 +1477,27 @@ class SttController with ChangeNotifier {
         final loadingFuture = _sqliteService.getLoadingFuture(newPage);
         if (loadingFuture != null) {
           appLogger.log('NAV', '⏳ Page $newPage already loading, waiting...');
-          loadingFuture.then((lines) {
-            pageCache[newPage] = lines;
-            _updateSurahNameForPage(newPage);
-            _loadCurrentPageAyats();
-            notifyListeners();
-            Future.microtask(() => _preloadAdjacentPagesAggressively());
-          }).catchError((e) {
-            appLogger.log('NAV_ERROR', 'Failed to wait for page $newPage: $e');
-            // Fallback to normal load
-            _loadSinglePageData(newPage).then((_) {
-              _updateSurahNameForPage(newPage);
-              _loadCurrentPageAyats();
-              notifyListeners();
-              Future.microtask(() => _preloadAdjacentPagesAggressively());
-            });
-          });
+          loadingFuture
+              .then((lines) {
+                pageCache[newPage] = lines;
+                _updateSurahNameForPage(newPage);
+                _loadCurrentPageAyats();
+                notifyListeners();
+                Future.microtask(() => _preloadAdjacentPagesAggressively());
+              })
+              .catchError((e) {
+                appLogger.log(
+                  'NAV_ERROR',
+                  'Failed to wait for page $newPage: $e',
+                );
+                // Fallback to normal load
+                _loadSinglePageData(newPage).then((_) {
+                  _updateSurahNameForPage(newPage);
+                  _loadCurrentPageAyats();
+                  notifyListeners();
+                  Future.microtask(() => _preloadAdjacentPagesAggressively());
+                });
+              });
           return; // Exit early, will update when load completes
         }
       }
@@ -1443,8 +1574,8 @@ class SttController with ChangeNotifier {
     int targetPage,
     int targetSurahId,
   ) async {
-    if (targetPage < 1 || targetPage > 604) {
-      appLogger.log('NAV', 'Invalid page: $targetPage');
+    if (targetPage < 1 || targetPage > totalPages) {
+      appLogger.log('NAV', 'Invalid page: $targetPage (max: $totalPages)');
       return;
     }
 
@@ -1973,14 +2104,14 @@ class SttController with ChangeNotifier {
       //   final int procAyah = message['ayah'] ?? 0;
       //   final int procWordIndex = message['word_index'] ?? 0;
       //   final int procSurah = message['surah'] ?? suratId ?? _determinedSurahId ?? 1;
-      //   
+      //
       //   // Update word status to processing (blue/yellow)
       //   final procKey = _wordKey(procSurah, procAyah);
       //   if (!_wordStatusMap.containsKey(procKey)) {
       //     _wordStatusMap[procKey] = {};
       //   }
       //   _wordStatusMap[procKey]![procWordIndex] = WordStatus.processing;
-      //   
+      //
       //   // Also update _currentWords if available
       //   if (_currentWords.isNotEmpty && procWordIndex < _currentWords.length) {
       //     _currentWords[procWordIndex] = WordFeedback(
@@ -1990,7 +2121,7 @@ class SttController with ChangeNotifier {
       //       similarity: 0.0,
       //     );
       //   }
-      //   
+      //
       //   notifyListeners();
       //   break;
 
@@ -2051,16 +2182,17 @@ class SttController with ChangeNotifier {
             'ðŸ”¥ STT REALTIME: Updated _currentWords[$feedbackWordIndex] = $expectedWord (${_mapWordStatus(status)})',
           );
         }
-        
+
         // ✅ NEW: Set NEXT word to processing (blue) based on next_word_index from backend
         final int? nextWordIndex = message['next_word_index'];
-        if (nextWordIndex != null && 
-            nextWordIndex < totalWords && 
+        if (nextWordIndex != null &&
+            nextWordIndex < totalWords &&
             nextWordIndex >= 0 &&
             nextWordIndex < _currentWords.length) {
           // Only set processing if word is still pending (not already matched/mismatched)
           final currentNextStatus = _wordStatusMap[feedbackKey]?[nextWordIndex];
-          if (currentNextStatus == null || currentNextStatus == WordStatus.pending) {
+          if (currentNextStatus == null ||
+              currentNextStatus == WordStatus.pending) {
             _wordStatusMap[feedbackKey]![nextWordIndex] = WordStatus.processing;
             _currentWords[nextWordIndex] = WordFeedback(
               text: _currentWords[nextWordIndex].text,
@@ -2143,7 +2275,7 @@ class SttController with ChangeNotifier {
         _currentAyatIndex = _ayatList.indexWhere(
           (a) => a.ayah == nextAyah && a.surah_id == completedSurah,
         );
-        
+
         // 🔵 TARTEEL-STYLE: Set first word of NEXT ayah to processing immediately
         // This ensures smooth transition - new ayah starts with blue indicator
         if (nextAyah > 0) {
@@ -2153,9 +2285,11 @@ class SttController with ChangeNotifier {
           }
           // Set word 0 to processing (blue)
           _wordStatusMap[nextAyahKey]![0] = WordStatus.processing;
-          print('🔵 STT: Ayah complete! Set first word of next ayah to processing - $nextAyahKey[0]');
+          print(
+            '🔵 STT: Ayah complete! Set first word of next ayah to processing - $nextAyahKey[0]',
+          );
         }
-        
+
         notifyListeners();
         break;
 
@@ -2223,10 +2357,12 @@ class SttController with ChangeNotifier {
           _wordStatusMap[firstWordKey] = {};
         }
         // Only set if word 0 is not already matched/mismatched (for resume sessions)
-        if (_wordStatusMap[firstWordKey]![0] == null || 
+        if (_wordStatusMap[firstWordKey]![0] == null ||
             _wordStatusMap[firstWordKey]![0] == WordStatus.pending) {
           _wordStatusMap[firstWordKey]![0] = WordStatus.processing;
-          print('🔵 STT: Set first word to processing (Tarteel-style) - $firstWordKey[0]');
+          print(
+            '🔵 STT: Set first word to processing (Tarteel-style) - $firstWordKey[0]',
+          );
         }
 
         appLogger.log(
@@ -2846,10 +2982,10 @@ class SttController with ChangeNotifier {
 
       // ✅ Send with page/juz info if available
       final firstAyah = _ayatList.isNotEmpty ? _ayatList.first.ayah : 1;
-      
+
       // ✅ FIX: isResume true ONLY when resumeSessionId is set (from Resume History)
       final bool shouldResume = resumeSessionId != null;
-      
+
       _webSocketService.sendStartRecording(
         recordingSurahId,
         pageId: pageId,
@@ -2857,7 +2993,8 @@ class SttController with ChangeNotifier {
         ayah: firstAyah,
         isFromHistory: isFromHistory,
         sessionId: resumeSessionId,
-        isResume: shouldResume,  // ✅ NEW: Backend will restore words only if true
+        isResume:
+            shouldResume, // ✅ NEW: Backend will restore words only if true
       );
 
       print('ðŸŽ™ï¸ startRecording(): Starting audio recording...');
